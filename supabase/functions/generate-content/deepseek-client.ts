@@ -94,16 +94,44 @@ export class DeepSeekClient {
     return this.parseContent(generatedContent);
   }
 
+  private cleanMarkdownJson(content: string): string {
+    console.log('=== LIMPIEZA DE MARKDOWN ===');
+    console.log('Contenido original (primeros 200 chars):', content.substring(0, 200));
+    
+    // Buscar bloques de JSON en markdown
+    const jsonBlockRegex = /```(?:json)?\s*([\s\S]*?)\s*```/g;
+    const matches = content.match(jsonBlockRegex);
+    
+    if (matches) {
+      console.log('Se encontraron bloques de markdown, extrayendo JSON...');
+      // Extraer solo el contenido JSON del primer bloque encontrado
+      const firstMatch = matches[0];
+      const cleanedContent = firstMatch.replace(/```(?:json)?\s*/, '').replace(/\s*```$/, '').trim();
+      console.log('Contenido limpio (primeros 200 chars):', cleanedContent.substring(0, 200));
+      return cleanedContent;
+    }
+    
+    console.log('No se encontraron bloques de markdown, devolviendo contenido original');
+    return content.trim();
+  }
+
   private parseContent(content: string): any[] {
+    console.log('=== PARSEANDO CONTENIDO ===');
+    
+    // Limpiar markdown antes de parsear
+    const cleanedContent = this.cleanMarkdownJson(content);
+    
     let parsedContent;
     try {
-      parsedContent = JSON.parse(content);
+      parsedContent = JSON.parse(cleanedContent);
       console.log('Contenido parseado exitosamente como JSON');
       console.log('Tipo de contenido:', Array.isArray(parsedContent) ? 'Array' : typeof parsedContent);
     } catch (error) {
-      console.error('Error parseando JSON del contenido generado:', error);
-      console.error('Contenido que falló al parsear:', content);
-      throw new Error('Respuesta de DeepSeek no es JSON válido');
+      console.error('=== ERROR PARSEANDO JSON ===');
+      console.error('Error:', error);
+      console.error('Contenido original completo:', content);
+      console.error('Contenido limpio que falló al parsear:', cleanedContent);
+      throw new Error('Respuesta de DeepSeek no es JSON válido después de limpiar markdown');
     }
 
     if (!Array.isArray(parsedContent)) {
@@ -111,6 +139,7 @@ export class DeepSeekClient {
       parsedContent = [parsedContent];
     }
 
+    console.log('Contenido final parseado exitosamente, elementos:', parsedContent.length);
     return parsedContent;
   }
 }

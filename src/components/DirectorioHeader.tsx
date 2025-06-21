@@ -18,7 +18,7 @@ const DirectorioHeader = () => {
           <nav className="hidden md:flex space-x-6">
             <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Inicio</Link>
             <Link to="/directorio" className="text-primary font-medium text-sm">Directorio</Link>
-            <Link to="/categorias" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Categorías</Link>
+            <Link to="/admin" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Admin</Link>
           </nav>
         </div>
       </div>

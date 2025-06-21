@@ -5,9 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Loader, Wand2, Save, Eye, Image } from "lucide-react";
+import { Loader, Wand2, Save, Eye, Image, CheckCircle } from "lucide-react";
 import { useGenerateContent, useGenerateImage, useSaveGeneratedContent } from "@/hooks/useContentGeneration";
 import { useCategories } from "@/hooks/useCategories";
 
@@ -112,7 +111,7 @@ const AdminContentGenerator = () => {
                 ) : (
                   <Image className="h-4 w-4 mr-2" />
                 )}
-                Generar Imágenes
+                Generar Imágenes ({imageGenerationQueue.length})
               </Button>
             )}
             <Button 
@@ -134,27 +133,72 @@ const AdminContentGenerator = () => {
             {generatedContent.map((item, index) => (
               <Card key={index} className="p-4">
                 {contentType === 'ingredient' && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-semibold text-lg">{item.name}</h3>
                       <Badge variant="secondary">{item.name_en}</Badge>
                       {item.popularity && (
                         <Badge variant="outline">Popularidad: {item.popularity}%</Badge>
                       )}
+                      {item.image_url && (
+                        <Badge className="bg-green-100 text-green-800">
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                          Imagen generada
+                        </Badge>
+                      )}
                     </div>
+                    
                     {item.image_url && (
-                      <img src={item.image_url} alt={item.name} className="w-32 h-32 object-cover rounded" />
+                      <div className="flex justify-center">
+                        <img 
+                          src={item.image_url} 
+                          alt={item.name} 
+                          className="w-48 h-48 object-cover rounded-lg border shadow-sm" 
+                        />
+                      </div>
                     )}
-                    <p className="text-sm text-muted-foreground">{item.description}</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                      <div>Temporada: {item.temporada}</div>
-                      <div>Origen: {item.origen}</div>
-                      <div>Merma: {item.merma}%</div>
-                      <div>Rendimiento: {item.rendimiento}%</div>
+                    
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {item.description}
+                    </p>
+                    
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm bg-gray-50 p-3 rounded-lg">
+                      <div><strong>Temporada:</strong> {item.temporada}</div>
+                      <div><strong>Origen:</strong> {item.origen}</div>
+                      <div><strong>Merma:</strong> {item.merma}%</div>
+                      <div><strong>Rendimiento:</strong> {item.rendimiento}%</div>
                     </div>
+                    
                     {item.uses && (
-                      <div>
-                        <strong>Usos:</strong> {item.uses.join(', ')}
+                      <div className="bg-blue-50 p-3 rounded-lg">
+                        <strong className="text-sm">Usos culinarios:</strong>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {item.uses.map((use: string, i: number) => (
+                            <Badge key={i} variant="outline" className="text-xs">
+                              {use}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {item.nutritional_info && (
+                      <div className="bg-green-50 p-3 rounded-lg">
+                        <strong className="text-sm">Información nutricional (por 100g):</strong>
+                        <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-2 text-xs">
+                          <div>Calorías: {item.nutritional_info.calories}</div>
+                          <div>Proteína: {item.nutritional_info.protein}g</div>
+                          <div>Carbos: {item.nutritional_info.carbs}g</div>
+                          <div>Grasa: {item.nutritional_info.fat}g</div>
+                          <div>Fibra: {item.nutritional_info.fiber}g</div>
+                          <div>Vit. C: {item.nutritional_info.vitamin_c}mg</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {item.price_estimate && (
+                      <div className="bg-yellow-50 p-3 rounded-lg">
+                        <strong className="text-sm">Precio estimado:</strong> €{item.price_estimate}/kg
                       </div>
                     )}
                   </div>
@@ -162,8 +206,19 @@ const AdminContentGenerator = () => {
                 
                 {contentType === 'category' && (
                   <div>
-                    <h3 className="font-semibold">{item.name}</h3>
-                    <p className="text-sm text-muted-foreground">{item.description}</p>
+                    <h3 className="font-semibold text-lg">{item.name}</h3>
+                    <Badge variant="secondary" className="mt-1">{item.name_en}</Badge>
+                    <p className="text-sm text-muted-foreground mt-2">{item.description}</p>
+                  </div>
+                )}
+
+                {contentType === 'price_update' && (
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold">{item.ingredient_name}</h3>
+                      <Badge>€{item.price}/kg</Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">{item.season_variation}</p>
                   </div>
                 )}
               </Card>
@@ -181,6 +236,10 @@ const AdminContentGenerator = () => {
           <CardTitle className="flex items-center gap-2">
             <Wand2 className="h-5 w-5" />
             Generador de Contenido AI
+            <Badge className="bg-green-100 text-green-800 ml-2">
+              <CheckCircle className="h-3 w-3 mr-1" />
+              APIs Activas
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -230,6 +289,8 @@ const AdminContentGenerator = () => {
                   <SelectItem value="Italia">Italia</SelectItem>
                   <SelectItem value="México">México</SelectItem>
                   <SelectItem value="Argentina">Argentina</SelectItem>
+                  <SelectItem value="Colombia">Colombia</SelectItem>
+                  <SelectItem value="Perú">Perú</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -256,8 +317,17 @@ const AdminContentGenerator = () => {
             ) : (
               <Wand2 className="h-4 w-4 mr-2" />
             )}
-            Generar Contenido con DeepSeek
+            Generar Contenido con DeepSeek AI
           </Button>
+
+          {contentType === 'ingredient' && (
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+              <div className="flex items-center gap-2 text-sm text-blue-800">
+                <Image className="h-4 w-4" />
+                <span>Las imágenes se generarán automáticamente usando Flux (Replicate) después del contenido</span>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -68,7 +68,7 @@ export const useDataStatus = () => {
         if (!hasMultipleLanguages && !hasPrices && !hasUses && !hasRecipes) stats.missingAllData++;
       });
 
-      console.log('Estado de datos:', stats);
+      console.log('📊 Estado de datos:', stats);
       return { stats, ingredients: ingredients || [] };
     },
   });
@@ -80,11 +80,18 @@ export const useCompleteIngredientsData = () => {
 
   return useMutation({
     mutationFn: async ({ ingredientIds }: { ingredientIds: string[] }) => {
-      console.log('=== COMPLETANDO DATOS DE INGREDIENTES ===');
-      console.log(`Procesando ${ingredientIds.length} ingredientes`);
+      console.log('=== INICIANDO RECUPERACIÓN DE DATOS ===');
+      console.log(`🔄 Procesando ${ingredientIds.length} ingredientes`);
 
       let completedCount = 0;
       let errorCount = 0;
+      const errors: string[] = [];
+
+      // Mostrar toast de inicio
+      toast({
+        title: "Recuperación iniciada",
+        description: `Procesando ${ingredientIds.length} ingredientes...`,
+      });
 
       for (const ingredientId of ingredientIds) {
         try {
@@ -96,12 +103,13 @@ export const useCompleteIngredientsData = () => {
             .single();
 
           if (fetchError || !ingredient) {
-            console.error(`Error fetching ingredient ${ingredientId}:`, fetchError);
+            console.error(`❌ Error obteniendo ingrediente ${ingredientId}:`, fetchError);
             errorCount++;
+            errors.push(`Error obteniendo ingrediente ${ingredientId}`);
             continue;
           }
 
-          console.log(`Completando datos para: ${ingredient.name}`);
+          console.log(`🔄 Completando datos para: ${ingredient.name}`);
 
           // Generar datos completos con DeepSeek
           const { data: generatedData, error: generateError } = await supabase.functions.invoke('generate-content', {
@@ -113,8 +121,9 @@ export const useCompleteIngredientsData = () => {
           });
 
           if (generateError || !generatedData.success) {
-            console.error(`Error generating data for ${ingredient.name}:`, generateError);
+            console.error(`❌ Error generando datos para ${ingredient.name}:`, generateError);
             errorCount++;
+            errors.push(`Error generando datos para ${ingredient.name}`);
             continue;
           }
 
@@ -137,8 +146,9 @@ export const useCompleteIngredientsData = () => {
             .eq('id', ingredientId);
 
           if (updateError) {
-            console.error(`Error updating ingredient ${ingredient.name}:`, updateError);
+            console.error(`❌ Error actualizando ingrediente ${ingredient.name}:`, updateError);
             errorCount++;
+            errors.push(`Error actualizando ${ingredient.name}`);
             continue;
           }
 
@@ -183,7 +193,7 @@ export const useCompleteIngredientsData = () => {
               .eq('ingredient_id', ingredientId);
 
             if (!existingUses || existingUses.length === 0) {
-              const usesToInsert = completedIngredient.usos_nutritivos.map((uso: string) => ({
+              const usesToInsert = completedIngredient.usos_nutritivos.slice(0, 3).map((uso: string) => ({
                 ingredient_id: ingredientId,
                 use_description: uso
               }));
@@ -202,7 +212,7 @@ export const useCompleteIngredientsData = () => {
               .eq('ingredient_id', ingredientId);
 
             if (!existingRecipes || existingRecipes.length === 0) {
-              const recipesToInsert = completedIngredient.recetas.map((receta: any) => ({
+              const recipesToInsert = completedIngredient.recetas.slice(0, 3).map((receta: any) => ({
                 ingredient_id: ingredientId,
                 name: receta.nombre || receta.name,
                 type: receta.tipo || receta.type || 'principal',
@@ -239,30 +249,40 @@ export const useCompleteIngredientsData = () => {
           }
 
           completedCount++;
-          console.log(`✅ Completado: ${ingredient.name}`);
+          console.log(`✅ Completado: ${ingredient.name} (${completedCount}/${ingredientIds.length})`);
 
         } catch (error) {
-          console.error(`Error processing ingredient ${ingredientId}:`, error);
+          console.error(`❌ Error procesando ingrediente ${ingredientId}:`, error);
           errorCount++;
+          errors.push(`Error procesando ingrediente ${ingredientId}: ${error}`);
         }
       }
 
-      return { completedCount, errorCount, total: ingredientIds.length };
+      return { completedCount, errorCount, total: ingredientIds.length, errors };
     },
     onSuccess: (result) => {
+      // Invalidar queries para actualizar la UI
       queryClient.invalidateQueries({ queryKey: ['ingredients'] });
       queryClient.invalidateQueries({ queryKey: ['data-status'] });
       
-      toast({
-        title: "Recuperación de datos completada",
-        description: `✅ ${result.completedCount} ingredientes completados, ❌ ${result.errorCount} errores`,
-      });
+      if (result.completedCount > 0) {
+        toast({
+          title: "✅ Recuperación completada",
+          description: `${result.completedCount} ingredientes completados exitosamente${result.errorCount > 0 ? `, ${result.errorCount} errores` : ''}`,
+        });
+      } else {
+        toast({
+          title: "⚠️ Recuperación terminada",
+          description: `No se pudieron completar ingredientes. ${result.errorCount} errores.`,
+          variant: "destructive",
+        });
+      }
     },
     onError: (error) => {
-      console.error('Error en recuperación de datos:', error);
+      console.error('❌ Error en recuperación de datos:', error);
       toast({
-        title: "Error en recuperación",
-        description: error.message,
+        title: "❌ Error en recuperación",
+        description: error.message || "Error desconocido durante la recuperación",
         variant: "destructive",
       });
     },

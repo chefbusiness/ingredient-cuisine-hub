@@ -4,11 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { AlertTriangle, Database, RefreshCw, CheckCircle } from "lucide-react";
+import { AlertTriangle, Database, RefreshCw, CheckCircle, PlayCircle } from "lucide-react";
 import { useDataStatus, useCompleteIngredientsData } from "@/hooks/useDataRecovery";
 
 const DataRecoveryPanel = () => {
-  const { data: statusData, isLoading: isLoadingStatus } = useDataStatus();
+  const { data: statusData, isLoading: isLoadingStatus, refetch } = useDataStatus();
   const { mutate: completeData, isPending: isCompleting } = useCompleteIngredientsData();
   const [selectedAction, setSelectedAction] = useState<'languages' | 'prices' | 'all' | null>(null);
 
@@ -65,7 +65,14 @@ const DataRecoveryPanel = () => {
     }
     
     setSelectedAction(action);
-    completeData({ ingredientIds });
+    completeData({ 
+      ingredientIds 
+    }, {
+      onSettled: () => {
+        setSelectedAction(null);
+        refetch(); // Actualizar estadísticas después de completar
+      }
+    });
   };
 
   const completenessPercentage = stats.total > 0 
@@ -83,7 +90,7 @@ const DataRecoveryPanel = () => {
             Estado de Integridad de Datos
           </CardTitle>
           <CardDescription>
-            Análisis del estado actual de los datos de ingredientes
+            Análisis del estado actual de los datos de ingredientes y herramientas de recuperación automática
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -94,104 +101,135 @@ const DataRecoveryPanel = () => {
               <span className="text-sm text-muted-foreground">{completenessPercentage}%</span>
             </div>
             <Progress value={completenessPercentage} className="h-2" />
+            <p className="text-xs text-muted-foreground">
+              {stats.total - stats.missingAllData} de {stats.total} ingredientes con datos completos
+            </p>
           </div>
 
           {/* Estadísticas detalladas */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
+            <div className="text-center p-3 bg-blue-50 rounded-lg">
               <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
               <div className="text-xs text-muted-foreground">Total Ingredientes</div>
             </div>
-            <div className="text-center">
+            <div className="text-center p-3 bg-green-50 rounded-lg">
               <div className="text-2xl font-bold text-green-600">{stats.withMultipleLanguages}</div>
-              <div className="text-xs text-muted-foreground">Con Idiomas</div>
+              <div className="text-xs text-muted-foreground">Con Múltiples Idiomas</div>
             </div>
-            <div className="text-center">
+            <div className="text-center p-3 bg-orange-50 rounded-lg">
               <div className="text-2xl font-bold text-orange-600">{stats.withPrices}</div>
               <div className="text-xs text-muted-foreground">Con Precios</div>
             </div>
-            <div className="text-center">
+            <div className="text-center p-3 bg-purple-50 rounded-lg">
               <div className="text-2xl font-bold text-purple-600">{stats.withUses}</div>
-              <div className="text-xs text-muted-foreground">Con Usos</div>
+              <div className="text-xs text-muted-foreground">Con Usos Culinarios</div>
             </div>
           </div>
 
-          {/* Problemas detectados */}
+          {/* Acciones de recuperación */}
           {needsRecovery && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="flex items-center gap-2 text-amber-600">
                 <AlertTriangle className="h-4 w-4" />
-                <span className="font-medium">Problemas Detectados</span>
+                <span className="font-medium">Recuperación de Datos Disponible</span>
               </div>
               
-              <div className="space-y-2">
+              <div className="grid gap-3">
                 {stats.missingLanguages > 0 && (
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <Badge variant="outline" className="mr-2">{stats.missingLanguages}</Badge>
-                      <span className="text-sm">Ingredientes sin traducciones</span>
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-blue-50 to-blue-100">
+                    <div className="flex items-center gap-3">
+                      <Badge variant="outline" className="bg-white">{stats.missingLanguages}</Badge>
+                      <div>
+                        <p className="font-medium">Traducciones Faltantes</p>
+                        <p className="text-sm text-muted-foreground">Completar nombres en latín, francés, italiano, etc.</p>
+                      </div>
                     </div>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleRecovery('languages')}
                       disabled={isCompleting}
+                      className="bg-white hover:bg-blue-50"
                     >
                       {isCompleting && selectedAction === 'languages' ? (
                         <RefreshCw className="h-4 w-4 animate-spin mr-1" />
-                      ) : null}
+                      ) : (
+                        <PlayCircle className="h-4 w-4 mr-1" />
+                      )}
                       Completar Idiomas
                     </Button>
                   </div>
                 )}
 
                 {stats.missingPrices > 0 && (
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <Badge variant="outline" className="mr-2">{stats.missingPrices}</Badge>
-                      <span className="text-sm">Ingredientes sin precios</span>
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-orange-50 to-orange-100">
+                    <div className="flex items-center gap-3">
+                      <Badge variant="outline" className="bg-white">{stats.missingPrices}</Badge>
+                      <div>
+                        <p className="font-medium">Precios Faltantes</p>
+                        <p className="text-sm text-muted-foreground">Generar precios por países y unidades</p>
+                      </div>
                     </div>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleRecovery('prices')}
                       disabled={isCompleting}
+                      className="bg-white hover:bg-orange-50"
                     >
                       {isCompleting && selectedAction === 'prices' ? (
                         <RefreshCw className="h-4 w-4 animate-spin mr-1" />
-                      ) : null}
+                      ) : (
+                        <PlayCircle className="h-4 w-4 mr-1" />
+                      )}
                       Completar Precios
                     </Button>
                   </div>
                 )}
 
                 {stats.missingAllData > 0 && (
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
-                      <Badge variant="destructive" className="mr-2">{stats.missingAllData}</Badge>
-                      <span className="text-sm">Ingredientes con datos incompletos</span>
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-gradient-to-r from-red-50 to-red-100">
+                    <div className="flex items-center gap-3">
+                      <Badge variant="destructive" className="bg-white text-red-600">{stats.missingAllData}</Badge>
+                      <div>
+                        <p className="font-medium">Datos Críticos Faltantes</p>
+                        <p className="text-sm text-muted-foreground">Completar todos los datos: idiomas, precios, usos y recetas</p>
+                      </div>
                     </div>
                     <Button
                       size="sm"
                       onClick={() => handleRecovery('all')}
                       disabled={isCompleting}
+                      className="bg-red-600 hover:bg-red-700 text-white"
                     >
                       {isCompleting && selectedAction === 'all' ? (
                         <RefreshCw className="h-4 w-4 animate-spin mr-1" />
-                      ) : null}
-                      Recuperar Todo
+                      ) : (
+                        <PlayCircle className="h-4 w-4 mr-1" />
+                      )}
+                      Recuperación Completa
                     </Button>
                   </div>
                 )}
+              </div>
+
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800">
+                  <strong>Nota:</strong> La recuperación usa IA (DeepSeek) para generar datos faltantes. 
+                  El proceso puede tomar varios minutos dependiendo de la cantidad de ingredientes.
+                </p>
               </div>
             </div>
           )}
 
           {/* Estado saludable */}
           {!needsRecovery && (
-            <div className="flex items-center gap-2 text-green-600 p-3 bg-green-50 rounded-lg">
-              <CheckCircle className="h-4 w-4" />
-              <span className="font-medium">Todos los datos están completos</span>
+            <div className="flex items-center gap-2 text-green-600 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <CheckCircle className="h-5 w-5" />
+              <div>
+                <p className="font-medium">¡Datos Completos!</p>
+                <p className="text-sm">Todos los ingredientes tienen la información necesaria</p>
+              </div>
             </div>
           )}
         </CardContent>

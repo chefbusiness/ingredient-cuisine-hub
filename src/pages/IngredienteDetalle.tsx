@@ -1,4 +1,3 @@
-
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, ChefHat, TrendingUp, Calculator, Globe, Clock, Star, Heart, Camera, Upload } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -262,7 +261,7 @@ const IngredienteDetalle = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <RealImagesGallery images={realImages} ingredientId={ingredient.id} />
+                      <RealImagesGallery ingredientId={ingredient.id} />
                     </CardContent>
                   </Card>
                 )}

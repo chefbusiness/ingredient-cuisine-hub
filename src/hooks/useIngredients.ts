@@ -11,6 +11,7 @@ export interface Ingredient {
   category_id: string;
   popularity: number;
   image_url?: string;
+  real_image_url?: string; // Nueva propiedad
   temporada?: string;
   origen?: string;
   merma: number;

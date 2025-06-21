@@ -114,6 +114,47 @@ export type Database = {
           },
         ]
       }
+      ingredient_real_images: {
+        Row: {
+          caption: string | null
+          created_at: string
+          id: string
+          image_url: string
+          ingredient_id: string
+          is_approved: boolean | null
+          uploaded_by: string | null
+          votes_count: number | null
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          image_url: string
+          ingredient_id: string
+          is_approved?: boolean | null
+          uploaded_by?: string | null
+          votes_count?: number | null
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string
+          ingredient_id?: string
+          is_approved?: boolean | null
+          uploaded_by?: string | null
+          votes_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingredient_real_images_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingredient_recipes: {
         Row: {
           created_at: string
@@ -227,6 +268,7 @@ export type Database = {
           name_zh: string | null
           origen: string | null
           popularity: number
+          real_image_url: string | null
           rendimiento: number
           temporada: string | null
           updated_at: string
@@ -247,6 +289,7 @@ export type Database = {
           name_zh?: string | null
           origen?: string | null
           popularity?: number
+          real_image_url?: string | null
           rendimiento?: number
           temporada?: string | null
           updated_at?: string
@@ -267,6 +310,7 @@ export type Database = {
           name_zh?: string | null
           origen?: string | null
           popularity?: number
+          real_image_url?: string | null
           rendimiento?: number
           temporada?: string | null
           updated_at?: string

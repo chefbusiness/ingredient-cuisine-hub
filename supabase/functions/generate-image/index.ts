@@ -1,91 +1,97 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import Replicate from "https://esm.sh/replicate@0.25.2";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const { ingredientName, description } = await req.json();
     const replicateApiKey = Deno.env.get('REPLICATE_API_KEY');
+
     if (!replicateApiKey) {
-      throw new Error('REPLICATE_API_KEY no configurada');
+      throw new Error('REPLICATE_API_KEY no está configurado');
     }
 
-    const replicate = new Replicate({
-      auth: replicateApiKey,
-    });
+    // Prompt modificado para ilustraciones minimalistas
+    const prompt = `Delicate minimalist illustration of ${ingredientName}, ${description || ''}. Clean vector-style artwork with natural colors, simple elegant lines, and accurate botanical/culinary representation. Subtle shadows, white background, professional food illustration style, recognizable ingredient characteristics, 800x800 resolution, high quality illustration.`;
+    
+    const negativePrompt = "photograph, photo, realistic, 3D render, camera, lens, shadows, complex background, cluttered, busy, ornate, decorative elements, text, watermarks";
 
-    const body = await req.json();
-    const { ingredientName, description } = body;
+    console.log('Generando ilustración para:', ingredientName);
+    console.log('Prompt:', prompt);
 
-    if (!ingredientName) {
-      return new Response(
-        JSON.stringify({ error: "ingredientName es requerido" }), 
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      );
-    }
-
-    // Prompt optimizado para Flux 1.1 Pro - fotografía culinaria profesional
-    const prompt = `Professional culinary photography of ${ingredientName}, ${description || ''}, 
-    shot with macro lens, studio lighting setup with softbox and reflectors, 
-    clean white seamless background, commercial food photography style, 
-    ultra high resolution 8k, razor sharp focus, natural vibrant colors, 
-    perfect lighting gradient, professional food styling, 
-    centered composition for ingredient catalog, photorealistic textures, 
-    commercial quality suitable for culinary directory, 
-    depth of field with ingredient in perfect focus`;
-
-    console.log("Generando imagen con Flux 1.1 Pro para:", ingredientName);
-    console.log("Prompt optimizado:", prompt);
-
-    const output = await replicate.run(
-      "black-forest-labs/flux-1.1-pro",
-      {
+    const response = await fetch('https://api.replicate.com/v1/predictions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Token ${replicateApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        version: "4ac69054d7e15e45ce42f5e6f3b01c02e49d6b82c2e36c1f0ea7e8cb5f3d1e9a", // Flux 1.1 Pro
         input: {
           prompt: prompt,
-          width: 1024,
-          height: 1024,
-          num_outputs: 1,
-          output_format: "webp",
-          output_quality: 95,
-          num_inference_steps: 30,
-          guidance_scale: 3.5,
-          safety_tolerance: 2,
-          seed: Math.floor(Math.random() * 1000000)
-        }
-      }
-    );
-
-    console.log("Imagen generada con Flux 1.1 Pro:", output);
-
-    return new Response(JSON.stringify({ 
-      success: true,
-      image_url: Array.isArray(output) ? output[0] : output,
-      ingredient_name: ingredientName,
-      model_used: "flux-1.1-pro"
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
+          negative_prompt: negativePrompt,
+          aspect_ratio: "1:1",
+          output_format: "jpeg",
+          output_quality: 90,
+          safety_tolerance: 5,
+          seed: Math.floor(Math.random() * 1000000),
+        },
+      }),
     });
 
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Error de Replicate: ${response.status} - ${errorText}`);
+    }
+
+    const prediction = await response.json();
+    console.log('Predicción creada:', prediction.id);
+
+    // Polling para esperar el resultado
+    let result = prediction;
+    while (result.status === 'starting' || result.status === 'processing') {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const pollResponse = await fetch(`https://api.replicate.com/v1/predictions/${result.id}`, {
+        headers: {
+          'Authorization': `Token ${replicateApiKey}`,
+        },
+      });
+      
+      result = await pollResponse.json();
+      console.log('Estado de la generación:', result.status);
+    }
+
+    if (result.status === 'succeeded' && result.output) {
+      const imageUrl = Array.isArray(result.output) ? result.output[0] : result.output;
+      
+      return new Response(JSON.stringify({ 
+        success: true,
+        imageUrl: imageUrl,
+        prompt: prompt
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    } else {
+      throw new Error(`Error en la generación: ${result.error || 'Estado: ' + result.status}`);
+    }
+
   } catch (error) {
-    console.error("Error en generate-image con Flux 1.1 Pro:", error);
+    console.error('Error en generate-image:', error);
     return new Response(JSON.stringify({ 
       error: error.message,
       success: false 
     }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });

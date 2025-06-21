@@ -27,13 +27,13 @@ const Admin = () => {
         />
 
         <Tabs defaultValue="generator" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="generator">
+          <TabsList className="flex w-full">
+            <TabsTrigger value="generator" className="flex-1">
               <Wand2 className="h-4 w-4 mr-2" />
               Generador AI
             </TabsTrigger>
-            <TabsTrigger value="content">Gestión de Contenido</TabsTrigger>
-            <TabsTrigger value="settings">Configuración</TabsTrigger>
+            <TabsTrigger value="content" className="flex-1">Gestión de Contenido</TabsTrigger>
+            <TabsTrigger value="settings" className="flex-1">Configuración</TabsTrigger>
           </TabsList>
 
           <TabsContent value="generator" className="space-y-6">

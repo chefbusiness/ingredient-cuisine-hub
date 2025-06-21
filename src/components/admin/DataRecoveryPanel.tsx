@@ -43,12 +43,15 @@ const DataRecoveryPanel = () => {
   const getIngredientsToComplete = (action: 'languages' | 'prices' | 'all') => {
     switch (action) {
       case 'languages':
-        return ingredients.filter(ing => !ing.name_la && !ing.name_fr && !ing.name_it).map(ing => ing.id);
+        // Buscar ingredientes que faltan francés, italiano, portugués o chino
+        return ingredients.filter(ing => 
+          !ing.name_fr || !ing.name_it || !ing.name_pt || !ing.name_zh
+        ).map(ing => ing.id);
       case 'prices':
         return ingredients.filter(ing => !ing.ingredient_prices || ing.ingredient_prices.length === 0).map(ing => ing.id);
       case 'all':
         return ingredients.filter(ing => 
-          (!ing.name_la && !ing.name_fr && !ing.name_it) ||
+          (!ing.name_fr || !ing.name_it || !ing.name_pt || !ing.name_zh) ||
           (!ing.ingredient_prices || ing.ingredient_prices.length === 0) ||
           (!ing.ingredient_uses || ing.ingredient_uses.length === 0) ||
           (!ing.ingredient_recipes || ing.ingredient_recipes.length === 0)
@@ -61,9 +64,14 @@ const DataRecoveryPanel = () => {
   const handleRecovery = (action: 'languages' | 'prices' | 'all') => {
     const ingredientIds = getIngredientsToComplete(action);
     if (ingredientIds.length === 0) {
+      toast({
+        title: "Sin ingredientes para completar",
+        description: `No hay ingredientes que necesiten ${action === 'languages' ? 'idiomas' : action === 'prices' ? 'precios' : 'datos'}`,
+      });
       return;
     }
     
+    console.log(`🔄 Iniciando recuperación de ${action} para ${ingredientIds.length} ingredientes`);
     setSelectedAction(action);
     completeData({ 
       ingredientIds 
@@ -114,7 +122,7 @@ const DataRecoveryPanel = () => {
             </div>
             <div className="text-center p-3 bg-green-50 rounded-lg">
               <div className="text-2xl font-bold text-green-600">{stats.withMultipleLanguages}</div>
-              <div className="text-xs text-muted-foreground">Con Múltiples Idiomas</div>
+              <div className="text-xs text-muted-foreground">Con Todos los Idiomas</div>
             </div>
             <div className="text-center p-3 bg-orange-50 rounded-lg">
               <div className="text-2xl font-bold text-orange-600">{stats.withPrices}</div>
@@ -140,8 +148,8 @@ const DataRecoveryPanel = () => {
                     <div className="flex items-center gap-3">
                       <Badge variant="outline" className="bg-white">{stats.missingLanguages}</Badge>
                       <div>
-                        <p className="font-medium">Traducciones Faltantes</p>
-                        <p className="text-sm text-muted-foreground">Completar nombres en latín, francés, italiano, etc.</p>
+                        <p className="font-medium">Idiomas Faltantes</p>
+                        <p className="text-sm text-muted-foreground">Completar francés, italiano, portugués y chino</p>
                       </div>
                     </div>
                     <Button

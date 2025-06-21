@@ -49,7 +49,14 @@ export const useDataStatus = () => {
       };
 
       ingredients?.forEach(ingredient => {
-        const hasMultipleLanguages = !!(ingredient.name_la || ingredient.name_fr || ingredient.name_it || ingredient.name_pt || ingredient.name_zh);
+        // Verificar idiomas críticos: francés, italiano, portugués y chino
+        const hasAllLanguages = !!(
+          ingredient.name_fr && 
+          ingredient.name_it && 
+          ingredient.name_pt && 
+          ingredient.name_zh
+        );
+        
         const hasPrices = ingredient.ingredient_prices && ingredient.ingredient_prices.length > 0;
         const hasUses = ingredient.ingredient_uses && ingredient.ingredient_uses.length > 0;
         const hasRecipes = ingredient.ingredient_recipes && ingredient.ingredient_recipes.length > 0;
@@ -57,18 +64,29 @@ export const useDataStatus = () => {
         const hasVarieties = ingredient.ingredient_varieties && ingredient.ingredient_varieties.length > 0;
 
         if (hasPrices) stats.withPrices++;
-        if (hasMultipleLanguages) stats.withMultipleLanguages++;
+        if (hasAllLanguages) stats.withMultipleLanguages++;
         if (hasUses) stats.withUses++;
         if (hasRecipes) stats.withRecipes++;
         if (hasNutrition) stats.withNutrition++;
         if (hasVarieties) stats.withVarieties++;
 
-        if (!hasMultipleLanguages) stats.missingLanguages++;
+        // Contabilizar faltantes
+        if (!hasAllLanguages) stats.missingLanguages++;
         if (!hasPrices) stats.missingPrices++;
-        if (!hasMultipleLanguages && !hasPrices && !hasUses && !hasRecipes) stats.missingAllData++;
+        if (!hasAllLanguages && !hasPrices && !hasUses && !hasRecipes) stats.missingAllData++;
+        
+        // Debug por ingrediente
+        if (!hasAllLanguages) {
+          console.log(`🔍 ${ingredient.name} falta idiomas:`, {
+            fr: !ingredient.name_fr,
+            it: !ingredient.name_it,
+            pt: !ingredient.name_pt,
+            zh: !ingredient.name_zh
+          });
+        }
       });
 
-      console.log('📊 Estado de datos:', stats);
+      console.log('📊 Estado de datos corregido:', stats);
       return { stats, ingredients: ingredients || [] };
     },
   });
@@ -98,7 +116,7 @@ export const useCompleteIngredientsData = () => {
           // Obtener el ingrediente actual
           const { data: ingredient, error: fetchError } = await supabase
             .from('ingredients')
-            .select('id, name, description')
+            .select('id, name, description, name_fr, name_it, name_pt, name_zh')
             .eq('id', ingredientId)
             .single();
 
@@ -110,6 +128,12 @@ export const useCompleteIngredientsData = () => {
           }
 
           console.log(`🔄 Completando datos para: ${ingredient.name}`);
+          console.log(`📝 Idiomas actuales:`, {
+            fr: ingredient.name_fr,
+            it: ingredient.name_it,
+            pt: ingredient.name_pt,
+            zh: ingredient.name_zh
+          });
 
           // Generar datos completos con DeepSeek
           const { data: generatedData, error: generateError } = await supabase.functions.invoke('generate-content', {
@@ -128,21 +152,39 @@ export const useCompleteIngredientsData = () => {
           }
 
           const completedIngredient = generatedData.data[0];
+          
+          console.log(`📥 Datos generados para ${ingredient.name}:`, {
+            name_fr: completedIngredient.name_fr,
+            name_it: completedIngredient.name_it,
+            name_pt: completedIngredient.name_pt,
+            name_zh: completedIngredient.name_zh
+          });
 
-          // Actualizar ingrediente con idiomas faltantes
+          // Actualizar ingrediente con idiomas faltantes (solo si no existen)
+          const updateData: any = {
+            merma: completedIngredient.merma || 0,
+            rendimiento: completedIngredient.rendimiento || 100,
+            temporada: completedIngredient.temporada || null,
+            origen: completedIngredient.origen || null
+          };
+
+          // Solo actualizar idiomas que faltan
+          if (!ingredient.name_fr && completedIngredient.name_fr) {
+            updateData.name_fr = completedIngredient.name_fr;
+          }
+          if (!ingredient.name_it && completedIngredient.name_it) {
+            updateData.name_it = completedIngredient.name_it;
+          }
+          if (!ingredient.name_pt && completedIngredient.name_pt) {
+            updateData.name_pt = completedIngredient.name_pt;
+          }
+          if (!ingredient.name_zh && completedIngredient.name_zh) {
+            updateData.name_zh = completedIngredient.name_zh;
+          }
+
           const { error: updateError } = await supabase
             .from('ingredients')
-            .update({
-              name_la: completedIngredient.name_la || null,
-              name_fr: completedIngredient.name_fr || null,
-              name_it: completedIngredient.name_it || null,
-              name_pt: completedIngredient.name_pt || null,
-              name_zh: completedIngredient.name_zh || null,
-              merma: completedIngredient.merma || 0,
-              rendimiento: completedIngredient.rendimiento || 100,
-              temporada: completedIngredient.temporada || null,
-              origen: completedIngredient.origen || null
-            })
+            .update(updateData)
             .eq('id', ingredientId);
 
           if (updateError) {

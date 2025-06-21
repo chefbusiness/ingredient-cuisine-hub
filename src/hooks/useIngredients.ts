@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -60,18 +59,20 @@ export const useIngredients = (searchQuery?: string, categoryFilter?: string, so
   return useQuery({
     queryKey: ['ingredients', searchQuery, categoryFilter, sortBy],
     queryFn: async () => {
+      console.log('=== FETCH INGREDIENTS ===');
+      console.log('Parámetros:', { searchQuery, categoryFilter, sortBy });
+
       let query = supabase
         .from('ingredients')
         .select(`
           *,
           categories!inner(name, name_en),
-          ingredient_prices!inner(
+          ingredient_prices!left(
             price,
             unit,
-            countries!inner(name, currency_symbol)
+            countries!left(name, currency_symbol, code)
           )
-        `)
-        .eq('ingredient_prices.countries.code', 'ES'); // Filtrar precios de España por defecto
+        `);
 
       // Aplicar filtro de búsqueda
       if (searchQuery) {
@@ -90,6 +91,9 @@ export const useIngredients = (searchQuery?: string, categoryFilter?: string, so
         query = query.order('name', { ascending: true });
       } else if (sortBy === 'precio') {
         query = query.order('ingredient_prices.price', { ascending: true });
+      } else {
+        // Orden por defecto: popularidad descendente
+        query = query.order('popularity', { ascending: false });
       }
 
       const { data, error } = await query;
@@ -99,7 +103,29 @@ export const useIngredients = (searchQuery?: string, categoryFilter?: string, so
         throw error;
       }
 
-      return data || [];
+      console.log(`✅ Encontrados ${data?.length || 0} ingredientes`);
+      
+      // Filtrar precios de España como preferencia, pero mostrar todos los ingredientes
+      const processedData = data?.map(ingredient => {
+        if (ingredient.ingredient_prices && ingredient.ingredient_prices.length > 0) {
+          // Buscar precios de España primero
+          const spanishPrices = ingredient.ingredient_prices.filter(
+            price => price.countries?.code === 'ES'
+          );
+          
+          if (spanishPrices.length > 0) {
+            return {
+              ...ingredient,
+              ingredient_prices: spanishPrices
+            };
+          }
+        }
+        
+        // Si no hay precios de España, mantener los precios existentes (si los hay)
+        return ingredient;
+      }) || [];
+
+      return processedData;
     },
   });
 };

@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -275,37 +276,9 @@ export const useFixCategorization = () => {
 
   return useMutation({
     mutationFn: async () => {
-      console.log('=== INICIANDO CORRECCIÓN DE CATEGORIZACIÓN ===');
+      console.log('=== INICIANDO VERIFICACIÓN DE CATEGORIZACIÓN ===');
       
-      // Primero, obtenemos o creamos la categoría "especias"
-      let { data: spicesCategory, error: categoryError } = await supabase
-        .from('categories')
-        .select('id')
-        .eq('name', 'especias')
-        .single();
-
-      if (categoryError || !spicesCategory) {
-        console.log('Categoría especias no encontrada, creándola...');
-        const { data: newCategory, error: createError } = await supabase
-          .from('categories')
-          .insert({
-            name: 'especias',
-            name_en: 'spices',
-            description: 'Especias y condimentos'
-          })
-          .select('id')
-          .single();
-
-        if (createError) {
-          console.error('Error creando categoría especias:', createError);
-          throw createError;
-        }
-        spicesCategory = newCategory;
-      }
-
-      console.log('ID de categoría especias:', spicesCategory.id);
-
-      // Lista exacta de ingredientes de especias que necesitan corrección
+      // Lista de ingredientes de especias
       const spiceNames = [
         'Pimentón',
         'Pimienta negra',
@@ -319,79 +292,102 @@ export const useFixCategorization = () => {
         'Tomillo'
       ];
 
-      console.log('Buscando ingredientes de especias:', spiceNames);
-
-      // Obtenemos todos los ingredientes que podrían ser especias
-      const { data: ingredients, error: fetchError } = await supabase
+      // Verificamos la categorización actual
+      const { data: currentStatus, error: statusError } = await supabase
         .from('ingredients')
-        .select('id, name, category_id, categories(name)')
+        .select(`
+          id, 
+          name, 
+          category_id,
+          categories!inner(name)
+        `)
         .in('name', spiceNames);
 
-      if (fetchError) {
-        console.error('Error obteniendo ingredientes:', fetchError);
-        throw fetchError;
+      if (statusError) {
+        console.error('Error verificando estado actual:', statusError);
+        throw statusError;
       }
 
-      console.log('Ingredientes encontrados:', ingredients?.length || 0);
-      console.log('Detalles de ingredientes:', ingredients?.map(i => ({ 
-        name: i.name, 
-        currentCategory: i.categories?.name,
-        needsUpdate: i.category_id !== spicesCategory.id
-      })));
+      console.log('Estado actual de los ingredientes de especias:');
+      currentStatus?.forEach(ingredient => {
+        console.log(`- ${ingredient.name}: ${ingredient.categories?.name}`);
+      });
 
-      if (!ingredients || ingredients.length === 0) {
+      // Contar cuántos están correctamente categorizados
+      const correctlyPlaced = currentStatus?.filter(ing => ing.categories?.name === 'especias') || [];
+      const incorrectlyPlaced = currentStatus?.filter(ing => ing.categories?.name !== 'especias') || [];
+
+      console.log(`✅ Correctamente en "especias": ${correctlyPlaced.length}`);
+      console.log(`❌ En categoría incorrecta: ${incorrectlyPlaced.length}`);
+
+      if (incorrectlyPlaced.length === 0) {
         toast({
-          title: "No se encontraron ingredientes de especias",
-          description: "No hay ingredientes de especias para corregir",
+          title: "✅ Categorización correcta",
+          description: `Todos los ${correctlyPlaced.length} ingredientes de especias están en la categoría correcta`,
         });
-        return { updated: 0 };
+        return { 
+          fixed: 0, 
+          total: correctlyPlaced.length,
+          alreadyCorrect: true,
+          details: correctlyPlaced.map(i => i.name)
+        };
       }
 
-      // Filtramos solo los que necesitan actualización
-      const ingredientsToUpdate = ingredients.filter(ing => ing.category_id !== spicesCategory.id);
+      // Si hay ingredientes mal categorizados, intentamos corregirlos
+      console.log('Ingredientes que necesitan corrección:', incorrectlyPlaced.map(i => i.name));
       
-      if (ingredientsToUpdate.length === 0) {
-        toast({
-          title: "Categorización ya está correcta",
-          description: "Todos los ingredientes de especias ya están en la categoría correcta",
-        });
-        return { updated: 0 };
+      // Obtener ID de categoría especias
+      const { data: spicesCategory, error: categoryError } = await supabase
+        .from('categories')
+        .select('id')
+        .eq('name', 'especias')
+        .single();
+
+      if (categoryError || !spicesCategory) {
+        throw new Error('No se pudo encontrar la categoría "especias"');
       }
 
-      console.log(`Actualizando ${ingredientsToUpdate.length} ingredientes a categoría especias`);
-
-      // Actualizamos los ingredientes
+      // Aplicar corrección
       const { data: updateResult, error: updateError } = await supabase
         .from('ingredients')
         .update({ category_id: spicesCategory.id })
-        .in('id', ingredientsToUpdate.map(ing => ing.id))
+        .in('id', incorrectlyPlaced.map(ing => ing.id))
         .select('name');
 
       if (updateError) {
-        console.error('Error actualizando ingredientes:', updateError);
+        console.error('Error aplicando corrección:', updateError);
         throw updateError;
       }
 
-      console.log('Ingredientes actualizados exitosamente:', updateResult?.map(r => r.name));
-      console.log('=== CORRECCIÓN COMPLETADA ===');
-
-      return { updated: updateResult?.length || 0, names: updateResult?.map(r => r.name) || [] };
+      console.log('✅ Corrección aplicada exitosamente a:', updateResult?.map(r => r.name));
+      
+      return { 
+        fixed: updateResult?.length || 0,
+        total: currentStatus?.length || 0,
+        alreadyCorrect: false,
+        details: updateResult?.map(r => r.name) || []
+      };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['ingredients'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       
-      if (result.updated > 0) {
+      if (result.alreadyCorrect) {
         toast({
-          title: "Categorización corregida exitosamente",
-          description: `Se corrigieron ${result.updated} ingredientes de especias: ${result.names?.join(', ')}`,
+          title: "✅ Categorización ya está correcta",
+          description: `Todos los ${result.total} ingredientes de especias están en la categoría correcta`,
+        });
+      } else if (result.fixed > 0) {
+        toast({
+          title: "✅ Categorización corregida",
+          description: `Se corrigieron ${result.fixed} ingredientes: ${result.details.join(', ')}`,
         });
       }
     },
     onError: (error) => {
-      console.error('Error en corrección de categorización:', error);
+      console.error('Error en verificación/corrección:', error);
       toast({
-        title: "Error al corregir categorización",
+        title: "Error al verificar categorización",
         description: error.message,
         variant: "destructive",
       });

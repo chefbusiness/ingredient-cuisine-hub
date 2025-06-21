@@ -7,11 +7,15 @@ export interface Ingredient {
   name: string;
   name_en: string;
   name_la?: string;
+  name_fr?: string;
+  name_it?: string;
+  name_pt?: string;
+  name_zh?: string;
   description: string;
   category_id: string;
   popularity: number;
   image_url?: string;
-  real_image_url?: string; // Nueva propiedad
+  real_image_url?: string;
   temporada?: string;
   origen?: string;
   merma: number;
@@ -29,6 +33,26 @@ export interface Ingredient {
       name: string;
       currency_symbol: string;
     };
+  }>;
+  ingredient_uses?: Array<{
+    use_description: string;
+  }>;
+  ingredient_recipes?: Array<{
+    name: string;
+    type: string;
+    difficulty: string;
+    time: string;
+  }>;
+  nutritional_info?: Array<{
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    fiber: number;
+    vitamin_c: number;
+  }>;
+  ingredient_varieties?: Array<{
+    variety_name: string;
   }>;
 }
 

@@ -11,7 +11,7 @@ import { useCategories } from "@/hooks/useCategories";
 
 const AdminContentGenerator = () => {
   const [contentType, setContentType] = useState<'ingredient' | 'category' | 'price_update'>('ingredient');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [region, setRegion] = useState('España');
   const [count, setCount] = useState(1);
   const [generatedContent, setGeneratedContent] = useState<any[]>([]);
@@ -27,7 +27,7 @@ const AdminContentGenerator = () => {
     try {
       const result = await generateContent.mutateAsync({
         type: contentType,
-        category: selectedCategory,
+        category: selectedCategory === 'all' ? undefined : selectedCategory,
         region: region,
         count: count
       });
@@ -265,7 +265,7 @@ const AdminContentGenerator = () => {
                     <SelectValue placeholder="Seleccionar categoría" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas las categorías</SelectItem>
+                    <SelectItem value="all">Todas las categorías</SelectItem>
                     {categories.map((cat) => (
                       <SelectItem key={cat.id} value={cat.name}>
                         {cat.name.charAt(0).toUpperCase() + cat.name.slice(1)}

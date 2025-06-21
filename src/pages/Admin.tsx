@@ -1,12 +1,13 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wand2 } from "lucide-react";
+import { Wand2, Edit } from "lucide-react";
 import AdminContentGenerator from "@/components/AdminContentGenerator";
 import AdminHeader from "@/components/admin/AdminHeader";
 import AdminStatusBanner from "@/components/admin/AdminStatusBanner";
 import AdminStatsOverview from "@/components/admin/AdminStatsOverview";
 import AdminContentTab from "@/components/admin/AdminContentTab";
 import AdminSettingsTab from "@/components/admin/AdminSettingsTab";
+import AdminManualManagement from "@/components/admin/AdminManualManagement";
 import { useIngredients } from "@/hooks/useIngredients";
 import { useCategories } from "@/hooks/useCategories";
 
@@ -32,6 +33,10 @@ const Admin = () => {
               <Wand2 className="h-4 w-4 mr-2" />
               Generador AI
             </TabsTrigger>
+            <TabsTrigger value="manual" className="flex-1">
+              <Edit className="h-4 w-4 mr-2" />
+              Gestión Manual
+            </TabsTrigger>
             <TabsTrigger value="content" className="flex-1">Gestión de Contenido</TabsTrigger>
             <TabsTrigger value="settings" className="flex-1">Configuración</TabsTrigger>
           </TabsList>
@@ -44,6 +49,16 @@ const Admin = () => {
               </p>
             </div>
             <AdminContentGenerator />
+          </TabsContent>
+
+          <TabsContent value="manual" className="space-y-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold mb-2">Gestión Manual de Ingredientes</h2>
+              <p className="text-muted-foreground">
+                Edita, elimina y gestiona manualmente los ingredientes existentes en la base de datos.
+              </p>
+            </div>
+            <AdminManualManagement />
           </TabsContent>
 
           <TabsContent value="content" className="space-y-6">

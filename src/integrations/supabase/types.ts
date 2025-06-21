@@ -9,7 +9,322 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          name_en: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          name_en: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          name_en?: string
+        }
+        Relationships: []
+      }
+      countries: {
+        Row: {
+          code: string
+          created_at: string
+          currency: string
+          currency_symbol: string
+          id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          currency: string
+          currency_symbol: string
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          currency?: string
+          currency_symbol?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      ingredient_prices: {
+        Row: {
+          country_id: string
+          created_at: string
+          id: string
+          ingredient_id: string
+          month: number | null
+          price: number
+          season_variation: string | null
+          unit: string
+          updated_at: string
+          year: number | null
+        }
+        Insert: {
+          country_id: string
+          created_at?: string
+          id?: string
+          ingredient_id: string
+          month?: number | null
+          price: number
+          season_variation?: string | null
+          unit?: string
+          updated_at?: string
+          year?: number | null
+        }
+        Update: {
+          country_id?: string
+          created_at?: string
+          id?: string
+          ingredient_id?: string
+          month?: number | null
+          price?: number
+          season_variation?: string | null
+          unit?: string
+          updated_at?: string
+          year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingredient_prices_country_id_fkey"
+            columns: ["country_id"]
+            isOneToOne: false
+            referencedRelation: "countries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ingredient_prices_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ingredient_recipes: {
+        Row: {
+          created_at: string
+          difficulty: string
+          id: string
+          ingredient_id: string
+          name: string
+          time: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          difficulty: string
+          id?: string
+          ingredient_id: string
+          name: string
+          time: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          difficulty?: string
+          id?: string
+          ingredient_id?: string
+          name?: string
+          time?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingredient_recipes_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ingredient_uses: {
+        Row: {
+          created_at: string
+          id: string
+          ingredient_id: string
+          use_description: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ingredient_id: string
+          use_description: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ingredient_id?: string
+          use_description?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingredient_uses_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ingredient_varieties: {
+        Row: {
+          created_at: string
+          id: string
+          ingredient_id: string
+          variety_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ingredient_id: string
+          variety_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ingredient_id?: string
+          variety_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingredient_varieties_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ingredients: {
+        Row: {
+          category_id: string
+          created_at: string
+          description: string
+          id: string
+          image_url: string | null
+          merma: number
+          name: string
+          name_en: string
+          name_fr: string | null
+          name_it: string | null
+          name_la: string | null
+          name_pt: string | null
+          name_zh: string | null
+          origen: string | null
+          popularity: number
+          rendimiento: number
+          temporada: string | null
+          updated_at: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          description: string
+          id?: string
+          image_url?: string | null
+          merma?: number
+          name: string
+          name_en: string
+          name_fr?: string | null
+          name_it?: string | null
+          name_la?: string | null
+          name_pt?: string | null
+          name_zh?: string | null
+          origen?: string | null
+          popularity?: number
+          rendimiento?: number
+          temporada?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          image_url?: string | null
+          merma?: number
+          name?: string
+          name_en?: string
+          name_fr?: string | null
+          name_it?: string | null
+          name_la?: string | null
+          name_pt?: string | null
+          name_zh?: string | null
+          origen?: string | null
+          popularity?: number
+          rendimiento?: number
+          temporada?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ingredients_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nutritional_info: {
+        Row: {
+          calories: number | null
+          carbs: number | null
+          created_at: string
+          fat: number | null
+          fiber: number | null
+          id: string
+          ingredient_id: string
+          protein: number | null
+          vitamin_c: number | null
+        }
+        Insert: {
+          calories?: number | null
+          carbs?: number | null
+          created_at?: string
+          fat?: number | null
+          fiber?: number | null
+          id?: string
+          ingredient_id: string
+          protein?: number | null
+          vitamin_c?: number | null
+        }
+        Update: {
+          calories?: number | null
+          carbs?: number | null
+          created_at?: string
+          fat?: number | null
+          fiber?: number | null
+          id?: string
+          ingredient_id?: string
+          protein?: number | null
+          vitamin_c?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nutritional_info_ingredient_id_fkey"
+            columns: ["ingredient_id"]
+            isOneToOne: false
+            referencedRelation: "ingredients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

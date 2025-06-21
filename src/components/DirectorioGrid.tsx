@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 interface Ingredient {
-  id: number;
+  id: number | string; // Permitir tanto número como string para UUIDs
   name: string;
   nameEN: string;
   nameLA: string;
@@ -35,6 +35,9 @@ const DirectorioGrid = ({ ingredients }: DirectorioGridProps) => {
                 src={ingredient.image}
                 alt={ingredient.name}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                onError={(e) => {
+                  e.currentTarget.src = "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&h=400&fit=crop";
+                }}
               />
               <div className="absolute top-2 right-2 flex items-center space-x-1 bg-background/90 rounded-md px-2 py-1">
                 <TrendingUp className="h-3 w-3 text-primary" />

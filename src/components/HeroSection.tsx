@@ -1,12 +1,27 @@
 
 import { useState } from "react";
 import { Search, ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 const HeroSection = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const navigate = useNavigate();
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      navigate(`/directorio?search=${encodeURIComponent(searchQuery)}`);
+    } else {
+      navigate('/directorio');
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   return (
     <section className="py-12 bg-background">
@@ -29,15 +44,14 @@ const HeroSection = () => {
                 placeholder="Buscar ingredientes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={handleKeyPress}
                 className="pl-10 h-10"
               />
             </div>
-            <Link to={`/directorio${searchQuery ? `?search=${searchQuery}` : ''}`}>
-              <Button className="mt-3 h-9 px-4">
-                Explorar Directorio
-                <ArrowRight className="ml-2 h-3 w-3" />
-              </Button>
-            </Link>
+            <Button onClick={handleSearch} className="mt-3 h-9 px-4">
+              Explorar Directorio
+              <ArrowRight className="ml-2 h-3 w-3" />
+            </Button>
           </div>
         </div>
       </div>

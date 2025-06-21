@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,12 +34,21 @@ const AdminContentGenerator = () => {
       });
 
       if (result.success) {
-        setGeneratedContent(result.data);
+        // Asegurar que todos los ingredientes tengan la categoría correcta si se seleccionó una específica
+        let processedData = result.data;
+        if (contentType === 'ingredient' && selectedCategory !== 'all') {
+          processedData = result.data.map((item: any) => ({
+            ...item,
+            category: selectedCategory
+          }));
+        }
+        
+        setGeneratedContent(processedData);
         setPreviewMode(true);
         
         // Si son ingredientes, agregar a cola de generación de imágenes
         if (contentType === 'ingredient') {
-          const ingredientNames = result.data.map((item: any) => item.name);
+          const ingredientNames = processedData.map((item: any) => item.name);
           setImageGenerationQueue(ingredientNames);
         }
       }
@@ -136,6 +146,11 @@ const AdminContentGenerator = () => {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h3 className="font-semibold text-lg">{item.name}</h3>
                       <Badge variant="secondary">{item.name_en}</Badge>
+                      {item.category && (
+                        <Badge className="bg-purple-100 text-purple-800">
+                          Categoría: {item.category}
+                        </Badge>
+                      )}
                       {item.popularity && (
                         <Badge variant="outline">Popularidad: {item.popularity}%</Badge>
                       )}

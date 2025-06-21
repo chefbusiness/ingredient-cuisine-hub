@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
@@ -24,29 +23,38 @@ serve(async (req) => {
       const results = [];
       
       for (const ingredient of data) {
+        console.log('Procesando ingrediente:', ingredient.name, 'con categoría:', ingredient.category);
+        
         // Primero obtener o crear la categoría
+        let categoryName = ingredient.category || 'otros';
         const { data: existingCategory } = await supabase
           .from('categories')
           .select('id')
-          .eq('name', ingredient.category || 'otros')
+          .eq('name', categoryName)
           .single();
 
         let categoryId = existingCategory?.id;
         
         if (!categoryId) {
+          console.log('Creando nueva categoría:', categoryName);
           const { data: newCategory, error: categoryError } = await supabase
             .from('categories')
             .insert({
-              name: ingredient.category || 'otros',
-              name_en: ingredient.category || 'others',
-              description: `Categoría de ${ingredient.category || 'otros ingredientes'}`
+              name: categoryName,
+              name_en: categoryName === 'especias' ? 'spices' : categoryName,
+              description: `Categoría de ${categoryName}`
             })
             .select('id')
             .single();
 
-          if (categoryError) throw categoryError;
+          if (categoryError) {
+            console.error('Error creando categoría:', categoryError);
+            throw categoryError;
+          }
           categoryId = newCategory.id;
         }
+
+        console.log('Usando categoría ID:', categoryId, 'para ingrediente:', ingredient.name);
 
         // Crear el ingrediente
         const { data: newIngredient, error: ingredientError } = await supabase
@@ -66,7 +74,12 @@ serve(async (req) => {
           .select('id')
           .single();
 
-        if (ingredientError) throw ingredientError;
+        if (ingredientError) {
+          console.error('Error creando ingrediente:', ingredientError);
+          throw ingredientError;
+        }
+
+        console.log('Ingrediente creado exitosamente:', newIngredient.id);
 
         // Agregar información nutricional
         if (ingredient.nutritional_info) {
@@ -137,6 +150,7 @@ serve(async (req) => {
         results.push({
           id: newIngredient.id,
           name: ingredient.name,
+          category: categoryName,
           success: true
         });
       }

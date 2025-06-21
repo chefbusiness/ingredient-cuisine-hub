@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Database, Package, Image, RefreshCw, Tag, Camera } from "lucide-react";
+import { Database, Package, Image, RefreshCw, Tag, Camera, AlertTriangle } from "lucide-react";
 import { useRegenerateImages, useFixCategorization } from "@/hooks/useContentGeneration";
 
 interface AdminContentTabProps {
@@ -30,6 +30,29 @@ const AdminContentTab = ({ ingredientsCount, categoriesCount }: AdminContentTabP
           Administra ingredientes, categorías, precios e imágenes del directorio.
         </p>
       </div>
+
+      {/* Banner de corrección de categorización */}
+      <Card className="border-orange-200 bg-orange-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-orange-800">
+            <AlertTriangle className="h-5 w-5" />
+            Corrección de Categorización Pendiente
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-orange-700 mb-4">
+            Se han detectado ingredientes de especias que están mal categorizados. Haz clic en el botón para corregir automáticamente la categorización.
+          </p>
+          <Button 
+            onClick={handleFixCategorization}
+            disabled={fixCategorization.isPending}
+            className="bg-orange-600 hover:bg-orange-700"
+          >
+            <Tag className={`h-4 w-4 mr-2 ${fixCategorization.isPending ? 'animate-spin' : ''}`} />
+            {fixCategorization.isPending ? 'Corrigiendo Categorías...' : 'Corregir Categorización de Especias'}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Estadísticas de contenido */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -105,12 +128,12 @@ const AdminContentTab = ({ ingredientsCount, categoriesCount }: AdminContentTabP
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Tag className="h-5 w-5" />
-              <span>Corregir Categorización</span>
+              <span>Validar Categorización</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Corrige la categorización de especias que están mal clasificadas.
+              Verifica y corrige ingredientes que pueden estar mal categorizados.
             </p>
             <Button 
               onClick={handleFixCategorization}
@@ -119,7 +142,7 @@ const AdminContentTab = ({ ingredientsCount, categoriesCount }: AdminContentTabP
               className="w-full"
             >
               <Tag className="h-4 w-4 mr-2" />
-              {fixCategorization.isPending ? 'Corrigiendo...' : 'Corregir Categorías'}
+              {fixCategorization.isPending ? 'Validando...' : 'Validar Categorías'}
             </Button>
           </CardContent>
         </Card>

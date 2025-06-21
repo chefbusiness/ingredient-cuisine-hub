@@ -6,12 +6,21 @@ export const generatePrompt = (params: GenerateContentParams): string => {
   
   switch (type) {
     case 'ingredient':
-      return `Genera ${count} ingrediente(s) ${category ? `de la categoría ${category}` : ''} típico(s) de ${region}. 
+      const categoryInstruction = category 
+        ? `Genera ${count} ingrediente(s) específicamente de la categoría "${category}" típico(s) de ${region}.`
+        : `Genera ${count} ingrediente(s) típico(s) de ${region}.`;
+      
+      const categoryResponse = category 
+        ? `"category": "${category}",`
+        : `"category": "determina la categoría apropiada basada en el ingrediente",`;
+      
+      return `${categoryInstruction}
       Para cada ingrediente, proporciona la siguiente información en formato JSON:
       {
         "name": "nombre en español",
         "name_en": "nombre en inglés",
         "name_la": "nombre en latín (opcional)",
+        ${categoryResponse}
         "description": "descripción detallada (150-200 palabras)",
         "temporada": "temporada principal (ej: primavera, verano, otoño, invierno, todo el año)",
         "origen": "región de origen",
@@ -39,6 +48,7 @@ export const generatePrompt = (params: GenerateContentParams): string => {
         "price_estimate": número (precio estimado por kg en euros)
       }
       
+      ${category ? `IMPORTANTE: Todos los ingredientes DEBEN pertenecer a la categoría "${category}".` : ''}
       Responde SOLO con un array JSON válido de ingredientes, sin texto adicional.`;
       
     case 'category':

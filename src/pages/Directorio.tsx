@@ -1,11 +1,9 @@
 import { useState, useMemo } from "react";
-import { Search, Filter, ChefHat, TrendingUp, Grid3X3, List } from "lucide-react";
-import { Link } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import DirectorioHeader from "@/components/DirectorioHeader";
+import DirectorioFilters from "@/components/DirectorioFilters";
+import DirectorioResults from "@/components/DirectorioResults";
+import DirectorioGrid from "@/components/DirectorioGrid";
+import DirectorioEmpty from "@/components/DirectorioEmpty";
 
 const Directorio = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -178,31 +176,16 @@ const Directorio = () => {
     return filtered;
   }, [searchQuery, selectedCategory, sortBy]);
 
+  const handleClearFilters = () => {
+    setSearchQuery("");
+    setSelectedCategory("todos");
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Clean Header */}
-      <header className="clean-nav sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center space-x-3">
-              <div className="p-2 bg-primary rounded-md">
-                <ChefHat className="h-5 w-5 text-primary-foreground" />
-              </div>
-              <h1 className="text-lg font-semibold text-foreground">
-                Directorio de Ingredientes
-              </h1>
-            </Link>
-            <nav className="hidden md:flex space-x-6">
-              <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Inicio</Link>
-              <Link to="/directorio" className="text-primary font-medium text-sm">Directorio</Link>
-              <Link to="/categorias" className="text-muted-foreground hover:text-foreground transition-colors text-sm">Categorías</Link>
-            </nav>
-          </div>
-        </div>
-      </header>
+      <DirectorioHeader />
 
       <div className="container mx-auto px-6 py-8">
-        {/* Clean Page Header */}
         <div className="text-center mb-8">
           <h2 className="text-3xl font-semibold text-foreground mb-3 heading-clean">
             Directorio Completo de Ingredientes
@@ -213,143 +196,22 @@ const Directorio = () => {
           </p>
         </div>
 
-        {/* Clean Search and Filters */}
-        <Card className="clean-card mb-8 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="md:col-span-2 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Buscar ingredientes..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+        <DirectorioFilters
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+          sortBy={sortBy}
+          setSortBy={setSortBy}
+          categories={categories}
+        />
 
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger>
-                <SelectValue placeholder="Categoría" />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category.value} value={category.value}>
-                    {category.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <DirectorioResults resultsCount={filteredIngredientes.length} />
 
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger>
-                <SelectValue placeholder="Ordenar por" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="popularidad">Popularidad</SelectItem>
-                <SelectItem value="nombre">Nombre A-Z</SelectItem>
-                <SelectItem value="precio">Precio</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </Card>
-
-        {/* Results Summary */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            <p className="text-muted-foreground">
-              <span className="font-medium text-foreground">{filteredIngredientes.length}</span> ingredientes encontrados
-            </p>
-            <div className="flex items-center space-x-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">Filtros activos</span>
-            </div>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button variant="outline" size="sm">
-              <Grid3X3 className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="sm">
-              <List className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-
-        {/* Clean Ingredients Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredIngredientes.map((ingredient) => (
-            <Link key={ingredient.id} to={`/ingrediente/${ingredient.id}`}>
-              <Card className="clean-card group h-full overflow-hidden">
-                <div className="aspect-square overflow-hidden relative">
-                  <img
-                    src={ingredient.image}
-                    alt={ingredient.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                  <div className="absolute top-2 right-2 flex items-center space-x-1 bg-background/90 rounded-md px-2 py-1">
-                    <TrendingUp className="h-3 w-3 text-primary" />
-                    <span className="text-xs font-medium text-foreground">
-                      {ingredient.popularity}%
-                    </span>
-                  </div>
-                </div>
-                <CardContent className="p-4">
-                  <h3 className="font-medium text-base text-foreground mb-1">
-                    {ingredient.name}
-                  </h3>
-                  
-                  <p className="text-sm text-muted-foreground mb-2">{ingredient.nameEN}</p>
-                  
-                  <div className="flex items-center justify-between mb-3">
-                    <Badge variant="secondary" className="text-xs capitalize">
-                      {ingredient.category}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">{ingredient.temporada}</span>
-                  </div>
-                  
-                  <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                    {ingredient.description}
-                  </p>
-                  
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Precio España:</span>
-                      <span className="font-medium text-primary">{ingredient.price}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Rendimiento:</span>
-                      <Badge variant="outline" className="text-xs">
-                        {ingredient.rendimiento}%
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
-
-        {/* No Results */}
-        {filteredIngredientes.length === 0 && (
-          <div className="text-center py-16">
-            <div className="mb-6">
-              <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-medium text-foreground mb-2">
-                No se encontraron ingredientes
-              </h3>
-              <p className="text-muted-foreground">
-                No se encontraron ingredientes que coincidan con tu búsqueda.
-              </p>
-            </div>
-            <Button 
-              onClick={() => {
-                setSearchQuery("");
-                setSelectedCategory("todos");
-              }}
-              className="btn-clean"
-            >
-              Limpiar filtros
-            </Button>
-          </div>
+        {filteredIngredientes.length === 0 ? (
+          <DirectorioEmpty onClearFilters={handleClearFilters} />
+        ) : (
+          <DirectorioGrid ingredients={filteredIngredientes} />
         )}
       </div>
     </div>

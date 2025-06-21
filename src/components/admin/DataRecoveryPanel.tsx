@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,11 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { AlertTriangle, Database, RefreshCw, CheckCircle, PlayCircle } from "lucide-react";
 import { useDataStatus, useCompleteIngredientsData } from "@/hooks/useDataRecovery";
+import { useToast } from "@/hooks/use-toast";
 
 const DataRecoveryPanel = () => {
   const { data: statusData, isLoading: isLoadingStatus, refetch } = useDataStatus();
   const { mutate: completeData, isPending: isCompleting } = useCompleteIngredientsData();
   const [selectedAction, setSelectedAction] = useState<'languages' | 'prices' | 'all' | null>(null);
+  const { toast } = useToast();
 
   if (isLoadingStatus) {
     return (

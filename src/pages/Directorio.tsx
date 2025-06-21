@@ -1,6 +1,5 @@
-
 import { useState, useMemo } from "react";
-import { Search, Filter, ChefHat, TrendingUp } from "lucide-react";
+import { Search, Filter, ChefHat, TrendingUp, Sparkles, Grid3X3, List } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -183,56 +182,62 @@ const Directorio = () => {
   }, [searchQuery, selectedCategory, sortBy]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-green-200 sticky top-0 z-50">
+    <div className="min-h-screen bg-background">
+      {/* Modern Header */}
+      <header className="glass-nav sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <Link to="/" className="flex items-center space-x-3">
-              <ChefHat className="h-8 w-8 text-green-600" />
-              <h1 className="text-xl font-bold text-gray-800">
+              <div className="p-2 bg-primary rounded-xl">
+                <ChefHat className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <h1 className="text-xl font-bold text-foreground">
                 Directorio de Ingredientes
               </h1>
             </Link>
-            <nav className="hidden md:flex space-x-6">
-              <Link to="/" className="text-gray-600 hover:text-green-600 transition-colors">Inicio</Link>
-              <Link to="/directorio" className="text-green-600 font-medium">Directorio</Link>
-              <Link to="/categorias" className="text-gray-600 hover:text-green-600 transition-colors">Categorías</Link>
+            <nav className="hidden md:flex space-x-8">
+              <Link to="/" className="text-muted-foreground hover:text-primary transition-colors">Inicio</Link>
+              <Link to="/directorio" className="text-primary font-medium">Directorio</Link>
+              <Link to="/categorias" className="text-muted-foreground hover:text-primary transition-colors">Categorías</Link>
             </nav>
           </div>
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Page Header */}
-        <div className="text-center mb-8">
-          <h2 className="text-4xl font-bold text-gray-800 mb-4">
+      <div className="container mx-auto px-4 py-12">
+        {/* Modern Page Header */}
+        <div className="text-center mb-12">
+          <div className="flex items-center justify-center mb-4">
+            <Sparkles className="h-6 w-6 text-primary mr-2" />
+            <Badge variant="secondary" className="px-3 py-1">Directorio Completo</Badge>
+          </div>
+          <h2 className="text-5xl font-bold text-foreground mb-6 heading-gradient">
             Directorio Completo de Ingredientes
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
             Explora nuestra base de datos completa con información detallada sobre precios, 
             mermas, rendimientos y usos profesionales.
           </p>
         </div>
 
-        {/* Search and Filters */}
-        <div className="bg-white/80 rounded-lg p-6 mb-8 shadow-lg">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Modern Search and Filters */}
+        <Card className="glass-card mb-12 p-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Search */}
             <div className="md:col-span-2 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Buscar ingredientes..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-12 py-3 rounded-xl border-border/40 focus:border-primary/40"
               />
             </div>
 
             {/* Category Filter */}
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger>
+              <SelectTrigger className="rounded-xl border-border/40">
                 <SelectValue placeholder="Categoría" />
               </SelectTrigger>
               <SelectContent>
@@ -246,7 +251,7 @@ const Directorio = () => {
 
             {/* Sort */}
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger>
+              <SelectTrigger className="rounded-xl border-border/40">
                 <SelectValue placeholder="Ordenar por" />
               </SelectTrigger>
               <SelectContent>
@@ -256,65 +261,75 @@ const Directorio = () => {
               </SelectContent>
             </Select>
           </div>
-        </div>
+        </Card>
 
         {/* Results Summary */}
-        <div className="flex items-center justify-between mb-6">
-          <p className="text-gray-600">
-            Mostrando {filteredIngredientes.length} ingredientes
-          </p>
-          <div className="flex items-center space-x-2 text-sm text-gray-500">
-            <Filter className="h-4 w-4" />
-            <span>Filtros activos</span>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-4">
+            <p className="text-muted-foreground text-lg">
+              <span className="font-semibold text-foreground">{filteredIngredientes.length}</span> ingredientes encontrados
+            </p>
+            <div className="flex items-center space-x-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Filtros activos</span>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" size="sm" className="rounded-lg">
+              <Grid3X3 className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm" className="rounded-lg">
+              <List className="h-4 w-4" />
+            </Button>
           </div>
         </div>
 
-        {/* Ingredients Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {/* Modern Ingredients Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {filteredIngredientes.map((ingredient) => (
             <Link key={ingredient.id} to={`/ingrediente/${ingredient.id}`}>
-              <Card className="group hover:shadow-xl transition-all duration-300 border-2 border-transparent hover:border-green-200 bg-white/90 h-full">
-                <div className="aspect-square overflow-hidden rounded-t-lg">
+              <Card className="modern-card group h-full overflow-hidden">
+                <div className="aspect-square overflow-hidden relative">
                   <img
                     src={ingredient.image}
                     alt={ingredient.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
-                </div>
-                <CardContent className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-lg text-gray-800 leading-tight">
-                      {ingredient.name}
-                    </h3>
-                    <div className="flex items-center space-x-1 ml-2">
-                      <TrendingUp className="h-3 w-3 text-green-600" />
-                      <span className="text-xs text-green-600 font-medium">
-                        {ingredient.popularity}%
-                      </span>
-                    </div>
+                  <div className="absolute top-3 right-3 flex items-center space-x-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1">
+                    <TrendingUp className="h-3 w-3 text-primary" />
+                    <span className="text-xs font-medium text-primary">
+                      {ingredient.popularity}%
+                    </span>
                   </div>
+                </div>
+                <CardContent className="p-6">
+                  <h3 className="font-bold text-xl text-foreground mb-2 group-hover:text-primary transition-colors">
+                    {ingredient.name}
+                  </h3>
                   
-                  <p className="text-sm text-gray-500 mb-2">{ingredient.nameEN}</p>
+                  <p className="text-sm text-muted-foreground mb-3">{ingredient.nameEN}</p>
                   
-                  <div className="flex items-center justify-between mb-3">
-                    <Badge variant="outline" className="text-xs capitalize">
+                  <div className="flex items-center justify-between mb-4">
+                    <Badge variant="outline" className="text-xs capitalize rounded-full">
                       {ingredient.category}
                     </Badge>
-                    <span className="text-sm text-gray-500">{ingredient.temporada}</span>
+                    <span className="text-xs text-muted-foreground">{ingredient.temporada}</span>
                   </div>
                   
-                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2 leading-relaxed">
                     {ingredient.description}
                   </p>
                   
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Precio España:</span>
-                      <span className="font-semibold text-green-600">{ingredient.price}</span>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Precio España:</span>
+                      <span className="font-semibold text-primary">{ingredient.price}</span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Rendimiento:</span>
-                      <span className="font-semibold">{ingredient.rendimiento}%</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-muted-foreground">Rendimiento:</span>
+                      <Badge className="bg-primary/10 text-primary border-primary/20">
+                        {ingredient.rendimiento}%
+                      </Badge>
                     </div>
                   </div>
                 </CardContent>
@@ -325,16 +340,22 @@ const Directorio = () => {
 
         {/* No Results */}
         {filteredIngredientes.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500 text-lg mb-4">
-              No se encontraron ingredientes que coincidan con tu búsqueda.
-            </p>
+          <div className="text-center py-20">
+            <div className="mb-6">
+              <Search className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-2xl font-semibold text-foreground mb-2">
+                No se encontraron ingredientes
+              </h3>
+              <p className="text-muted-foreground text-lg">
+                No se encontraron ingredientes que coincidan con tu búsqueda.
+              </p>
+            </div>
             <Button 
               onClick={() => {
                 setSearchQuery("");
                 setSelectedCategory("todos");
               }}
-              variant="outline"
+              className="btn-modern"
             >
               Limpiar filtros
             </Button>

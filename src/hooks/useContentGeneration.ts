@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -7,11 +6,17 @@ export const useGenerateContent = () => {
   const { toast } = useToast();
   
   return useMutation({
-    mutationFn: async ({ type, count, category }: { type: string; count: number; category?: string }) => {
-      console.log('Generating content:', { type, count, category });
+    mutationFn: async ({ type, count, category, region, ingredient }: { 
+      type: string; 
+      count: number; 
+      category?: string;
+      region?: string;
+      ingredient?: string;
+    }) => {
+      console.log('Generating content:', { type, count, category, region, ingredient });
       
       const { data, error } = await supabase.functions.invoke('generate-content', {
-        body: { type, count, category }
+        body: { type, count, category, region, ingredient }
       });
 
       if (error) {
@@ -36,6 +41,90 @@ export const useGenerateContent = () => {
       console.error('Generation error:', error);
       toast({
         title: "Error al generar contenido",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useGenerateImage = () => {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ ingredientName, description }: { ingredientName: string; description?: string }) => {
+      console.log('Generating image for:', ingredientName);
+      
+      const { data, error } = await supabase.functions.invoke('generate-image', {
+        body: { 
+          name: ingredientName,
+          description: description 
+        }
+      });
+
+      if (error) {
+        console.error('Error generating image:', error);
+        throw error;
+      }
+
+      if (!data.success) {
+        throw new Error(data.error || 'Error generating image');
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      toast({
+        title: "Imagen generada exitosamente",
+        description: "La imagen se ha generado correctamente",
+      });
+    },
+    onError: (error) => {
+      console.error('Image generation error:', error);
+      toast({
+        title: "Error al generar imagen",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+};
+
+export const useSaveGeneratedContent = () => {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async ({ type, data }: { type: string; data: any[] }) => {
+      console.log('Saving content:', { type, count: data.length });
+      
+      const { data: result, error } = await supabase.functions.invoke('save-generated-content', {
+        body: { type, data }
+      });
+
+      if (error) {
+        console.error('Error saving content:', error);
+        throw error;
+      }
+
+      if (!result.success) {
+        throw new Error('Error saving content');
+      }
+
+      return result;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      toast({
+        title: "Contenido guardado exitosamente",
+        description: "El contenido se ha guardado en la base de datos",
+      });
+    },
+    onError: (error) => {
+      console.error('Save error:', error);
+      toast({
+        title: "Error al guardar contenido",
         description: error.message,
         variant: "destructive",
       });

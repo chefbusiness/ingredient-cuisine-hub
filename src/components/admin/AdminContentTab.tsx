@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Database, Package, Image, RefreshCw, Tag, Camera, AlertTriangle } from "lucide-react";
+import { Database, Package, Image, RefreshCw, Tag, Camera, AlertTriangle, CheckCircle } from "lucide-react";
 import { useRegenerateImages, useFixCategorization } from "@/hooks/useContentGeneration";
 
 interface AdminContentTabProps {
@@ -19,6 +19,7 @@ const AdminContentTab = ({ ingredientsCount, categoriesCount }: AdminContentTabP
   };
 
   const handleFixCategorization = () => {
+    console.log('Usuario hizo clic en corregir categorización');
     fixCategorization.mutate();
   };
 
@@ -31,25 +32,55 @@ const AdminContentTab = ({ ingredientsCount, categoriesCount }: AdminContentTabP
         </p>
       </div>
 
-      {/* Banner de corrección de categorización */}
+      {/* Banner de corrección de categorización mejorado */}
       <Card className="border-orange-200 bg-orange-50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-orange-800">
-            <AlertTriangle className="h-5 w-5" />
-            Corrección de Categorización Pendiente
+            {fixCategorization.isPending ? (
+              <RefreshCw className="h-5 w-5 animate-spin" />
+            ) : fixCategorization.isSuccess ? (
+              <CheckCircle className="h-5 w-5 text-green-600" />
+            ) : (
+              <AlertTriangle className="h-5 w-5" />
+            )}
+            {fixCategorization.isPending 
+              ? 'Corrigiendo Categorización...'
+              : fixCategorization.isSuccess 
+                ? 'Categorización Corregida'
+                : 'Corrección de Categorización de Especias'
+            }
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-orange-700 mb-4">
-            Se han detectado ingredientes de especias que están mal categorizados. Haz clic en el botón para corregir automáticamente la categorización.
-          </p>
+          {fixCategorization.isPending ? (
+            <p className="text-sm text-orange-700 mb-4">
+              Procesando ingredientes de especias... Por favor espera.
+            </p>
+          ) : fixCategorization.isSuccess ? (
+            <p className="text-sm text-green-700 mb-4">
+              ✅ Categorización completada exitosamente. Los ingredientes de especias han sido movidos a la categoría correcta.
+            </p>
+          ) : (
+            <p className="text-sm text-orange-700 mb-4">
+              Se han detectado ingredientes de especias (Pimentón, Pimienta negra, Azafrán, etc.) que están mal categorizados. Haz clic para corregir automáticamente.
+            </p>
+          )}
+          
           <Button 
             onClick={handleFixCategorization}
-            disabled={fixCategorization.isPending}
-            className="bg-orange-600 hover:bg-orange-700"
+            disabled={fixCategorization.isPending || fixCategorization.isSuccess}
+            className={fixCategorization.isSuccess 
+              ? "bg-green-600 hover:bg-green-700" 
+              : "bg-orange-600 hover:bg-orange-700"
+            }
           >
             <Tag className={`h-4 w-4 mr-2 ${fixCategorization.isPending ? 'animate-spin' : ''}`} />
-            {fixCategorization.isPending ? 'Corrigiendo Categorías...' : 'Corregir Categorización de Especias'}
+            {fixCategorization.isPending 
+              ? 'Corrigiendo Categorías...' 
+              : fixCategorization.isSuccess
+                ? 'Categorización Completada'
+                : 'Corregir Categorización de Especias'
+            }
           </Button>
         </CardContent>
       </Card>

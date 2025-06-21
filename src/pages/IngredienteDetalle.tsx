@@ -1,137 +1,86 @@
 
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, ChefHat, TrendingUp, Calculator, Globe, Clock, Star } from "lucide-react";
+import { ArrowLeft, ChefHat, TrendingUp, Calculator, Globe, Clock, Star, Heart, Camera, Upload } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useIngredientById } from "@/hooks/useIngredients";
+import { useRealImages } from "@/hooks/useRealImages";
+import { useGenerateImage } from "@/hooks/useContentGeneration";
+import { RealImagesGallery } from "@/components/RealImagesGallery";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const IngredienteDetalle = () => {
   const { id } = useParams();
+  const { data: ingredient, isLoading, error } = useIngredientById(id || "");
+  const { data: realImages = [] } = useRealImages(id || "");
+  const generateImage = useGenerateImage();
 
-  // Simulamos datos del ingrediente basado en el ID
-  const ingredient = {
-    id: parseInt(id || "1"),
-    name: "Tomate Cherry",
-    nameEN: "Cherry Tomato",
-    nameLA: "Tomate Cereza",
-    nameFR: "Tomate Cerise",
-    nameIT: "Pomodorino",
-    namePT: "Tomate Cereja",
-    nameZH: "樱桃番茄",
-    category: "Verduras",
-    popularity: 95,
-    description: "El tomate cherry es una variedad de tomate pequeño y dulce, muy apreciado en la cocina profesional por su versatilidad y presentación. Su sabor intenso y su forma compacta lo convierten en un ingrediente ideal para guarniciones, ensaladas gourmet y platos de alta cocina.",
-    image: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=800&h=800&fit=crop",
-    temporada: "Todo el año (mejor de mayo a octubre)",
-    origen: "Región mediterránea",
-    variedades: ["Cherry rojo", "Cherry amarillo", "Cherry pera", "Cherry negro"],
+  const handleGenerateImage = async () => {
+    if (!ingredient) return;
     
-    // Información nutricional
-    nutrition: {
-      calories: 18,
-      protein: 0.9,
-      carbs: 3.9,
-      fat: 0.2,
-      fiber: 1.2,
-      vitamin_c: 14
-    },
-
-    // Merma y rendimiento
-    merma: 5.2,
-    rendimiento: 94.8,
-    
-    // Usos profesionales
-    uses: [
-      "Ensaladas gourmet y mixtas",
-      "Guarnición para carnes y pescados",
-      "Aperitivos y canapés",
-      "Salsas frescas y coulis",
-      "Confitado y deshidratado",
-      "Decoración de platos"
-    ],
-
-    // Recetas importantes
-    recipes: [
-      {
-        name: "Ensalada Caprese moderna",
-        type: "Entrante",
-        difficulty: "Fácil",
-        time: "15 min"
-      },
-      {
-        name: "Tomates cherry confitados",
-        type: "Guarnición",
-        difficulty: "Medio",
-        time: "45 min"
-      },
-      {
-        name: "Carpaccio de ternera con cherry",
-        type: "Principal",
-        difficulty: "Medio",
-        time: "20 min"
-      }
-    ],
-
-    // Precios por país
-    prices: {
-      "España": {
-        price: 3.50,
-        currency: "€",
-        unit: "kg",
-        season_variation: "+15% invierno"
-      },
-      "Francia": {
-        price: 4.20,
-        currency: "€",
-        unit: "kg",
-        season_variation: "+20% invierno"
-      },
-      "Estados Unidos": {
-        price: 4.80,
-        currency: "$",
-        unit: "kg",
-        season_variation: "+25% invierno"
-      },
-      "Italia": {
-        price: 3.80,
-        currency: "€",
-        unit: "kg",
-        season_variation: "+10% invierno"
-      }
-    },
-
-    // Conservación y almacenamiento
-    storage: {
-      temperature: "12-15°C",
-      humidity: "85-90%",
-      duration: "7-10 días",
-      tips: "Conservar en lugar fresco y seco, evitar refrigeración directa para mantener sabor"
-    },
-
-    // Preparación
-    preparation: {
-      washing: "Lavar con agua fría antes del uso",
-      cutting: "Cortar justo antes de servir para evitar pérdida de jugos",
-      cooking: "Cocción rápida para mantener forma y textura"
-    }
+    await generateImage.mutateAsync({
+      ingredientName: ingredient.name,
+      description: ingredient.description
+    });
   };
 
-  const monthlyPrices = [
-    { month: "Enero", spain: 4.20, france: 5.10, usa: 5.80 },
-    { month: "Febrero", spain: 4.00, france: 4.90, usa: 5.60 },
-    { month: "Marzo", spain: 3.80, france: 4.50, usa: 5.20 },
-    { month: "Abril", spain: 3.20, france: 3.80, usa: 4.40 },
-    { month: "Mayo", spain: 2.80, france: 3.40, usa: 3.90 },
-    { month: "Junio", spain: 2.60, france: 3.20, usa: 3.70 },
-    { month: "Julio", spain: 2.40, france: 2.90, usa: 3.40 },
-    { month: "Agosto", spain: 2.50, france: 3.00, usa: 3.50 },
-    { month: "Septiembre", spain: 2.80, france: 3.30, usa: 3.80 },
-    { month: "Octubre", spain: 3.20, france: 3.80, usa: 4.30 },
-    { month: "Noviembre", spain: 3.80, france: 4.40, usa: 5.00 },
-    { month: "Diciembre", spain: 4.10, france: 4.80, usa: 5.50 }
-  ];
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="space-y-6">
+            <Skeleton className="h-8 w-64" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 space-y-6">
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex flex-col md:flex-row gap-6">
+                      <Skeleton className="md:w-64 h-64" />
+                      <div className="flex-1 space-y-4">
+                        <Skeleton className="h-8 w-48" />
+                        <Skeleton className="h-6 w-32" />
+                        <Skeleton className="h-20 w-full" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+              <div className="space-y-6">
+                <Skeleton className="h-32" />
+                <Skeleton className="h-48" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !ingredient) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50">
+        <div className="container mx-auto px-4 py-8">
+          <Alert className="max-w-md mx-auto">
+            <AlertDescription>
+              {error ? 'Error al cargar el ingrediente' : 'Ingrediente no encontrado'}
+            </AlertDescription>
+          </Alert>
+          <div className="text-center mt-4">
+            <Link to="/directorio">
+              <Button variant="outline">Volver al directorio</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Usar imagen real si existe, sino la imagen AI generada
+  const primaryImage = ingredient.real_image_url || ingredient.image_url;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50">
@@ -148,7 +97,7 @@ const IngredienteDetalle = () => {
             <nav className="hidden md:flex space-x-6">
               <Link to="/" className="text-gray-600 hover:text-green-600 transition-colors">Inicio</Link>
               <Link to="/directorio" className="text-gray-600 hover:text-green-600 transition-colors">Directorio</Link>
-              <Link to="/categorias" className="text-gray-600 hover:text-green-600 transition-colors">Categorías</Link>
+              <Link to="/admin" className="text-gray-600 hover:text-green-600 transition-colors">Admin</Link>
             </nav>
           </div>
         </div>
@@ -175,11 +124,27 @@ const IngredienteDetalle = () => {
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row gap-6">
                   <div className="md:w-64 h-64 flex-shrink-0">
-                    <img
-                      src={ingredient.image}
-                      alt={ingredient.name}
-                      className="w-full h-full object-cover rounded-lg shadow-lg"
-                    />
+                    {primaryImage ? (
+                      <img
+                        src={primaryImage}
+                        alt={ingredient.name}
+                        className="w-full h-full object-cover rounded-lg shadow-lg"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-100 rounded-lg shadow-lg flex items-center justify-center">
+                        <div className="text-center">
+                          <Camera className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                          <p className="text-sm text-gray-500 mb-3">Sin imagen</p>
+                          <Button 
+                            size="sm" 
+                            onClick={handleGenerateImage}
+                            disabled={generateImage.isPending}
+                          >
+                            {generateImage.isPending ? 'Generando...' : 'Generar imagen'}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-start justify-between mb-4">
@@ -187,9 +152,9 @@ const IngredienteDetalle = () => {
                         <h1 className="text-3xl font-bold text-gray-800 mb-2">
                           {ingredient.name}
                         </h1>
-                        <p className="text-lg text-gray-600 mb-3">{ingredient.nameEN}</p>
+                        <p className="text-lg text-gray-600 mb-3">{ingredient.name_en}</p>
                         <Badge variant="outline" className="mb-4">
-                          {ingredient.category}
+                          {ingredient.categories?.name || 'Sin categoría'}
                         </Badge>
                       </div>
                       <div className="flex items-center space-x-2 bg-green-100 px-3 py-2 rounded-full">
@@ -204,14 +169,18 @@ const IngredienteDetalle = () => {
                     </p>
 
                     <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-600">Temporada:</span>
-                        <p className="font-medium">{ingredient.temporada}</p>
-                      </div>
-                      <div>
-                        <span className="text-gray-600">Origen:</span>
-                        <p className="font-medium">{ingredient.origen}</p>
-                      </div>
+                      {ingredient.temporada && (
+                        <div>
+                          <span className="text-gray-600">Temporada:</span>
+                          <p className="font-medium">{ingredient.temporada}</p>
+                        </div>
+                      )}
+                      {ingredient.origen && (
+                        <div>
+                          <span className="text-gray-600">Origen:</span>
+                          <p className="font-medium">{ingredient.origen}</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -244,34 +213,59 @@ const IngredienteDetalle = () => {
                         </div>
                         <div>
                           <span className="text-sm text-gray-600">Inglés</span>
-                          <p className="font-medium">{ingredient.nameEN}</p>
+                          <p className="font-medium">{ingredient.name_en}</p>
                         </div>
-                        <div>
-                          <span className="text-sm text-gray-600">Francés</span>
-                          <p className="font-medium">{ingredient.nameFR}</p>
-                        </div>
-                        <div>
-                          <span className="text-sm text-gray-600">Italiano</span>
-                          <p className="font-medium">{ingredient.nameIT}</p>
-                        </div>
+                        {ingredient.name_fr && (
+                          <div>
+                            <span className="text-sm text-gray-600">Francés</span>
+                            <p className="font-medium">{ingredient.name_fr}</p>
+                          </div>
+                        )}
+                        {ingredient.name_it && (
+                          <div>
+                            <span className="text-sm text-gray-600">Italiano</span>
+                            <p className="font-medium">{ingredient.name_it}</p>
+                          </div>
+                        )}
                       </div>
                       <div className="space-y-3">
-                        <div>
-                          <span className="text-sm text-gray-600">Latinoamérica</span>
-                          <p className="font-medium">{ingredient.nameLA}</p>
-                        </div>
-                        <div>
-                          <span className="text-sm text-gray-600">Portugués</span>
-                          <p className="font-medium">{ingredient.namePT}</p>
-                        </div>
-                        <div>
-                          <span className="text-sm text-gray-600">Chino</span>
-                          <p className="font-medium">{ingredient.nameZH}</p>
-                        </div>
+                        {ingredient.name_la && (
+                          <div>
+                            <span className="text-sm text-gray-600">Latinoamérica</span>
+                            <p className="font-medium">{ingredient.name_la}</p>
+                          </div>
+                        )}
+                        {ingredient.name_pt && (
+                          <div>
+                            <span className="text-sm text-gray-600">Portugués</span>
+                            <p className="font-medium">{ingredient.name_pt}</p>
+                          </div>
+                        )}
+                        {ingredient.name_zh && (
+                          <div>
+                            <span className="text-sm text-gray-600">Chino</span>
+                            <p className="font-medium">{ingredient.name_zh}</p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Galería de imágenes reales */}
+                {realImages.length > 0 && (
+                  <Card className="bg-white/90">
+                    <CardHeader>
+                      <CardTitle className="flex items-center space-x-2">
+                        <Camera className="h-5 w-5" />
+                        <span>Imágenes Reales</span>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <RealImagesGallery images={realImages} ingredientId={ingredient.id} />
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
               <TabsContent value="usos" className="space-y-4">
@@ -283,36 +277,42 @@ const IngredienteDetalle = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {ingredient.uses.map((use, index) => (
-                        <div key={index} className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-                          <Star className="h-4 w-4 text-green-600 flex-shrink-0" />
-                          <span className="text-gray-700">{use}</span>
-                        </div>
-                      ))}
-                    </div>
+                    {ingredient.ingredient_uses && ingredient.ingredient_uses.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {ingredient.ingredient_uses.map((useItem, index) => (
+                          <div key={index} className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                            <Star className="h-4 w-4 text-green-600 flex-shrink-0" />
+                            <span className="text-gray-700">{useItem.use_description}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-center py-4">No hay usos registrados para este ingrediente</p>
+                    )}
                   </CardContent>
                 </Card>
 
-                <Card className="bg-white/90">
-                  <CardHeader>
-                    <CardTitle>Recetas Destacadas</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {ingredient.recipes.map((recipe, index) => (
-                        <div key={index} className="p-4 border border-green-200 rounded-lg">
-                          <h4 className="font-semibold text-gray-800 mb-2">{recipe.name}</h4>
-                          <div className="space-y-1 text-sm text-gray-600">
-                            <p><span className="font-medium">Tipo:</span> {recipe.type}</p>
-                            <p><span className="font-medium">Dificultad:</span> {recipe.difficulty}</p>
-                            <p><span className="font-medium">Tiempo:</span> {recipe.time}</p>
+                {ingredient.ingredient_recipes && ingredient.ingredient_recipes.length > 0 && (
+                  <Card className="bg-white/90">
+                    <CardHeader>
+                      <CardTitle>Recetas Destacadas</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {ingredient.ingredient_recipes.map((recipe, index) => (
+                          <div key={index} className="p-4 border border-green-200 rounded-lg">
+                            <h4 className="font-semibold text-gray-800 mb-2">{recipe.name}</h4>
+                            <div className="space-y-1 text-sm text-gray-600">
+                              <p><span className="font-medium">Tipo:</span> {recipe.type}</p>
+                              <p><span className="font-medium">Dificultad:</span> {recipe.difficulty}</p>
+                              <p><span className="font-medium">Tiempo:</span> {recipe.time}</p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
 
               <TabsContent value="precios" className="space-y-4">
@@ -321,47 +321,23 @@ const IngredienteDetalle = () => {
                     <CardTitle>Precios por País</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {Object.entries(ingredient.prices).map(([country, data]) => (
-                        <div key={country} className="p-4 border border-green-200 rounded-lg">
-                          <h4 className="font-semibold text-gray-800 mb-2">{country}</h4>
-                          <p className="text-2xl font-bold text-green-600 mb-1">
-                            {data.currency}{data.price.toFixed(2)}/{data.unit}
-                          </p>
-                          <p className="text-sm text-gray-600">{data.season_variation}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-white/90">
-                  <CardHeader>
-                    <CardTitle>Evolución Mensual de Precios (España)</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="border-b">
-                            <th className="text-left py-2">Mes</th>
-                            <th className="text-right py-2">España</th>
-                            <th className="text-right py-2">Francia</th>
-                            <th className="text-right py-2">EE.UU.</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {monthlyPrices.map((month, index) => (
-                            <tr key={index} className="border-b">
-                              <td className="py-2">{month.month}</td>
-                              <td className="text-right py-2">€{month.spain.toFixed(2)}</td>
-                              <td className="text-right py-2">€{month.france.toFixed(2)}</td>
-                              <td className="text-right py-2">${month.usa.toFixed(2)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    {ingredient.ingredient_prices && ingredient.ingredient_prices.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {ingredient.ingredient_prices.map((priceData, index) => (
+                          <div key={index} className="p-4 border border-green-200 rounded-lg">
+                            <h4 className="font-semibold text-gray-800 mb-2">
+                              {priceData.countries?.name || 'País no especificado'}
+                            </h4>
+                            <p className="text-2xl font-bold text-green-600 mb-1">
+                              {priceData.countries?.currency_symbol || '€'}{priceData.price.toFixed(2)}/{priceData.unit}
+                            </p>
+                            <p className="text-sm text-gray-600">Precio actual</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-center py-4">No hay precios registrados para este ingrediente</p>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -379,91 +355,71 @@ const IngredienteDetalle = () => {
                       <div className="space-y-4">
                         <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
                           <span className="text-gray-700">Merma</span>
-                          <span className="text-2xl font-bold text-red-600">{ingredient.merma}%</span>
+                          <span className="text-2xl font-bold text-red-600">{ingredient.merma.toFixed(1)}%</span>
                         </div>
                         <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
                           <span className="text-gray-700">Rendimiento</span>
-                          <span className="text-2xl font-bold text-green-600">{ingredient.rendimiento}%</span>
+                          <span className="text-2xl font-bold text-green-600">{ingredient.rendimiento.toFixed(1)}%</span>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-white/90">
-                    <CardHeader>
-                      <CardTitle>Información Nutricional (por 100g)</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span>Calorías</span>
-                          <span className="font-medium">{ingredient.nutrition.calories} kcal</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Proteínas</span>
-                          <span className="font-medium">{ingredient.nutrition.protein}g</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Carbohidratos</span>
-                          <span className="font-medium">{ingredient.nutrition.carbs}g</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Grasas</span>
-                          <span className="font-medium">{ingredient.nutrition.fat}g</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Fibra</span>
-                          <span className="font-medium">{ingredient.nutrition.fiber}g</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span>Vitamina C</span>
-                          <span className="font-medium">{ingredient.nutrition.vitamin_c}mg</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  {ingredient.nutritional_info && ingredient.nutritional_info.length > 0 && (
+                    <Card className="bg-white/90">
+                      <CardHeader>
+                        <CardTitle>Información Nutricional (por 100g)</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        {ingredient.nutritional_info.map((nutrition, index) => (
+                          <div key={index} className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span>Calorías</span>
+                              <span className="font-medium">{nutrition.calories} kcal</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Proteínas</span>
+                              <span className="font-medium">{nutrition.protein}g</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Carbohidratos</span>
+                              <span className="font-medium">{nutrition.carbs}g</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Grasas</span>
+                              <span className="font-medium">{nutrition.fat}g</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Fibra</span>
+                              <span className="font-medium">{nutrition.fiber}g</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Vitamina C</span>
+                              <span className="font-medium">{nutrition.vitamin_c}mg</span>
+                            </div>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
 
-                <Card className="bg-white/90">
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Clock className="h-5 w-5" />
-                      <span>Conservación y Preparación</span>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="font-semibold text-gray-800 mb-3">Almacenamiento</h4>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span>Temperatura:</span>
-                            <span className="font-medium">{ingredient.storage.temperature}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Humedad:</span>
-                            <span className="font-medium">{ingredient.storage.humidity}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span>Duración:</span>
-                            <span className="font-medium">{ingredient.storage.duration}</span>
-                          </div>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-3">
-                          <strong>Consejo:</strong> {ingredient.storage.tips}
-                        </p>
+                {ingredient.ingredient_varieties && ingredient.ingredient_varieties.length > 0 && (
+                  <Card className="bg-white/90">
+                    <CardHeader>
+                      <CardTitle>Variedades</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex flex-wrap gap-2">
+                        {ingredient.ingredient_varieties.map((variety, index) => (
+                          <Badge key={index} variant="secondary">
+                            {variety.variety_name}
+                          </Badge>
+                        ))}
                       </div>
-                      <div>
-                        <h4 className="font-semibold text-gray-800 mb-3">Preparación</h4>
-                        <div className="space-y-2 text-sm text-gray-600">
-                          <p><strong>Lavado:</strong> {ingredient.preparation.washing}</p>
-                          <p><strong>Corte:</strong> {ingredient.preparation.cutting}</p>
-                          <p><strong>Cocción:</strong> {ingredient.preparation.cooking}</p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                )}
               </TabsContent>
             </Tabs>
           </div>
@@ -477,6 +433,7 @@ const IngredienteDetalle = () => {
               </CardHeader>
               <CardContent className="space-y-3">
                 <Button className="w-full bg-green-600 hover:bg-green-700">
+                  <Heart className="h-4 w-4 mr-2" />
                   Añadir a Favoritos
                 </Button>
                 <Button variant="outline" className="w-full">
@@ -485,6 +442,17 @@ const IngredienteDetalle = () => {
                 <Button variant="outline" className="w-full">
                   Ver Recetas
                 </Button>
+                {!primaryImage && (
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={handleGenerateImage}
+                    disabled={generateImage.isPending}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    {generateImage.isPending ? 'Generando...' : 'Generar imagen'}
+                  </Button>
+                )}
               </CardContent>
             </Card>
 
@@ -500,46 +468,25 @@ const IngredienteDetalle = () => {
                     <p className="text-sm text-gray-600">Popularidad</p>
                   </div>
                   <div className="p-3 bg-blue-50 rounded-lg">
-                    <p className="text-2xl font-bold text-blue-600">{ingredient.rendimiento}%</p>
+                    <p className="text-2xl font-bold text-blue-600">{ingredient.rendimiento.toFixed(1)}%</p>
                     <p className="text-sm text-gray-600">Rendimiento</p>
                   </div>
                 </div>
                 <Separator />
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Precio promedio:</span>
-                    <span className="font-medium">€3.50/kg</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Variedad principal:</span>
-                    <span className="font-medium">Cherry rojo</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Related Ingredients */}
-            <Card className="bg-white/90">
-              <CardHeader>
-                <CardTitle className="text-lg">Ingredientes Relacionados</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {[
-                    { name: "Tomate Pera", id: 9 },
-                    { name: "Tomate RAF", id: 10 },
-                    { name: "Pimiento Rojo", id: 11 }
-                  ].map((item) => (
-                    <Link 
-                      key={item.id} 
-                      to={`/ingrediente/${item.id}`}
-                      className="block p-2 rounded-lg hover:bg-green-50 transition-colors"
-                    >
-                      <span className="text-sm text-gray-700 hover:text-green-600">
-                        {item.name}
+                  {ingredient.ingredient_prices && ingredient.ingredient_prices.length > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Precio promedio:</span>
+                      <span className="font-medium">
+                        {ingredient.ingredient_prices[0].countries?.currency_symbol || '€'}
+                        {ingredient.ingredient_prices[0].price.toFixed(2)}/{ingredient.ingredient_prices[0].unit}
                       </span>
-                    </Link>
-                  ))}
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Categoría:</span>
+                    <span className="font-medium">{ingredient.categories?.name || 'Sin categoría'}</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>

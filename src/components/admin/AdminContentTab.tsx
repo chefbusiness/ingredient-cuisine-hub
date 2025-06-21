@@ -2,8 +2,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Link } from "react-router-dom";
-import { Image, Camera } from "lucide-react";
+import { Database, Package, Image, RefreshCw, Tag, Camera } from "lucide-react";
+import { useRegenerateImages, useFixCategorization } from "@/hooks/useContentGeneration";
 
 interface AdminContentTabProps {
   ingredientsCount: number;
@@ -11,85 +11,142 @@ interface AdminContentTabProps {
 }
 
 const AdminContentTab = ({ ingredientsCount, categoriesCount }: AdminContentTabProps) => {
+  const regenerateImages = useRegenerateImages();
+  const fixCategorization = useFixCategorization();
+
+  const handleRegenerateImages = () => {
+    regenerateImages.mutate();
+  };
+
+  const handleFixCategorization = () => {
+    fixCategorization.mutate();
+  };
+
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Gestión de Contenido Existente</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground mb-4">
-            Herramientas para editar y gestionar el contenido existente del directorio.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="p-4">
-              <h3 className="font-semibold mb-2">Ingredientes</h3>
-              <p className="text-sm text-muted-foreground mb-3">
-                {ingredientsCount} ingredientes registrados
-              </p>
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/directorio">Ver Lista</Link>
-              </Button>
-            </Card>
-            <Card className="p-4">
-              <h3 className="font-semibold mb-2">Categorías</h3>
-              <p className="text-sm text-muted-foreground mb-3">
-                {categoriesCount} categorías disponibles
-              </p>
-              <Button variant="outline" size="sm">Gestionar</Button>
-            </Card>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="mb-6">
+        <h2 className="text-2xl font-bold mb-2">Gestión de Contenido</h2>
+        <p className="text-muted-foreground">
+          Administra ingredientes, categorías, precios e imágenes del directorio.
+        </p>
+      </div>
 
+      {/* Estadísticas de contenido */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total Ingredientes</CardTitle>
+            <Package className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{ingredientsCount}</div>
+            <p className="text-xs text-muted-foreground">
+              Ingredientes en la base de datos
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Categorías</CardTitle>
+            <Tag className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{categoriesCount}</div>
+            <p className="text-xs text-muted-foreground">
+              Categorías disponibles
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Estado</CardTitle>
+            <Database className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center space-x-2">
+              <Badge variant="outline" className="text-green-600 border-green-600">
+                Activo
+              </Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Sistema funcionando correctamente
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Herramientas de corrección */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Image className="h-5 w-5" />
+              <span>Regenerar Imágenes</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Genera imágenes para ingredientes que no tienen imagen asignada.
+            </p>
+            <Button 
+              onClick={handleRegenerateImages}
+              disabled={regenerateImages.isPending}
+              className="w-full"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${regenerateImages.isPending ? 'animate-spin' : ''}`} />
+              {regenerateImages.isPending ? 'Generando...' : 'Regenerar Imágenes Faltantes'}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Tag className="h-5 w-5" />
+              <span>Corregir Categorización</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Corrige la categorización de especias que están mal clasificadas.
+            </p>
+            <Button 
+              onClick={handleFixCategorization}
+              disabled={fixCategorization.isPending}
+              variant="outline"
+              className="w-full"
+            >
+              <Tag className="h-4 w-4 mr-2" />
+              {fixCategorization.isPending ? 'Corrigiendo...' : 'Corregir Categorías'}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Acciones avanzadas */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Camera className="h-5 w-5" />
-            Sistema de Imágenes Híbrido
+          <CardTitle className="flex items-center space-x-2">
+            <Database className="h-5 w-5" />
+            <span>Acciones Avanzadas</span>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <div className="flex items-start gap-3">
-                <Image className="h-5 w-5 text-blue-600 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-blue-900">Ilustraciones AI (Flux 1.1 Pro)</h4>
-                  <p className="text-sm text-blue-700 mt-1">
-                    Ilustraciones minimalistas y delicadas generadas automáticamente. 
-                    <Badge variant="secondary" className="ml-2">Imagen Principal</Badge>
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-start gap-3">
-                <Camera className="h-5 w-5 text-green-600 mt-0.5" />
-                <div>
-                  <h4 className="font-medium text-green-900">Fotografías Reales</h4>
-                  <p className="text-sm text-green-700 mt-1">
-                    Galería de imágenes reales subidas por administradores y usuarios.
-                    <Badge variant="secondary" className="ml-2">Galería Secundaria</Badge>
-                  </p>
-                  <div className="mt-3">
-                    <Button size="sm" variant="outline">
-                      Gestionar Imágenes Reales
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-sm text-muted-foreground">
-              <p>
-                <strong>Nuevo sistema:</strong> Las ilustraciones AI proporcionan una representación 
-                consistente y reconocible, mientras que las fotografías reales ofrecen autenticidad 
-                y variedad visual.
-              </p>
-            </div>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Button variant="outline" className="w-full">
+              <Camera className="h-4 w-4 mr-2" />
+              Gestionar Imágenes Reales
+            </Button>
+            <Button variant="outline" className="w-full">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Actualizar Precios
+            </Button>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Estas funciones permiten gestión avanzada del contenido del directorio.
+          </p>
         </CardContent>
       </Card>
     </div>

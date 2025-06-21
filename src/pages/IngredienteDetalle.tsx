@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useIngredientById } from "@/hooks/useIngredients";
 import { useRealImages } from "@/hooks/useRealImages";
 import { useGenerateImage } from "@/hooks/useContentGeneration";
-import { RealImagesGallery } from "@/components/RealImagesGallery";
+import RealImagesGallery from "@/components/RealImagesGallery";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 

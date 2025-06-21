@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -47,7 +46,7 @@ const Admin = () => {
             <div>
               <h3 className="font-semibold text-green-800">Sistema AI Activado</h3>
               <p className="text-sm text-green-700">
-                DeepSeek API y Replicate (Flux) están configurados y listos para generar contenido e imágenes
+                DeepSeek API y Replicate (Flux 1.1 Pro) están configurados y listos para generar contenido e imágenes de calidad profesional
               </p>
             </div>
           </div>
@@ -90,12 +89,12 @@ const Admin = () => {
 
           <Card className="border-blue-200 bg-blue-50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-blue-800">Flux (Replicate)</CardTitle>
+              <CardTitle className="text-sm font-medium text-blue-800">Flux 1.1 Pro</CardTitle>
               <Zap className="h-4 w-4 text-blue-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-blue-800">Activo</div>
-              <p className="text-xs text-blue-600">Generación de imágenes</p>
+              <p className="text-xs text-blue-600">Imágenes profesionales</p>
             </CardContent>
           </Card>
         </div>
@@ -115,7 +114,7 @@ const Admin = () => {
             <div className="mb-6">
               <h2 className="text-2xl font-bold mb-2">Generador de Contenido AI</h2>
               <p className="text-muted-foreground">
-                Usa DeepSeek para generar ingredientes, categorías y precios, y Flux para crear imágenes realistas.
+                Usa DeepSeek para generar ingredientes, categorías y precios, y Flux 1.1 Pro para crear imágenes realistas de calidad profesional.
               </p>
             </div>
             <AdminContentGenerator />
@@ -176,11 +175,11 @@ const Admin = () => {
                   <Card className="p-4 border-blue-200 bg-blue-50">
                     <div className="flex items-center gap-2 mb-2">
                       <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                      <h3 className="font-semibold text-blue-800">Replicate (Flux)</h3>
+                      <h3 className="font-semibold text-blue-800">Replicate (Flux 1.1 Pro)</h3>
                       <CheckCircle className="h-4 w-4 text-blue-600" />
                     </div>
                     <p className="text-sm text-blue-700">
-                      Generación de imágenes realistas de ingredientes
+                      Generación de imágenes realistas de calidad profesional para ingredientes
                     </p>
                     <div className="mt-2 text-xs text-blue-600">
                       ✓ API Key configurada correctamente
@@ -214,6 +213,14 @@ const Admin = () => {
                     <div className="flex items-center gap-2">
                       <CheckCircle className="h-4 w-4 text-green-500" />
                       <span>Usos culinarios profesionales</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span>Imágenes profesionales con Flux 1.1 Pro</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span>Calidad optimizada para fotografía culinaria</span>
                     </div>
                   </div>
                 </div>

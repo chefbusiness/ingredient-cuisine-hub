@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -111,7 +110,7 @@ const AdminContentGenerator = () => {
                 ) : (
                   <Image className="h-4 w-4 mr-2" />
                 )}
-                Generar Imágenes ({imageGenerationQueue.length})
+                Generar Imágenes con Flux 1.1 Pro ({imageGenerationQueue.length})
               </Button>
             )}
             <Button 
@@ -143,7 +142,7 @@ const AdminContentGenerator = () => {
                       {item.image_url && (
                         <Badge className="bg-green-100 text-green-800">
                           <CheckCircle className="h-3 w-3 mr-1" />
-                          Imagen generada
+                          Flux 1.1 Pro
                         </Badge>
                       )}
                     </div>
@@ -324,7 +323,7 @@ const AdminContentGenerator = () => {
             <div className="mt-4 p-4 bg-blue-50 rounded-lg">
               <div className="flex items-center gap-2 text-sm text-blue-800">
                 <Image className="h-4 w-4" />
-                <span>Las imágenes se generarán automáticamente usando Flux (Replicate) después del contenido</span>
+                <span>Las imágenes se generarán automáticamente usando <strong>Flux 1.1 Pro</strong> (Replicate) con calidad profesional</span>
               </div>
             </div>
           )}

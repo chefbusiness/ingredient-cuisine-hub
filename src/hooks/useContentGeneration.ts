@@ -4,10 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 interface GenerateContentParams {
-  type: 'ingredient' | 'category' | 'price_update';
+  type: 'ingredient' | 'category' | 'price_update' | 'market_research' | 'weather_impact' | 'cultural_variants' | 'trend_analysis' | 'supply_chain';
   category?: string;
   region?: string;
   count?: number;
+  ingredient?: string;
+  search_query?: string;
 }
 
 interface GenerateImageParams {
@@ -27,10 +29,20 @@ export const useGenerateContent = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      const typeMessages = {
+        ingredient: "Ingredientes generados exitosamente",
+        category: "Categorías generadas exitosamente", 
+        market_research: "Investigación de mercado completada",
+        weather_impact: "Análisis climático completado",
+        cultural_variants: "Investigación cultural completada",
+        trend_analysis: "Análisis de tendencias completado",
+        supply_chain: "Investigación de cadena de suministro completada"
+      };
+      
       toast({
-        title: "Contenido generado",
-        description: "El contenido ha sido generado exitosamente",
+        title: "Investigación completada",
+        description: typeMessages[variables.type] || "Contenido generado exitosamente",
       });
     },
     onError: (error: any) => {

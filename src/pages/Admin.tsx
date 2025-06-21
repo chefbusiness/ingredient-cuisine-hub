@@ -1,10 +1,12 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ChefHat, ArrowLeft, Database, Wand2, BarChart3, CheckCircle, Zap } from "lucide-react";
+import { ChefHat, ArrowLeft, Database, Wand2, BarChart3, CheckCircle, Zap, Search } from "lucide-react";
 import AdminContentGenerator from "@/components/AdminContentGenerator";
+import AdminResearchPanel from "@/components/AdminResearchPanel";
 import { useIngredients } from "@/hooks/useIngredients";
 import { useCategories } from "@/hooks/useCategories";
 

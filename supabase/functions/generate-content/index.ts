@@ -13,6 +13,24 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
+// Función helper para crear timeout
+const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs = 30000) => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -20,11 +38,24 @@ serve(async (req) => {
 
   try {
     const { type, category, region = 'España', count = 1, ingredient, search_query } = await req.json();
+    
+    console.log('=== INICIO DE REQUEST ===');
+    console.log('Parámetros recibidos:', { type, category, region, count, ingredient, search_query });
+    
     const deepseekApiKey = Deno.env.get('DEEPSEEK_API_KEY');
 
+    // Validación detallada de la API key
     if (!deepseekApiKey) {
+      console.error('ERROR: DEEPSEEK_API_KEY no está configurada en las variables de entorno');
       throw new Error('DEEPSEEK_API_KEY no configurada');
     }
+
+    if (deepseekApiKey.length < 10) {
+      console.error('ERROR: DEEPSEEK_API_KEY parece ser inválida (muy corta):', deepseekApiKey.substring(0, 5) + '...');
+      throw new Error('DEEPSEEK_API_KEY parece ser inválida');
+    }
+
+    console.log('API Key encontrada, longitud:', deepseekApiKey.length, 'Primeros 10 chars:', deepseekApiKey.substring(0, 10) + '...');
 
     let prompt = '';
     
@@ -215,53 +246,109 @@ serve(async (req) => {
         break;
     }
 
-    console.log('Enviando prompt a DeepSeek:', prompt);
+    console.log('Prompt generado, longitud:', prompt.length);
+    console.log('Primeros 200 caracteres del prompt:', prompt.substring(0, 200) + '...');
 
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
+    const requestBody = {
+      model: 'deepseek-chat',
+      messages: [
+        {
+          role: 'system',
+          content: 'Eres un experto investigador en ingredientes culinarios, mercados gastronómicos y tendencias alimentarias. Tienes acceso a información actualizada de internet y puedes realizar investigaciones profundas. Siempre respondes con JSON válido y preciso basado en investigación real.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 6000,
+    };
+
+    console.log('=== LLAMADA A DEEPSEEK API ===');
+    console.log('URL:', 'https://api.deepseek.com/chat/completions');
+    console.log('Modelo:', requestBody.model);
+    console.log('Max tokens:', requestBody.max_tokens);
+    console.log('Temperature:', requestBody.temperature);
+
+    const response = await fetchWithTimeout('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${deepseekApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          {
-            role: 'system',
-            content: 'Eres un experto investigador en ingredientes culinarios, mercados gastronómicos y tendencias alimentarias. Tienes acceso a información actualizada de internet y puedes realizar investigaciones profundas. Siempre respondes con JSON válido y preciso basado en investigación real.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 6000,
-      }),
-    });
+      body: JSON.stringify(requestBody),
+    }, 30000);
+
+    console.log('=== RESPUESTA DE DEEPSEEK ===');
+    console.log('Status:', response.status);
+    console.log('Status Text:', response.statusText);
+    console.log('Headers:', Object.fromEntries(response.headers.entries()));
+
+    // Leer el cuerpo de la respuesta como texto primero
+    const responseText = await response.text();
+    console.log('Cuerpo de respuesta (primeros 500 chars):', responseText.substring(0, 500));
 
     if (!response.ok) {
-      throw new Error(`Error de DeepSeek API: ${response.status}`);
+      console.error('=== ERROR DE DEEPSEEK API ===');
+      console.error('Status:', response.status);
+      console.error('Status Text:', response.statusText);
+      console.error('Cuerpo completo del error:', responseText);
+      
+      // Intentar parsear el error como JSON
+      let errorDetails = 'Error desconocido';
+      try {
+        const errorJson = JSON.parse(responseText);
+        errorDetails = JSON.stringify(errorJson, null, 2);
+        console.error('Error parseado como JSON:', errorDetails);
+      } catch (parseError) {
+        console.error('No se pudo parsear el error como JSON:', parseError);
+        errorDetails = responseText;
+      }
+      
+      throw new Error(`Error de DeepSeek API: ${response.status} ${response.statusText}. Detalles: ${errorDetails}`);
     }
 
-    const data = await response.json();
-    const generatedContent = data.choices[0].message.content;
-    
-    console.log('Respuesta de DeepSeek:', generatedContent);
+    // Parsear la respuesta exitosa
+    let data;
+    try {
+      data = JSON.parse(responseText);
+      console.log('Respuesta parseada exitosamente');
+      console.log('Estructura de la respuesta:', Object.keys(data));
+    } catch (parseError) {
+      console.error('Error parseando respuesta JSON exitosa:', parseError);
+      console.error('Respuesta completa:', responseText);
+      throw new Error('Respuesta de DeepSeek no es JSON válido');
+    }
 
-    // Parsear y validar JSON
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      console.error('Estructura de respuesta inesperada:', data);
+      throw new Error('Estructura de respuesta de DeepSeek inesperada');
+    }
+
+    const generatedContent = data.choices[0].message.content;
+    console.log('Contenido generado (primeros 300 chars):', generatedContent.substring(0, 300));
+
+    // Parsear y validar JSON del contenido generado
     let parsedContent;
     try {
       parsedContent = JSON.parse(generatedContent);
+      console.log('Contenido parseado exitosamente como JSON');
+      console.log('Tipo de contenido:', Array.isArray(parsedContent) ? 'Array' : typeof parsedContent);
     } catch (error) {
-      console.error('Error parseando JSON:', error);
+      console.error('Error parseando JSON del contenido generado:', error);
+      console.error('Contenido que falló al parsear:', generatedContent);
       throw new Error('Respuesta de DeepSeek no es JSON válido');
     }
 
     // Asegurar que sea un array
     if (!Array.isArray(parsedContent)) {
+      console.log('Convirtiendo contenido a array');
       parsedContent = [parsedContent];
     }
+
+    console.log('=== RESPUESTA EXITOSA ===');
+    console.log('Número de elementos generados:', parsedContent.length);
 
     return new Response(JSON.stringify({ 
       success: true, 
@@ -272,10 +359,15 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error en generate-content:', error);
+    console.error('=== ERROR GENERAL ===');
+    console.error('Tipo de error:', error.constructor.name);
+    console.error('Mensaje:', error.message);
+    console.error('Stack trace:', error.stack);
+    
     return new Response(JSON.stringify({ 
       error: error.message,
-      success: false 
+      success: false,
+      errorType: error.constructor.name
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

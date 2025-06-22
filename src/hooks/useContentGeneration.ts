@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -102,26 +101,20 @@ export const useGenerateImage = () => {
           throw new Error('URL de imagen inválida recibida de Replicate');
         }
         
-        const { data: updateData, error: updateError } = await supabase
+        // Simplificar la actualización - solo verificar errores, no la respuesta
+        const { error: updateError } = await supabase
           .from('ingredients')
           .update({ image_url: data.imageUrl })
-          .eq('id', ingredientId)
-          .select();
+          .eq('id', ingredientId);
 
-        console.log('📊 Resultado de actualización:', { updateData, updateError });
+        console.log('📊 Resultado de actualización:', { updateError });
 
         if (updateError) {
           console.error('❌ Error actualizando ingrediente:', updateError);
           throw new Error(`Error guardando imagen en ingrediente: ${updateError.message}`);
         }
 
-        if (!updateData || updateData.length === 0) {
-          console.error('❌ No se actualizó ningún registro. ID del ingrediente:', ingredientId);
-          throw new Error('No se encontró el ingrediente para actualizar');
-        }
-
         console.log('✅ Ingrediente actualizado con nueva imagen');
-        console.log('📄 Datos actualizados:', updateData[0]);
       } else {
         console.log('⚠️ No se actualizará la base de datos:', { 
           tieneIngredientId: !!ingredientId, 

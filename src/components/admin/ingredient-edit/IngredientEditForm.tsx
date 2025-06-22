@@ -9,12 +9,13 @@ import IngredientBasicTab from "./IngredientBasicTab";
 import IngredientLanguagesTab from "./IngredientLanguagesTab";
 import IngredientImagesTab from "./IngredientImagesTab";
 import IngredientTechnicalTab from "./IngredientTechnicalTab";
+import { IngredientFormData } from "./types";
 
 interface IngredientEditFormProps {
   ingredient: Ingredient | null;
   categories: any[];
-  onSubmit: (data: any) => void;
-  form: ReturnType<typeof useForm>;
+  onSubmit: (data: IngredientFormData) => void;
+  form: ReturnType<typeof useForm<IngredientFormData>>;
 }
 
 const IngredientEditForm = ({ ingredient, categories, onSubmit, form }: IngredientEditFormProps) => {

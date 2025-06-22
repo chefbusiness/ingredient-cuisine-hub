@@ -16,6 +16,7 @@ import { useCategories } from "@/hooks/useCategories";
 import IngredientQualityBadge from "./ingredient-edit/IngredientQualityBadge";
 import IngredientActionButtons from "./ingredient-edit/IngredientActionButtons";
 import IngredientEditForm from "./ingredient-edit/IngredientEditForm";
+import { IngredientFormData } from "./ingredient-edit/types";
 
 interface IngredientEditDialogProps {
   ingredient: Ingredient | null;
@@ -27,7 +28,7 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
   const { mutate: updateIngredient, isPending } = useUpdateIngredient();
   const { data: categories = [] } = useCategories();
   
-  const form = useForm({
+  const form = useForm<IngredientFormData>({
     defaultValues: {
       name: "",
       name_en: "",
@@ -71,7 +72,7 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
     }
   }, [ingredient, form]);
 
-  const onSubmit = (data: any) => {
+  const onSubmit = (data: IngredientFormData) => {
     if (!ingredient) return;
     
     updateIngredient({

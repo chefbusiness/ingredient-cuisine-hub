@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import {
   FormControl,
@@ -8,9 +7,10 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Control } from "react-hook-form";
+import { IngredientFormData } from "./types";
 
 interface IngredientLanguagesTabProps {
-  control: Control<any>;
+  control: Control<IngredientFormData>;
 }
 
 const IngredientLanguagesTab = ({ control }: IngredientLanguagesTabProps) => {

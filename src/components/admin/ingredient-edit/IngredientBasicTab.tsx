@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -16,9 +15,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Control } from "react-hook-form";
+import { IngredientFormData } from "./types";
 
 interface IngredientBasicTabProps {
-  control: Control<any>;
+  control: Control<IngredientFormData>;
   categories: any[];
 }
 

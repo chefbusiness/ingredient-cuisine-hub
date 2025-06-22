@@ -1,4 +1,3 @@
-
 import { Input } from "@/components/ui/input";
 import {
   FormControl,
@@ -9,10 +8,11 @@ import {
 } from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Control, UseFormWatch } from "react-hook-form";
+import { IngredientFormData } from "./types";
 
 interface IngredientImagesTabProps {
-  control: Control<any>;
-  watch: UseFormWatch<any>;
+  control: Control<IngredientFormData>;
+  watch: UseFormWatch<IngredientFormData>;
 }
 
 const IngredientImagesTab = ({ control, watch }: IngredientImagesTabProps) => {

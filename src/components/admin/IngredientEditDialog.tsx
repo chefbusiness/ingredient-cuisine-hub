@@ -52,8 +52,11 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
 
   useEffect(() => {
     if (ingredient) {
-      console.log('🔄 Resetting form with ingredient data:', ingredient.name);
-      form.reset({
+      console.log('🔄 === RESETTING FORM WITH INGREDIENT DATA ===');
+      console.log('📋 Ingredient:', ingredient.name);
+      console.log('📋 Current image_url:', ingredient.image_url ? ingredient.image_url.substring(0, 50) + '...' : 'NULL');
+      
+      const formData = {
         name: ingredient.name || "",
         name_en: ingredient.name_en || "",
         name_la: ingredient.name_la || "",
@@ -70,18 +73,29 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
         popularity: ingredient.popularity || 0,
         image_url: ingredient.image_url || "",
         real_image_url: ingredient.real_image_url || "",
+      };
+      
+      console.log('📋 Form data being set:', {
+        name: formData.name,
+        image_url: formData.image_url ? formData.image_url.substring(0, 50) + '...' : 'EMPTY',
+        category_id: formData.category_id
       });
+      
+      form.reset(formData);
     }
   }, [ingredient, form]);
 
   const onSubmit = (data: IngredientFormData) => {
     if (!ingredient) return;
     
-    console.log('💾 Submitting ingredient update with data:', {
-      id: ingredient.id,
+    console.log('💾 === SUBMITTING FORM DATA ===');
+    console.log('📋 Ingredient ID:', ingredient.id);
+    console.log('📋 Form data to submit:', {
       name: data.name,
-      imageUrl: data.image_url?.substring(0, 50) + '...',
-      allData: data
+      image_url: data.image_url ? data.image_url.substring(0, 50) + '...' : 'EMPTY',
+      real_image_url: data.real_image_url ? data.real_image_url.substring(0, 50) + '...' : 'EMPTY',
+      category_id: data.category_id,
+      description: data.description ? data.description.substring(0, 100) + '...' : 'EMPTY'
     });
     
     updateIngredient({
@@ -89,11 +103,11 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
       updates: data,
     }, {
       onSuccess: () => {
-        console.log('✅ Ingredient updated successfully');
+        console.log('✅ Form submission successful - closing dialog');
         onClose();
       },
       onError: (error) => {
-        console.error('❌ Update failed:', error);
+        console.error('❌ Form submission failed:', error);
       },
     });
   };
@@ -107,7 +121,7 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
             <IngredientQualityBadge ingredient={ingredient} />
           </DialogTitle>
           <DialogDescription>
-            Modifica todos los campos del ingrediente y usa herramientas de IA para mejorar el contenido
+            Modifica todos los campos del ingrediente. Usa "Regenerar Imagen" para crear una nueva imagen, luego haz clic en "Guardar Cambios" para aplicar todo.
           </DialogDescription>
         </DialogHeader>
 

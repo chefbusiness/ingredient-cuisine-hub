@@ -1,10 +1,9 @@
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export const useGenerateImage = () => {
-  const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
@@ -13,7 +12,7 @@ export const useGenerateImage = () => {
       description?: string;
       ingredientId?: string;
     }) => {
-      console.log('🖼️ === STARTING IMAGE GENERATION ===');
+      console.log('🖼️ === STARTING IMAGE GENERATION (NO DB UPDATE) ===');
       console.log('📋 Parameters:', { ingredientName, ingredientId });
       
       if (!ingredientId) {
@@ -25,7 +24,7 @@ export const useGenerateImage = () => {
       console.log('🔍 Verifying ingredient exists...');
       const { data: existingIngredient, error: checkError } = await supabase
         .from('ingredients')
-        .select('id, name, image_url')
+        .select('id, name')
         .eq('id', ingredientId)
         .single();
       
@@ -67,35 +66,9 @@ export const useGenerateImage = () => {
         throw new Error('No se recibió URL de imagen');
       }
       
-      console.log('✅ Image URL received:', data.imageUrl.substring(0, 50) + '...');
+      console.log('✅ Image URL received (NOT SAVING TO DB):', data.imageUrl.substring(0, 50) + '...');
       
-      // Actualizar ingrediente con la nueva imagen (simplificado)
-      console.log('💾 Updating ingredient with new image...');
-      const { error: updateError, count } = await supabase
-        .from('ingredients')
-        .update({ 
-          image_url: data.imageUrl,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', ingredientId);
-
-      if (updateError) {
-        console.error('❌ Error updating ingredient:', updateError);
-        throw new Error(`Error guardando imagen: ${updateError.message}`);
-      }
-
-      // Verificar que se actualizó al menos un registro
-      if (count === 0) {
-        console.error('❌ No records were updated');
-        throw new Error('No se pudo actualizar el ingrediente - no se encontró el registro');
-      }
-
-      console.log('✅ Ingredient updated successfully:', {
-        ingredientId,
-        count,
-        imageUrl: data.imageUrl.substring(0, 50) + '...'
-      });
-
+      // NO ACTUALIZAR LA BASE DE DATOS - Solo retornar la URL
       return {
         success: true,
         imageUrl: data.imageUrl,
@@ -104,23 +77,15 @@ export const useGenerateImage = () => {
       };
     },
     onSuccess: (data) => {
-      console.log('🎉 Image generation mutation success');
-      
-      // Invalidar queries para refrescar la UI
-      queryClient.invalidateQueries({ queryKey: ['ingredients'] });
-      queryClient.invalidateQueries({ queryKey: ['ingredient'] });
-      
-      if (data.ingredientId) {
-        queryClient.refetchQueries({ queryKey: ['ingredient', data.ingredientId] });
-      }
+      console.log('🎉 Image generation success (URL only)');
       
       toast({
-        title: "🎉 Imagen generada exitosamente",
-        description: `Imagen creada para ${data.ingredientName}`,
+        title: "🎉 Imagen generada",
+        description: `Nueva imagen lista para ${data.ingredientName}. Recuerda hacer clic en "Guardar Cambios".`,
       });
     },
     onError: (error) => {
-      console.error('❌ Image generation mutation error:', error);
+      console.error('❌ Image generation error:', error);
       toast({
         title: "❌ Error al generar imagen",
         description: error.message,

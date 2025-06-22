@@ -33,9 +33,9 @@ const IngredientActionButtons = ({ ingredient, setValue, trigger }: IngredientAc
       ingredientId: ingredient.id
     }, {
       onSuccess: (result) => {
-        console.log('✅ Image regenerated successfully:', result.imageUrl.substring(0, 50) + '...');
+        console.log('✅ Image regenerated - updating form field only:', result.imageUrl.substring(0, 50) + '...');
         
-        // Update the form field with the new image URL
+        // Solo actualizar el campo del formulario - NO la base de datos
         setValue('image_url', result.imageUrl);
         
         // Trigger validation to ensure the field is properly updated
@@ -45,8 +45,8 @@ const IngredientActionButtons = ({ ingredient, setValue, trigger }: IngredientAc
         
         setIsRegeneratingImage(false);
         toast({
-          title: "✅ Imagen regenerada",
-          description: "La nueva imagen se ha aplicado al formulario. Recuerda guardar los cambios.",
+          title: "✅ Nueva imagen lista",
+          description: "La imagen se ha actualizado en el formulario. Haz clic en 'Guardar Cambios' para aplicar todos los cambios.",
         });
       },
       onError: (error) => {

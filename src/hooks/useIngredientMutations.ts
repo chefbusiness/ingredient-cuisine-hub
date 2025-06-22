@@ -9,53 +9,92 @@ export const useUpdateIngredient = () => {
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
-      console.log('🔄 Starting ingredient update mutation:', {
-        id,
-        updates: Object.keys(updates),
+      console.log('🔄 === STARTING INGREDIENT UPDATE MUTATION ===');
+      console.log('📋 Ingredient ID:', id);
+      console.log('📋 Updates to apply:', {
         name: updates.name,
-        imageUrl: updates.image_url?.substring(0, 50) + '...'
+        image_url: updates.image_url ? updates.image_url.substring(0, 50) + '...' : 'No change',
+        real_image_url: updates.real_image_url ? updates.real_image_url.substring(0, 50) + '...' : 'No change',
+        description: updates.description ? updates.description.substring(0, 100) + '...' : 'No change',
+        category_id: updates.category_id,
+        popularity: updates.popularity,
+        merma: updates.merma,
+        rendimiento: updates.rendimiento
       });
+
+      // Verificar que el ingrediente existe antes de actualizar
+      const { data: existing, error: checkError } = await supabase
+        .from('ingredients')
+        .select('id, name, image_url')
+        .eq('id', id)
+        .single();
+
+      if (checkError) {
+        console.error('❌ Error checking existing ingredient:', checkError);
+        throw new Error('No se pudo verificar el ingrediente existente');
+      }
+
+      console.log('📋 Current values in DB:', {
+        name: existing.name,
+        image_url: existing.image_url ? existing.image_url.substring(0, 50) + '...' : 'NULL'
+      });
+
+      const updateData = {
+        ...updates,
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('💾 Final update data:', updateData);
 
       const { data, error, count } = await supabase
         .from('ingredients')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', id)
         .select();
 
       if (error) {
-        console.error('❌ Error updating ingredient:', error);
-        throw error;
+        console.error('❌ Database update error:', error);
+        throw new Error(`Error actualizando ingrediente: ${error.message}`);
       }
-
-      console.log('✅ Database update result:', {
-        count,
-        updatedData: data?.[0] ? {
-          id: data[0].id,
-          name: data[0].name,
-          imageUrl: data[0].image_url?.substring(0, 50) + '...'
-        } : null
-      });
 
       if (count === 0) {
         console.error('❌ No records were updated');
         throw new Error('No se pudo actualizar el ingrediente - no se encontró el registro');
       }
 
-      return { id, updates, count, data };
+      console.log('✅ Database update successful:', {
+        count,
+        updatedData: data?.[0] ? {
+          id: data[0].id,
+          name: data[0].name,
+          imageUrl: data[0].image_url ? data[0].image_url.substring(0, 50) + '...' : 'NULL'
+        } : null
+      });
+
+      // Verificar que los cambios se aplicaron realmente
+      const { data: verification } = await supabase
+        .from('ingredients')
+        .select('id, name, image_url, updated_at')
+        .eq('id', id)
+        .single();
+
+      console.log('🔍 Verification check - actual values in DB:', {
+        name: verification?.name,
+        image_url: verification?.image_url ? verification.image_url.substring(0, 50) + '...' : 'NULL',
+        updated_at: verification?.updated_at
+      });
+
+      return { id, updates: updateData, count, data, verification };
     },
     onSuccess: (result) => {
-      console.log('🎉 Update mutation success:', {
-        id: result.id,
-        count: result.count
-      });
+      console.log('🎉 Update mutation success - invalidating queries');
       
       queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+      queryClient.invalidateQueries({ queryKey: ['ingredient', result.id] });
+      
       toast({
         title: "✅ Ingrediente actualizado",
-        description: "Los cambios se han guardado correctamente",
+        description: "Los cambios se han guardado correctamente en la base de datos",
       });
     },
     onError: (error) => {

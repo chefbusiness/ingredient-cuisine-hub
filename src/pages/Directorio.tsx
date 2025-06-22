@@ -2,44 +2,58 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import UnifiedHeader from "@/components/UnifiedHeader";
-import DirectorioFilters from "@/components/DirectorioFilters";
+import DirectorioStats from "@/components/DirectorioStats";
+import AdvancedSearchFilters from "@/components/AdvancedSearchFilters";
 import DirectorioResults from "@/components/DirectorioResults";
 import DirectorioGrid from "@/components/DirectorioGrid";
 import DirectorioEmpty from "@/components/DirectorioEmpty";
-import { useIngredients } from "@/hooks/useIngredients";
+import { useAdvancedIngredients } from "@/hooks/useAdvancedIngredients";
+import { useIngredientAnalytics } from "@/hooks/useIngredientAnalytics";
 import { useCategories } from "@/hooks/useCategories";
 import { seedIngredients } from "@/utils/seedData";
 import { Button } from "@/components/ui/button";
 import { Database, Loader } from "lucide-react";
 
+interface SearchFilters {
+  searchQuery: string;
+  category: string;
+  sortBy: string;
+  priceRange: [number, number];
+  popularityRange: [number, number];
+  season?: string;
+  origin?: string;
+}
+
 const Directorio = () => {
   const [searchParams] = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("todos");
-  const [sortBy, setSortBy] = useState("popularidad");
+  const [filters, setFilters] = useState<SearchFilters>({
+    searchQuery: "",
+    category: "todos",
+    sortBy: "popularidad",
+    priceRange: [0, 100],
+    popularityRange: [0, 100],
+    season: "",
+    origin: ""
+  });
 
   // Inicializar búsqueda y filtros desde URL
   useEffect(() => {
     const searchFromUrl = searchParams.get('search');
     const categoryFromUrl = searchParams.get('categoria');
     
-    if (searchFromUrl) {
-      setSearchQuery(searchFromUrl);
-    }
-    
-    if (categoryFromUrl) {
-      setSelectedCategory(categoryFromUrl);
+    if (searchFromUrl || categoryFromUrl) {
+      setFilters(prev => ({
+        ...prev,
+        searchQuery: searchFromUrl || "",
+        category: categoryFromUrl || "todos"
+      }));
     }
   }, [searchParams]);
 
-  // Usar hooks para obtener datos de Supabase
-  const { data: ingredients = [], isLoading: isLoadingIngredients, error: ingredientsError } = useIngredients(
-    searchQuery, 
-    selectedCategory === "todos" ? undefined : selectedCategory, 
-    sortBy
-  );
-  
+  // Usar hooks para obtener datos
+  const { data: ingredients = [], isLoading: isLoadingIngredients, error: ingredientsError } = useAdvancedIngredients(filters);
   const { data: categoriesData = [], isLoading: isLoadingCategories } = useCategories();
+  const { data: analytics, isLoading: isLoadingAnalytics } = useIngredientAnalytics();
 
   // Convertir categorías para el componente de filtros
   const categories = useMemo(() => {
@@ -74,9 +88,20 @@ const Directorio = () => {
     }));
   }, [ingredients]);
 
+  const handleFiltersChange = (newFilters: SearchFilters) => {
+    setFilters(newFilters);
+  };
+
   const handleClearFilters = () => {
-    setSearchQuery("");
-    setSelectedCategory("todos");
+    setFilters({
+      searchQuery: "",
+      category: "todos",
+      sortBy: "popularidad",
+      priceRange: [0, 100],
+      popularityRange: [0, 100],
+      season: "",
+      origin: ""
+    });
   };
 
   const handleSeedData = async () => {
@@ -88,14 +113,14 @@ const Directorio = () => {
     }
   };
 
-  if (isLoadingIngredients || isLoadingCategories) {
+  if (isLoadingIngredients || isLoadingCategories || isLoadingAnalytics) {
     return (
       <div className="min-h-screen bg-background">
         <UnifiedHeader />
         <div className="container mx-auto px-6 py-8">
           <div className="flex items-center justify-center py-16">
             <Loader className="h-8 w-8 animate-spin text-primary" />
-            <span className="ml-2 text-muted-foreground">Cargando ingredientes...</span>
+            <span className="ml-2 text-muted-foreground">Cargando directorio...</span>
           </div>
         </div>
       </div>
@@ -143,13 +168,19 @@ const Directorio = () => {
           )}
         </div>
 
-        <DirectorioFilters
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          selectedCategory={selectedCategory}
-          setSelectedCategory={setSelectedCategory}
-          sortBy={sortBy}
-          setSortBy={setSortBy}
+        {/* Estadísticas */}
+        {analytics && (
+          <DirectorioStats
+            totalIngredients={analytics.totalIngredients}
+            totalCategories={analytics.categoriesCount}
+            searchResults={formattedIngredients.length}
+            popularIngredient={analytics.mostPopularIngredient}
+          />
+        )}
+
+        {/* Filtros avanzados */}
+        <AdvancedSearchFilters
+          onFiltersChange={handleFiltersChange}
           categories={categories}
         />
 

@@ -1,76 +1,128 @@
 
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wand2, Trash2, RefreshCw } from "lucide-react";
-import AdminContentGenerator from "@/components/AdminContentGenerator";
-import AdminHeader from "@/components/admin/AdminHeader";
-import AdminStatusBanner from "@/components/admin/AdminStatusBanner";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Loader, BarChart3, Settings, Database, TrendingUp, Zap } from "lucide-react";
+import UnifiedHeader from "@/components/UnifiedHeader";
 import AdminStatsOverview from "@/components/admin/AdminStatsOverview";
-import AdminSimpleManagement from "@/components/admin/AdminSimpleManagement";
+import AdminContentTab from "@/components/admin/AdminContentTab";
+import AdminAnalyticsTab from "@/components/admin/AdminAnalyticsTab";
+import AdminSettingsTab from "@/components/admin/AdminSettingsTab";
 import BatchOperations from "@/components/admin/BatchOperations";
 import { useIngredients } from "@/hooks/useIngredients";
 import { useCategories } from "@/hooks/useCategories";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Admin = () => {
-  const { data: ingredients = [] } = useIngredients();
-  const { data: categories = [] } = useCategories();
+  const [activeTab, setActiveTab] = useState("overview");
+  const { user } = useAuth();
+  const { isSuperAdmin, loading: superAdminLoading } = useSuperAdmin();
+  const { data: ingredients = [], isLoading: ingredientsLoading } = useIngredients();
+  const { data: categories = [], isLoading: categoriesLoading } = useCategories();
+
+  // Redirect if not authenticated or not super admin
+  useEffect(() => {
+    if (!superAdminLoading && (!user || !isSuperAdmin)) {
+      window.location.href = '/';
+    }
+  }, [user, isSuperAdmin, superAdminLoading]);
+
+  if (superAdminLoading || ingredientsLoading || categoriesLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <UnifiedHeader />
+        <div className="container mx-auto px-6 py-8">
+          <div className="flex items-center justify-center py-16">
+            <Loader className="h-8 w-8 animate-spin text-primary" />
+            <span className="ml-2 text-muted-foreground">Cargando dashboard...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || !isSuperAdmin) {
+    return null; // Will redirect
+  }
 
   return (
     <div className="min-h-screen bg-background">
-      <AdminHeader />
-
+      <UnifiedHeader />
+      
       <div className="container mx-auto px-6 py-8">
-        <AdminStatusBanner />
-        
-        <AdminStatsOverview 
-          ingredientsCount={ingredients.length}
-          categoriesCount={categories.length}
-        />
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">Dashboard de Administración</h1>
+              <p className="text-muted-foreground mt-2">
+                Panel de control para gestionar el directorio de ingredientes
+              </p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                <Zap className="h-3 w-3 mr-1" />
+                Super Admin
+              </Badge>
+              <Badge variant="outline">
+                {ingredients.length} ingredientes
+              </Badge>
+            </div>
+          </div>
+        </div>
 
-        <Tabs defaultValue="generator" className="space-y-6">
-          <TabsList className="flex w-full">
-            <TabsTrigger value="generator" className="flex-1">
-              <Wand2 className="h-4 w-4 mr-2" />
-              Generador AI
+        {/* Tabs Navigation */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="overview" className="flex items-center space-x-2">
+              <TrendingUp className="h-4 w-4" />
+              <span>Resumen</span>
             </TabsTrigger>
-            <TabsTrigger value="batch" className="flex-1">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Operaciones Masivas
+            <TabsTrigger value="content" className="flex items-center space-x-2">
+              <Database className="h-4 w-4" />
+              <span>Contenido</span>
             </TabsTrigger>
-            <TabsTrigger value="management" className="flex-1">
-              <Trash2 className="h-4 w-4 mr-2" />
-              Gestión Simple
+            <TabsTrigger value="analytics" className="flex items-center space-x-2">
+              <BarChart3 className="h-4 w-4" />
+              <span>Analytics</span>
+            </TabsTrigger>
+            <TabsTrigger value="batch" className="flex items-center space-x-2">
+              <Zap className="h-4 w-4" />
+              <span>Operaciones</span>
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center space-x-2">
+              <Settings className="h-4 w-4" />
+              <span>Configuración</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="generator" className="space-y-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold mb-2">Generador de Contenido AI</h2>
-              <p className="text-muted-foreground">
-                Usa DeepSeek para generar ingredientes, categorías y precios, y Flux 1.1 Pro para crear imágenes realistas de calidad profesional.
-              </p>
-            </div>
-            <AdminContentGenerator />
-          </TabsContent>
+          {/* Tab Contents */}
+          <div className="mt-6">
+            <TabsContent value="overview">
+              <AdminStatsOverview />
+            </TabsContent>
 
-          <TabsContent value="batch" className="space-y-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold mb-2">Operaciones Masivas</h2>
-              <p className="text-muted-foreground">
-                Regenera imágenes para todos los ingredientes que no las tengan, o ejecuta otras operaciones en lote.
-              </p>
-            </div>
-            <BatchOperations totalIngredients={ingredients.length} />
-          </TabsContent>
+            <TabsContent value="content">
+              <AdminContentTab 
+                ingredientsCount={ingredients.length}
+                categoriesCount={categories.length}
+              />
+            </TabsContent>
 
-          <TabsContent value="management" className="space-y-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold mb-2">Gestión Simple</h2>
-              <p className="text-muted-foreground">
-                Solo eliminación de ingredientes. Para cambios, elimina y regenera con IA.
-              </p>
-            </div>
-            <AdminSimpleManagement />
-          </TabsContent>
+            <TabsContent value="analytics">
+              <AdminAnalyticsTab />
+            </TabsContent>
+
+            <TabsContent value="batch">
+              <BatchOperations totalIngredients={ingredients.length} />
+            </TabsContent>
+
+            <TabsContent value="settings">
+              <AdminSettingsTab />
+            </TabsContent>
+          </div>
         </Tabs>
       </div>
     </div>

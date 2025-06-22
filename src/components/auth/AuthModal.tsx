@@ -130,7 +130,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         
         <div className="text-center text-sm text-muted-foreground mb-4">
           <p className="mb-2">🔓 <strong>Acceso gratuito ilimitado</strong></p>
-          <p>• Más de 150 ingredientes profesionales</p>
+          <p>• Más de 4500 ingredientes profesionales</p>
           <p>• Precios actualizados por país</p>
           <p>• Guarda tus favoritos</p>
           <p>• Historial personalizado</p>

@@ -11,7 +11,7 @@ const CTASection = () => {
           ¿Listo para profesionalizar tu cocina?
         </h3>
         <p className="text-sm mb-6 max-w-lg mx-auto opacity-90">
-          Accede a información detallada de más de 150 ingredientes con precios actualizados, 
+          Accede a información detallada de más de 4500 ingredientes con precios actualizados, 
           porcentajes de merma y usos profesionales.
         </p>
         <Link to="/directorio">

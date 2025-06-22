@@ -1,3 +1,4 @@
+
 import { Input } from "@/components/ui/input";
 import {
   FormControl,
@@ -33,7 +34,12 @@ const IngredientImagesTab = ({ control, watch }: IngredientImagesTabProps) => {
                 <img 
                   src={currentImageUrl} 
                   alt={ingredientName || 'Ingredient'}
-                  className="w-full h-32 object-cover rounded"
+                  className="w-full h-32 object-cover rounded border"
+                  onLoad={() => console.log('✅ AI Image loaded successfully')}
+                  onError={(e) => {
+                    console.error('❌ AI Image failed to load:', currentImageUrl);
+                    e.currentTarget.style.display = 'none';
+                  }}
                 />
               </div>
             )}
@@ -44,7 +50,14 @@ const IngredientImagesTab = ({ control, watch }: IngredientImagesTabProps) => {
                 <FormItem>
                   <FormLabel>URL Imagen AI</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input 
+                      {...field} 
+                      placeholder="URL de la imagen generada por IA"
+                      onChange={(e) => {
+                        field.onChange(e);
+                        console.log('🔄 AI Image URL changed:', e.target.value?.substring(0, 50) + '...');
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -63,7 +76,11 @@ const IngredientImagesTab = ({ control, watch }: IngredientImagesTabProps) => {
                 <img 
                   src={realImageUrl} 
                   alt={`${ingredientName} real`}
-                  className="w-full h-32 object-cover rounded"
+                  className="w-full h-32 object-cover rounded border"
+                  onError={(e) => {
+                    console.error('❌ Real Image failed to load:', realImageUrl);
+                    e.currentTarget.style.display = 'none';
+                  }}
                 />
               </div>
             )}
@@ -74,7 +91,10 @@ const IngredientImagesTab = ({ control, watch }: IngredientImagesTabProps) => {
                 <FormItem>
                   <FormLabel>URL Imagen Real</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <Input 
+                      {...field} 
+                      placeholder="URL de la imagen real del ingrediente"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

@@ -51,6 +51,7 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
 
   useEffect(() => {
     if (ingredient) {
+      console.log('🔄 Resetting form with ingredient data:', ingredient.name);
       form.reset({
         name: ingredient.name || "",
         name_en: ingredient.name_en || "",
@@ -75,11 +76,17 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
   const onSubmit = (data: IngredientFormData) => {
     if (!ingredient) return;
     
+    console.log('💾 Submitting ingredient update with data:', {
+      id: ingredient.id,
+      imageUrl: data.image_url?.substring(0, 50) + '...'
+    });
+    
     updateIngredient({
       id: ingredient.id,
       updates: data,
     }, {
       onSuccess: () => {
+        console.log('✅ Ingredient updated successfully');
         onClose();
       },
     });
@@ -101,6 +108,7 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
         <IngredientActionButtons 
           ingredient={ingredient} 
           setValue={form.setValue} 
+          trigger={form.trigger}
         />
 
         <IngredientEditForm

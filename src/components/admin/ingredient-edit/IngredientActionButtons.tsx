@@ -6,14 +6,16 @@ import { useGenerateContent } from "@/hooks/useGenerateContent";
 import { useToast } from "@/hooks/use-toast";
 import { Wand2, Image } from "lucide-react";
 import { Ingredient } from "@/hooks/useIngredients";
-import { UseFormSetValue } from "react-hook-form";
+import { UseFormSetValue, UseFormTrigger } from "react-hook-form";
+import { IngredientFormData } from "./types";
 
 interface IngredientActionButtonsProps {
   ingredient: Ingredient | null;
-  setValue: UseFormSetValue<any>;
+  setValue: UseFormSetValue<IngredientFormData>;
+  trigger?: UseFormTrigger<IngredientFormData>;
 }
 
-const IngredientActionButtons = ({ ingredient, setValue }: IngredientActionButtonsProps) => {
+const IngredientActionButtons = ({ ingredient, setValue, trigger }: IngredientActionButtonsProps) => {
   const [isRegeneratingImage, setIsRegeneratingImage] = useState(false);
   const { mutate: generateImage, isPending: isGeneratingImage } = useGenerateImage();
   const { mutate: generateContent, isPending: isGeneratingContent } = useGenerateContent();
@@ -22,22 +24,39 @@ const IngredientActionButtons = ({ ingredient, setValue }: IngredientActionButto
   const handleRegenerateImage = () => {
     if (!ingredient) return;
     
+    console.log('🖼️ Starting image regeneration for:', ingredient.name);
     setIsRegeneratingImage(true);
+    
     generateImage({
       ingredientName: ingredient.name,
       description: ingredient.description,
       ingredientId: ingredient.id
     }, {
       onSuccess: (result) => {
+        console.log('✅ Image regenerated successfully:', result.imageUrl.substring(0, 50) + '...');
+        
+        // Update the form field with the new image URL
         setValue('image_url', result.imageUrl);
+        
+        // Trigger validation to ensure the field is properly updated
+        if (trigger) {
+          trigger('image_url');
+        }
+        
         setIsRegeneratingImage(false);
         toast({
           title: "✅ Imagen regenerada",
-          description: "La nueva imagen se ha aplicado al formulario",
+          description: "La nueva imagen se ha aplicado al formulario. Recuerda guardar los cambios.",
         });
       },
-      onError: () => {
+      onError: (error) => {
+        console.error('❌ Image regeneration failed:', error);
         setIsRegeneratingImage(false);
+        toast({
+          title: "❌ Error al regenerar imagen",
+          description: error.message,
+          variant: "destructive",
+        });
       }
     });
   };

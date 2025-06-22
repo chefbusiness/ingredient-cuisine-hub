@@ -38,10 +38,12 @@ serve(async (req) => {
     console.log('✅ Nombre del ingrediente:', finalIngredientName);
 
     console.log('3. Creando prompt...');
-    const prompt = `Professional food illustration of ${finalIngredientName}, clean minimalist style, white background, high quality`;
+    const prompt = `Professional food photography of ${finalIngredientName}, high quality, clean white background, studio lighting`;
     console.log('Prompt creado:', prompt);
 
     console.log('4. Haciendo llamada a Replicate API...');
+    
+    // Usar el modelo Flux Schnell que definitivamente funciona
     const replicateResponse = await fetch('https://api.replicate.com/v1/predictions', {
       method: 'POST',
       headers: {
@@ -49,7 +51,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        version: "f2ab8a5569070ad56005b2fba7d8059c9887d8a6c5b8de55", // Flux Schnell
+        version: "black-forest-labs/flux-schnell", // Modelo público y funcional
         input: {
           prompt: prompt,
           go_fast: true,
@@ -82,11 +84,11 @@ serve(async (req) => {
     console.log('7. Iniciando polling para resultado...');
     let result = prediction;
     let attempts = 0;
-    const maxAttempts = 20; // Reducido para evitar timeouts largos
+    const maxAttempts = 15; // Reducido para evitar timeouts
 
     while ((result.status === 'starting' || result.status === 'processing') && attempts < maxAttempts) {
       console.log(`Intento ${attempts + 1}/${maxAttempts} - Estado: ${result.status}`);
-      await new Promise(resolve => setTimeout(resolve, 3000)); // 3 segundos entre polls
+      await new Promise(resolve => setTimeout(resolve, 2000)); // 2 segundos entre polls
       attempts++;
       
       const pollResponse = await fetch(`https://api.replicate.com/v1/predictions/${result.id}`, {

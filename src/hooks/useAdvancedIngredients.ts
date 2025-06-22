@@ -46,8 +46,8 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
       query = query.gte('popularity', filters.popularityRange[0])
                    .lte('popularity', filters.popularityRange[1]);
 
-      // Aplicar filtro de temporada
-      if (filters.season) {
+      // Aplicar filtro de temporada - solo si no es "todas" y no está vacío
+      if (filters.season && filters.season !== "todas") {
         query = query.eq('temporada', filters.season);
       }
 

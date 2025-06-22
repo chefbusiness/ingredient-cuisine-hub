@@ -138,12 +138,12 @@ const AdvancedSearchFilters = ({ onFiltersChange, categories }: AdvancedSearchFi
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <Select value={filters.season || ""} onValueChange={(value) => handleFilterChange('season', value)}>
+                <Select value={filters.season || "todas"} onValueChange={(value) => handleFilterChange('season', value === "todas" ? "" : value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Temporada" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas</SelectItem>
+                    <SelectItem value="todas">Todas</SelectItem>
                     <SelectItem value="Primavera">Primavera</SelectItem>
                     <SelectItem value="Verano">Verano</SelectItem>
                     <SelectItem value="Otoño">Otoño</SelectItem>

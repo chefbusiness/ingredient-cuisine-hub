@@ -1,7 +1,6 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { verifySuperAdminAccess } from './auth.ts';
-import { validateImageUrl } from './validation.ts';
+import { validateImageUrl, isLikelyImageUrl } from './validation.ts';
 import { searchImagesWithDeepSeek } from './deepseek.ts';
 import { getIngredient, saveImageToDatabase, logAdminAction } from './database.ts';
 
@@ -16,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔍 === RESEARCH REAL IMAGES REQUEST ===');
+    console.log('🔍 === ENHANCED RESEARCH REAL IMAGES REQUEST ===');
     
     // Security check
     const authHeader = req.headers.get('authorization');
@@ -63,38 +62,63 @@ serve(async (req) => {
         // Get ingredient details
         const ingredient = await getIngredient(ingredientId);
 
-        // Search for images using DeepSeek
+        // Search for images using enhanced DeepSeek
+        console.log(`🤖 Querying DeepSeek for: ${ingredient.name}`);
         const foundImages = await searchImagesWithDeepSeek(ingredient, DEEPSEEK_API_KEY);
+        
+        console.log(`🔍 DeepSeek returned ${foundImages.length} potential images`);
 
         const validImages = [];
         
-        // Validate and filter images with improved validation
-        for (const imageInfo of foundImages.slice(0, 6)) { // Max 6 images
-          if (imageInfo.url && typeof imageInfo.url === 'string') {
-            console.log(`🔍 Validating image URL: ${imageInfo.url}`);
-            
-            const isValid = await validateImageUrl(imageInfo.url);
-            if (isValid) {
-              validImages.push({
-                url: imageInfo.url,
-                caption: imageInfo.description || '',
-                category: imageInfo.category || 'general'
-              });
-              console.log(`✅ Valid image found: ${imageInfo.url}`);
-            } else {
-              console.log(`❌ Invalid image URL: ${imageInfo.url}`);
-            }
+        // Enhanced validation process
+        for (let i = 0; i < Math.min(foundImages.length, 6); i++) {
+          const imageInfo = foundImages[i];
+          
+          if (!imageInfo.url || typeof imageInfo.url !== 'string') {
+            console.log(`❌ Invalid image data at index ${i}`);
+            continue;
+          }
+
+          console.log(`🔍 [${i + 1}/${foundImages.length}] Validating: ${imageInfo.url}`);
+          
+          // First, quick format validation
+          if (!isLikelyImageUrl(imageInfo.url)) {
+            console.log(`❌ Failed quick validation: ${imageInfo.url}`);
+            continue;
+          }
+          
+          // Then, full HTTP validation
+          const isValid = await validateImageUrl(imageInfo.url);
+          if (isValid) {
+            validImages.push({
+              url: imageInfo.url,
+              caption: imageInfo.description || `${ingredient.name} - ${imageInfo.category || 'general'}`,
+              category: imageInfo.category || 'general'
+            });
+            console.log(`✅ [${i + 1}] Valid image confirmed: ${imageInfo.url}`);
+          } else {
+            console.log(`❌ [${i + 1}] Failed HTTP validation: ${imageInfo.url}`);
+          }
+          
+          // Add small delay between validations to be respectful
+          if (i < foundImages.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
           }
         }
 
-        // Save valid images to database
+        // Save validated images to database
         let savedCount = 0;
         for (const imageInfo of validImages) {
-          const saved = await saveImageToDatabase(ingredientId, imageInfo.url, imageInfo.caption);
-          if (saved) {
-            savedCount++;
-          } else {
-            console.log(`❌ Error saving image: ${imageInfo.url}`);
+          try {
+            const saved = await saveImageToDatabase(ingredientId, imageInfo.url, imageInfo.caption);
+            if (saved) {
+              savedCount++;
+              console.log(`💾 Saved image: ${imageInfo.url}`);
+            } else {
+              console.log(`❌ Failed to save: ${imageInfo.url}`);
+            }
+          } catch (error) {
+            console.log(`❌ Database error saving ${imageInfo.url}:`, error.message);
           }
         }
 
@@ -104,10 +128,11 @@ serve(async (req) => {
           success: true,
           imagesFound: validImages.length,
           imagesSaved: savedCount,
-          images: validImages
+          images: validImages,
+          totalAttempted: foundImages.length
         });
 
-        console.log(`✅ Processed ${ingredient.name}: ${savedCount}/${validImages.length} images saved`);
+        console.log(`✅ Processed ${ingredient.name}: ${savedCount}/${validImages.length} valid images saved (${foundImages.length} total attempted)`);
 
       } catch (error) {
         console.error(`❌ Error processing ingredient ${ingredientId}:`, error);
@@ -150,7 +175,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('❌ Error in research-real-images:', error);
+    console.error('❌ Error in enhanced research-real-images:', error);
     return new Response(JSON.stringify({ 
       error: error.message,
       success: false 

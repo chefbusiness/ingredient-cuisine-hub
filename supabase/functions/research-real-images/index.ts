@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { verifySuperAdminAccess } from './auth.ts';
 import { validateImageUrl, isLikelyImageUrl } from './validation.ts';
@@ -69,25 +70,28 @@ serve(async (req) => {
         console.log(`🔍 DeepSeek returned ${foundImages.length} potential images`);
 
         const validImages = [];
+        const validationResults = [];
         
-        // Enhanced validation process
+        // Progressive validation process with detailed logging
         for (let i = 0; i < Math.min(foundImages.length, 6); i++) {
           const imageInfo = foundImages[i];
           
           if (!imageInfo.url || typeof imageInfo.url !== 'string') {
             console.log(`❌ Invalid image data at index ${i}`);
+            validationResults.push({ index: i, status: 'invalid_data', url: imageInfo.url });
             continue;
           }
 
-          console.log(`🔍 [${i + 1}/${foundImages.length}] Validating: ${imageInfo.url}`);
+          console.log(`🔍 [${i + 1}/${foundImages.length}] Processing: ${imageInfo.url}`);
           
           // First, quick format validation
           if (!isLikelyImageUrl(imageInfo.url)) {
             console.log(`❌ Failed quick validation: ${imageInfo.url}`);
+            validationResults.push({ index: i, status: 'format_invalid', url: imageInfo.url });
             continue;
           }
           
-          // Then, full HTTP validation
+          // Then, progressive HTTP validation
           const isValid = await validateImageUrl(imageInfo.url);
           if (isValid) {
             validImages.push({
@@ -95,16 +99,23 @@ serve(async (req) => {
               caption: imageInfo.description || `${ingredient.name} - ${imageInfo.category || 'general'}`,
               category: imageInfo.category || 'general'
             });
+            validationResults.push({ index: i, status: 'success', url: imageInfo.url });
             console.log(`✅ [${i + 1}] Valid image confirmed: ${imageInfo.url}`);
           } else {
-            console.log(`❌ [${i + 1}] Failed HTTP validation: ${imageInfo.url}`);
+            validationResults.push({ index: i, status: 'http_validation_failed', url: imageInfo.url });
+            console.log(`❌ [${i + 1}] Failed progressive validation: ${imageInfo.url}`);
           }
           
           // Add small delay between validations to be respectful
           if (i < foundImages.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Increased delay
           }
         }
+
+        console.log(`📊 Validation Summary for ${ingredient.name}:`);
+        console.log(`   - Total attempted: ${foundImages.length}`);
+        console.log(`   - Format valid: ${validationResults.filter(r => r.status !== 'format_invalid' && r.status !== 'invalid_data').length}`);
+        console.log(`   - HTTP valid: ${validImages.length}`);
 
         // Save validated images to database
         let savedCount = 0;
@@ -129,10 +140,11 @@ serve(async (req) => {
           imagesFound: validImages.length,
           imagesSaved: savedCount,
           images: validImages,
-          totalAttempted: foundImages.length
+          totalAttempted: foundImages.length,
+          validationDetails: validationResults
         });
 
-        console.log(`✅ Processed ${ingredient.name}: ${savedCount}/${validImages.length} valid images saved (${foundImages.length} total attempted)`);
+        console.log(`✅ Completed ${ingredient.name}: ${savedCount}/${validImages.length} valid images saved (${foundImages.length} total attempted)`);
 
       } catch (error) {
         console.error(`❌ Error processing ingredient ${ingredientId}:`, error);

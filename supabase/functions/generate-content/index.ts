@@ -14,10 +14,10 @@ const supabase = createClient(
 );
 
 // Security function to verify super admin access
-async function verifySuperAdminAccess(authHeader: string | null): Promise<boolean> {
+async function verifySuperAdminAccess(authHeader: string | null): Promise<{ authorized: boolean, userEmail?: string }> {
   if (!authHeader) {
     console.log('❌ No authorization header provided');
-    return false;
+    return { authorized: false };
   }
 
   try {
@@ -26,28 +26,35 @@ async function verifySuperAdminAccess(authHeader: string | null): Promise<boolea
     
     if (userError || !user) {
       console.log('❌ Invalid or expired token:', userError?.message);
-      return false;
+      return { authorized: false };
     }
 
-    // Use the new security function to check super admin status
-    const { data: isSuperAdmin, error: roleError } = await supabase
-      .rpc('verify_super_admin_access');
+    console.log('✅ User authenticated:', user.email);
 
-    if (roleError) {
-      console.log('❌ Error checking super admin status:', roleError.message);
-      return false;
+    // Check super admin status from profiles table
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role, email')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError) {
+      console.log('❌ Error fetching user profile:', profileError.message);
+      return { authorized: false, userEmail: user.email };
     }
 
-    if (!isSuperAdmin) {
-      console.log('❌ User is not a super admin:', user.email);
-      return false;
+    console.log('📋 User profile:', { email: profile.email, role: profile.role });
+
+    if (profile.role !== 'super_admin') {
+      console.log('❌ User is not a super admin:', profile.email, 'Current role:', profile.role);
+      return { authorized: false, userEmail: profile.email };
     }
 
-    console.log('✅ Super admin access verified for:', user.email);
-    return true;
+    console.log('✅ Super admin access verified for:', profile.email);
+    return { authorized: true, userEmail: profile.email };
   } catch (error) {
     console.log('❌ Error verifying admin access:', error);
-    return false;
+    return { authorized: false };
   }
 }
 
@@ -57,19 +64,29 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🔄 Processing generate-content request...');
+    
     // Security check: Verify super admin access
     const authHeader = req.headers.get('authorization');
-    const isAuthorized = await verifySuperAdminAccess(authHeader);
+    const authResult = await verifySuperAdminAccess(authHeader);
     
-    if (!isAuthorized) {
+    if (!authResult.authorized) {
+      const errorMessage = authResult.userEmail 
+        ? `Usuario ${authResult.userEmail} no tiene permisos de super admin. Contacta al administrador para obtener acceso.`
+        : 'Se requiere autenticación de super admin para acceder a esta función.';
+        
+      console.log('❌ Unauthorized access attempt');
       return new Response(JSON.stringify({ 
-        error: 'Unauthorized: Super admin access required',
-        code: 'UNAUTHORIZED'
+        error: errorMessage,
+        code: 'UNAUTHORIZED',
+        userEmail: authResult.userEmail
       }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log('✅ Authorization successful, processing request...');
 
     const { type, count, category, additionalPrompt } = await req.json();
 

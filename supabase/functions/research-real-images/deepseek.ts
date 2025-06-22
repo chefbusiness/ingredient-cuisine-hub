@@ -97,6 +97,7 @@ export async function searchImagesWithDeepSeek(
     imagesData = JSON.parse(cleanedContent);
   } catch {
     // Try to extract JSON from response if it has extra text
+    const cleanedContent = content.trim();
     const jsonMatch = cleanedContent.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       try {

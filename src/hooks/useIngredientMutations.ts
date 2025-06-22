@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -18,23 +17,11 @@ export const useUpdateIngredient = () => {
         throw new Error('ID del ingrediente es requerido');
       }
 
-      // Log each field being updated
-      Object.keys(updates).forEach(key => {
-        const value = updates[key];
-        if (key.includes('image_url')) {
-          console.log(`📝 ${key}:`, value ? value.substring(0, 50) + '...' : 'EMPTY');
-        } else if (key === 'description') {
-          console.log(`📝 ${key}:`, value ? value.substring(0, 100) + '...' : 'EMPTY');
-        } else {
-          console.log(`📝 ${key}:`, value);
-        }
-      });
-
       // Verificar que el ingrediente existe antes de actualizar
       console.log('🔍 Checking if ingredient exists...');
       const { data: existing, error: checkError } = await supabase
         .from('ingredients')
-        .select('id, name, image_url, description, category_id, popularity, merma, rendimiento')
+        .select('*')
         .eq('id', id)
         .single();
 
@@ -48,42 +35,39 @@ export const useUpdateIngredient = () => {
         throw new Error('Ingrediente no encontrado');
       }
 
-      console.log('📋 Current values in DB:', {
-        id: existing.id,
-        name: existing.name,
-        image_url: existing.image_url ? existing.image_url.substring(0, 50) + '...' : 'NULL',
-        description: existing.description ? existing.description.substring(0, 100) + '...' : 'NULL',
-        category_id: existing.category_id,
-        popularity: existing.popularity,
-        merma: existing.merma,
-        rendimiento: existing.rendimiento
-      });
+      console.log('📋 Current values in DB:', existing);
 
-      // Prepare final update data
-      const finalUpdateData = {
-        ...updates,
+      // Preparar datos de actualización, excluyendo campos que no deben cambiarse
+      const updateData = {
+        name: updates.name,
+        name_en: updates.name_en,
+        name_la: updates.name_la,
+        name_fr: updates.name_fr,
+        name_it: updates.name_it,
+        name_pt: updates.name_pt,
+        name_zh: updates.name_zh,
+        description: updates.description,
+        category_id: updates.category_id,
+        temporada: updates.temporada,
+        origen: updates.origen,
+        merma: parseFloat(updates.merma) || 0,
+        rendimiento: parseFloat(updates.rendimiento) || 100,
+        popularity: parseInt(updates.popularity) || 0,
+        image_url: updates.image_url,
+        real_image_url: updates.real_image_url,
         updated_at: new Date().toISOString()
       };
 
       console.log('💾 === EXECUTING SUPABASE UPDATE ===');
-      console.log('Final update data:', {
-        name: finalUpdateData.name,
-        image_url: finalUpdateData.image_url ? finalUpdateData.image_url.substring(0, 50) + '...' : 'EMPTY',
-        description: finalUpdateData.description ? finalUpdateData.description.substring(0, 100) + '...' : 'EMPTY',
-        category_id: finalUpdateData.category_id,
-        popularity: finalUpdateData.popularity,
-        merma: finalUpdateData.merma,
-        rendimiento: finalUpdateData.rendimiento,
-        updated_at: finalUpdateData.updated_at
-      });
+      console.log('Update data to send:', updateData);
 
-      // FIX: Usar maybeSingle() en lugar de single() para manejar el caso de 0 filas
+      // Ejecutar la actualización
       const { data, error } = await supabase
         .from('ingredients')
-        .update(finalUpdateData)
+        .update(updateData)
         .eq('id', id)
-        .select()
-        .maybeSingle();
+        .select('*')
+        .single();
 
       console.log('📤 Supabase update response:', {
         hasError: !!error,
@@ -93,53 +77,19 @@ export const useUpdateIngredient = () => {
 
       if (error) {
         console.error('❌ Supabase update error:', error);
-        console.error('Error details:', {
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          code: error.code
-        });
         throw new Error(`Error actualizando ingrediente: ${error.message}`);
       }
 
-      // Con maybeSingle(), data puede ser null si no se encontró registro
       if (!data) {
-        console.error('❌ No data returned from update - no matching record found or no changes made');
-        
-        // Intentar verificar si el registro aún existe
-        const { data: stillExists, error: existsError } = await supabase
-          .from('ingredients')
-          .select('id, name')
-          .eq('id', id)
-          .maybeSingle();
-        
-        if (existsError) {
-          console.error('❌ Error checking if record still exists:', existsError);
-        } else if (!stillExists) {
-          console.error('❌ Record no longer exists in database');
-          throw new Error('El ingrediente ya no existe en la base de datos');
-        } else {
-          console.log('✅ Record still exists, but update had no effect');
-          console.log('📋 Record that still exists:', stillExists);
-          throw new Error('La actualización no tuvo efecto. Es posible que no haya cambios o que haya un problema de permisos.');
-        }
+        console.error('❌ No data returned from update');
+        throw new Error('No se recibieron datos después de la actualización');
       }
 
-      console.log('✅ Database update successful:', {
-        id: data.id,
-        name: data.name,
-        image_url: data.image_url ? data.image_url.substring(0, 50) + '...' : 'NULL',
-        description: data.description ? data.description.substring(0, 100) + '...' : 'NULL',
-        category_id: data.category_id,
-        popularity: data.popularity,
-        merma: data.merma,
-        rendimiento: data.rendimiento,
-        updated_at: data.updated_at
-      });
+      console.log('✅ Database update successful:', data);
 
       return { 
         id, 
-        updates: finalUpdateData, 
+        updates: updateData, 
         data: data
       };
     },

@@ -1,11 +1,12 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wand2, Trash2 } from "lucide-react";
+import { Wand2, Trash2, RefreshCw } from "lucide-react";
 import AdminContentGenerator from "@/components/AdminContentGenerator";
 import AdminHeader from "@/components/admin/AdminHeader";
 import AdminStatusBanner from "@/components/admin/AdminStatusBanner";
 import AdminStatsOverview from "@/components/admin/AdminStatsOverview";
 import AdminSimpleManagement from "@/components/admin/AdminSimpleManagement";
+import BatchOperations from "@/components/admin/BatchOperations";
 import { useIngredients } from "@/hooks/useIngredients";
 import { useCategories } from "@/hooks/useCategories";
 
@@ -31,6 +32,10 @@ const Admin = () => {
               <Wand2 className="h-4 w-4 mr-2" />
               Generador AI
             </TabsTrigger>
+            <TabsTrigger value="batch" className="flex-1">
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Operaciones Masivas
+            </TabsTrigger>
             <TabsTrigger value="management" className="flex-1">
               <Trash2 className="h-4 w-4 mr-2" />
               Gestión Simple
@@ -45,6 +50,16 @@ const Admin = () => {
               </p>
             </div>
             <AdminContentGenerator />
+          </TabsContent>
+
+          <TabsContent value="batch" className="space-y-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold mb-2">Operaciones Masivas</h2>
+              <p className="text-muted-foreground">
+                Regenera imágenes para todos los ingredientes que no las tengan, o ejecuta otras operaciones en lote.
+              </p>
+            </div>
+            <BatchOperations totalIngredients={ingredients.length} />
           </TabsContent>
 
           <TabsContent value="management" className="space-y-6">

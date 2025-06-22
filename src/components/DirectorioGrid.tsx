@@ -1,5 +1,5 @@
 
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, Camera } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,27 @@ interface DirectorioGridProps {
 }
 
 const DirectorioGrid = ({ ingredients }: DirectorioGridProps) => {
+  const getIngredientImage = (ingredient: Ingredient) => {
+    // Si tiene imagen, usarla
+    if (ingredient.image) {
+      return ingredient.image;
+    }
+    
+    // Fallbacks específicos por categoría en lugar de solo tomates
+    const categoryFallbacks: { [key: string]: string } = {
+      'verduras': 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&h=400&fit=crop',
+      'frutas': 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=400&h=400&fit=crop',
+      'especias': 'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=400&fit=crop',
+      'carnes': 'https://images.unsplash.com/photo-1603360946369-dc9bb6258143?w=400&h=400&fit=crop',
+      'pescados': 'https://images.unsplash.com/photo-1544943910-4c1dc44aab44?w=400&h=400&fit=crop',
+      'lacteos': 'https://images.unsplash.com/photo-1628088062854-d1870b4553da?w=400&h=400&fit=crop',
+      'cereales': 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=400&fit=crop'
+    };
+    
+    return categoryFallbacks[ingredient.category.toLowerCase()] || 
+           'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&h=400&fit=crop';
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {ingredients.map((ingredient) => (
@@ -32,13 +53,19 @@ const DirectorioGrid = ({ ingredients }: DirectorioGridProps) => {
           <Card className="clean-card group h-full overflow-hidden">
             <div className="aspect-square overflow-hidden relative">
               <img
-                src={ingredient.image}
+                src={getIngredientImage(ingredient)}
                 alt={ingredient.name}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 onError={(e) => {
-                  e.currentTarget.src = "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&h=400&fit=crop";
+                  e.currentTarget.src = getIngredientImage(ingredient);
                 }}
               />
+              {!ingredient.image && (
+                <div className="absolute top-2 left-2 bg-orange-500/90 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+                  <Camera className="h-3 w-3" />
+                  Sin imagen IA
+                </div>
+              )}
               <div className="absolute top-2 right-2 flex items-center space-x-1 bg-background/90 rounded-md px-2 py-1">
                 <TrendingUp className="h-3 w-3 text-primary" />
                 <span className="text-xs font-medium text-foreground">

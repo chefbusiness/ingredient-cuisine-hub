@@ -1,5 +1,5 @@
 
-import { Camera, TrendingUp } from "lucide-react";
+import { Camera, TrendingUp, Zap } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,22 +24,43 @@ const IngredientMainCard = ({
         <div className="flex flex-col md:flex-row gap-6">
           <div className="md:w-64 h-64 flex-shrink-0">
             {primaryImage ? (
-              <img
-                src={primaryImage}
-                alt={ingredient.name}
-                className="w-full h-full object-cover rounded-lg shadow-lg"
-              />
+              <div className="relative w-full h-full">
+                <img
+                  src={primaryImage}
+                  alt={ingredient.name}
+                  className="w-full h-full object-cover rounded-lg shadow-lg"
+                />
+                <Button 
+                  size="sm" 
+                  variant="secondary"
+                  onClick={onGenerateImage}
+                  disabled={isGeneratingImage}
+                  className="absolute bottom-2 right-2 text-xs"
+                >
+                  {isGeneratingImage ? 'Generando...' : 'Regenerar'}
+                </Button>
+              </div>
             ) : (
-              <div className="w-full h-full bg-gray-100 rounded-lg shadow-lg flex items-center justify-center">
+              <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg shadow-lg flex items-center justify-center">
                 <div className="text-center">
-                  <Camera className="h-12 w-12 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500 mb-3">Sin imagen</p>
+                  <Camera className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm text-gray-500 mb-4">Sin imagen generada</p>
                   <Button 
-                    size="sm" 
                     onClick={onGenerateImage}
                     disabled={isGeneratingImage}
+                    className="bg-green-600 hover:bg-green-700"
                   >
-                    {isGeneratingImage ? 'Generando...' : 'Generar imagen'}
+                    {isGeneratingImage ? (
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                        Generando...
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Zap className="h-4 w-4" />
+                        Generar con Flux 1.1 Pro
+                      </div>
+                    )}
                   </Button>
                 </div>
               </div>

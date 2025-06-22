@@ -30,7 +30,7 @@ ${ingredientsList}
 
 ⚠️ CRÍTICO - EVITAR DUPLICADOS:
 - NO generes ingredientes que ya existen en la lista anterior
-- Verifica nombres en TODOS los idiomas (español, inglés, francés, italiano, portugués, chino)
+- Verifica nombres en TODOS los idiomas (español, inglés, francés, italiano, portugués, sinónimos latinoamericanos)
 - Si un ingrediente parece similar a uno existente, elige uno COMPLETAMENTE DIFERENTE
 - Busca ingredientes únicos y específicos que NO estén en la lista
 - Prioriza ingredientes menos comunes pero válidos de la región ${region}
@@ -50,13 +50,13 @@ ${ingredientsList}
   
   Para cada ingrediente, proporciona la siguiente información en formato JSON:
   {
-    "name": "nombre en español",
+    "name": "nombre en español (España)",
     "name_en": "nombre en inglés",
     "name_fr": "nombre en francés",
     "name_it": "nombre en italiano", 
     "name_pt": "nombre en portugués",
     "name_zh": "nombre en chino (caracteres chinos)",
-    "name_la": "nombre científico en latín (opcional)",
+    "name_la": "sinónimos en español de Latinoamérica (ej: papa en lugar de patata, tomate en lugar de jitomate, etc.)",
     ${categoryResponse}
     "description": "descripción detallada (150-200 palabras)",
     "temporada": "temporada principal (ej: primavera, verano, otoño, invierno, todo el año)",
@@ -93,8 +93,22 @@ ${ingredientsList}
   - VALIDA con múltiples fuentes profesionales antes de asignar el porcentaje
   - Si no encuentras datos específicos, usa promedios de la categoría e INDICA que es estimado
   
+  CRÍTICO - SINÓNIMOS LATINOAMERICANOS (name_la):
+  - NO uses nombres científicos en latín (ej: "Sus scrofa domesticus", "Brassica oleracea")
+  - USA SOLAMENTE sinónimos en ESPAÑOL usados en Latinoamérica
+  - Ejemplos correctos:
+    * Patata (España) → "papa" (Latinoamérica)
+    * Judías verdes (España) → "ejotes, chauchas, vainitas" (Latinoamérica)
+    * Guisantes (España) → "arvejas, chícharos" (Latinoamérica)
+    * Pimiento (España) → "chile, ají, pimentón" (Latinoamérica)
+    * Melocotón (España) → "durazno" (Latinoamérica)
+    * Zumo (España) → "jugo" (Latinoamérica)
+  - Si NO existe un sinónimo específico, coloca el mismo nombre que en España
+  - INVESTIGA nombres regionales específicos de México, Argentina, Colombia, Perú, Chile, etc.
+  
   IMPORTANTE: 
   - Todos los ingredientes DEBEN tener name_fr, name_it, name_pt y name_zh completados
+  - ASEGÚRATE de que name_la contenga SOLO sinónimos en español, NUNCA nombres científicos
   ${category ? `- Todos los ingredientes DEBEN pertenecer a la categoría "${category}"` : ''}
   - Usa nombres reales y precisos en cada idioma
   - Para name_zh usa caracteres chinos tradicionales o simplificados apropiados

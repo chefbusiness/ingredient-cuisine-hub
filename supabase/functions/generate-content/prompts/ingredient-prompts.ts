@@ -75,8 +75,38 @@ ${ingredientsList}
     "uses": ["uso culinario 1", "uso culinario 2", "uso culinario 3"],
     "recipes": [
       {
-        "name": "nombre de receta",
-        "type": "tipo (entrante, principal, postre, etc)",
+        "name": "nombre de receta entrante",
+        "type": "entrante",
+        "difficulty": "fácil/medio/difícil",
+        "time": "tiempo estimado"
+      },
+      {
+        "name": "nombre de receta principal",
+        "type": "principal",
+        "difficulty": "fácil/medio/difícil",
+        "time": "tiempo estimado"
+      },
+      {
+        "name": "nombre de receta guarnición",
+        "type": "guarnición",
+        "difficulty": "fácil/medio/difícil",
+        "time": "tiempo estimado"
+      },
+      {
+        "name": "nombre de receta postre",
+        "type": "postre",
+        "difficulty": "fácil/medio/difícil",
+        "time": "tiempo estimado"
+      },
+      {
+        "name": "nombre de receta salsa/condimento",
+        "type": "salsa",
+        "difficulty": "fácil/medio/difícil",
+        "time": "tiempo estimado"
+      },
+      {
+        "name": "nombre de receta especialidad regional",
+        "type": "especialidad",
         "difficulty": "fácil/medio/difícil",
         "time": "tiempo estimado"
       }
@@ -84,6 +114,14 @@ ${ingredientsList}
     "varieties": ["variedad 1", "variedad 2"],
     "price_estimate": número (precio estimado por kg en euros)
   }
+  
+  CRÍTICO - RECETAS (GENERAR EXACTAMENTE 6):
+  - SIEMPRE crear exactamente 6 recetas diferentes por ingrediente
+  - Variar los tipos: entrante, principal, guarnición, postre, salsa, especialidad
+  - Diversificar dificultades: 2 fáciles, 2 medias, 2 difíciles
+  - Incluir tiempos variados: desde 15 min hasta 3+ horas
+  - Usar recetas REALES y conocidas de la gastronomía profesional
+  - INVESTIGAR recetas auténticas que usen este ingrediente como protagonista
   
   CRÍTICO - CÁLCULO DE MERMAS:
   - BUSCA DATOS REALES de mermas en internet de fuentes profesionales
@@ -114,6 +152,7 @@ ${ingredientsList}
   - Para name_zh usa caracteres chinos tradicionales o simplificados apropiados
   - Las mermas DEBEN ser precisas y basadas en investigación real, no estimaciones genéricas
   - ASEGÚRATE de que NINGÚN ingrediente generado sea igual o similar a los ya existentes
+  - GENERA EXACTAMENTE 6 RECETAS VARIADAS Y AUTÉNTICAS por cada ingrediente
   
   Responde SOLO con un array JSON válido de ingredientes, sin texto adicional.`;
 };

@@ -23,7 +23,8 @@ const IngredienteDetalle = () => {
     
     await generateImage.mutateAsync({
       ingredientName: ingredient.name,
-      description: ingredient.description
+      description: ingredient.description,
+      ingredientId: ingredient.id // Pasar el ID del ingrediente
     });
   };
 

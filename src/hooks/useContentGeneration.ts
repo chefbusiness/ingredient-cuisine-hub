@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -49,15 +50,20 @@ export const useGenerateContent = () => {
 };
 
 export const useGenerateImage = () => {
+  const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ ingredientName, description }: { ingredientName: string; description?: string }) => {
+    mutationFn: async ({ ingredientName, description, ingredientId }: { 
+      ingredientName: string; 
+      description?: string;
+      ingredientId?: string;
+    }) => {
       console.log('🖼️ Iniciando generación de imagen para:', ingredientName);
       
       const requestBody = { 
         ingredientName: ingredientName,
-        name: ingredientName, // Enviamos ambos para compatibilidad
+        name: ingredientName,
         description: description 
       };
       
@@ -84,13 +90,34 @@ export const useGenerateImage = () => {
         throw new Error(data.error || 'Error generating image');
       }
 
+      // Si tenemos un ingredientId, actualizar la base de datos
+      if (ingredientId && data.imageUrl) {
+        console.log('💾 Actualizando ingrediente con nueva imagen:', ingredientId);
+        
+        const { error: updateError } = await supabase
+          .from('ingredients')
+          .update({ image_url: data.imageUrl })
+          .eq('id', ingredientId);
+
+        if (updateError) {
+          console.error('❌ Error actualizando ingrediente:', updateError);
+          throw new Error(`Error guardando imagen en ingrediente: ${updateError.message}`);
+        }
+
+        console.log('✅ Ingrediente actualizado con nueva imagen');
+      }
+
       console.log('✅ Imagen generada exitosamente');
       return data;
     },
     onSuccess: (data) => {
+      // Invalidar queries para que se actualice la UI
+      queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+      queryClient.invalidateQueries({ queryKey: ['ingredient'] });
+      
       toast({
         title: "✅ Imagen generada exitosamente",
-        description: "La imagen se ha generado correctamente",
+        description: "La imagen se ha generado y guardado correctamente",
       });
       console.log('🎉 Toast de éxito mostrado');
     },

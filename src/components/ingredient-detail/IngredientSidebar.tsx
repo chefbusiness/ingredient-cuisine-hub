@@ -44,7 +44,7 @@ const IngredientSidebar = ({
               disabled={isGeneratingImage}
             >
               <Upload className="h-4 w-4 mr-2" />
-              {isGeneratingImage ? 'Generando...' : 'Generar imagen'}
+              {isGeneratingImage ? 'Generando imagen...' : 'Generar imagen AI'}
             </Button>
           )}
         </CardContent>

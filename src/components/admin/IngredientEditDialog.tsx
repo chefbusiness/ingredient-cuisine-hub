@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -101,6 +102,10 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
     updateIngredient({
       id: ingredient.id,
       updates: data,
+    }, {
+      onSuccess: () => {
+        onClose();
+      },
     });
   };
 

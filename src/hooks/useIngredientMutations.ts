@@ -76,17 +76,18 @@ export const useUpdateIngredient = () => {
         updated_at: finalUpdateData.updated_at
       });
 
-      const { data, error, count } = await supabase
+      // FIX: Usar single() directamente sin el count
+      const { data, error } = await supabase
         .from('ingredients')
         .update(finalUpdateData)
         .eq('id', id)
-        .select('*');
+        .select()
+        .single();
 
       console.log('📤 Supabase update response:', {
         hasError: !!error,
-        count: count,
         hasData: !!data,
-        dataLength: data?.length || 0
+        errorDetails: error
       });
 
       if (error) {
@@ -100,70 +101,27 @@ export const useUpdateIngredient = () => {
         throw new Error(`Error actualizando ingrediente: ${error.message}`);
       }
 
-      if (count === 0) {
-        console.error('❌ No records were updated (count = 0)');
-        throw new Error('No se pudo actualizar el ingrediente - no se encontró el registro o no hubo cambios');
-      }
-
-      if (!data || data.length === 0) {
+      if (!data) {
         console.error('❌ No data returned from update');
         throw new Error('No se recibieron datos después de la actualización');
       }
 
-      const updatedRecord = data[0];
       console.log('✅ Database update successful:', {
-        id: updatedRecord.id,
-        name: updatedRecord.name,
-        image_url: updatedRecord.image_url ? updatedRecord.image_url.substring(0, 50) + '...' : 'NULL',
-        description: updatedRecord.description ? updatedRecord.description.substring(0, 100) + '...' : 'NULL',
-        category_id: updatedRecord.category_id,
-        popularity: updatedRecord.popularity,
-        merma: updatedRecord.merma,
-        rendimiento: updatedRecord.rendimiento,
-        updated_at: updatedRecord.updated_at
+        id: data.id,
+        name: data.name,
+        image_url: data.image_url ? data.image_url.substring(0, 50) + '...' : 'NULL',
+        description: data.description ? data.description.substring(0, 100) + '...' : 'NULL',
+        category_id: data.category_id,
+        popularity: data.popularity,
+        merma: data.merma,
+        rendimiento: data.rendimiento,
+        updated_at: data.updated_at
       });
-
-      // Verificar que los cambios se aplicaron realmente con una nueva consulta
-      console.log('🔍 Verifying changes were applied...');
-      const { data: verification, error: verifyError } = await supabase
-        .from('ingredients')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (verifyError) {
-        console.error('❌ Error verifying update:', verifyError);
-      } else {
-        console.log('🔍 Verification check - actual values in DB after update:', {
-          name: verification.name,
-          image_url: verification.image_url ? verification.image_url.substring(0, 50) + '...' : 'NULL',
-          description: verification.description ? verification.description.substring(0, 100) + '...' : 'NULL',
-          category_id: verification.category_id,
-          popularity: verification.popularity,
-          merma: verification.merma,
-          rendimiento: verification.rendimiento,
-          updated_at: verification.updated_at
-        });
-
-        // Compare what we sent vs what's actually in DB
-        const hasChanges = 
-          verification.name !== existing.name ||
-          verification.image_url !== existing.image_url ||
-          verification.description !== existing.description ||
-          verification.category_id !== existing.category_id ||
-          verification.popularity !== existing.popularity ||
-          verification.merma !== existing.merma ||
-          verification.rendimiento !== existing.rendimiento;
-
-        console.log('🔍 Changes were actually applied:', hasChanges);
-      }
 
       return { 
         id, 
         updates: finalUpdateData, 
-        count, 
-        data: updatedRecord, 
-        verification 
+        data: data
       };
     },
     onSuccess: (result) => {

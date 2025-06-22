@@ -1,8 +1,10 @@
 
-import { TrendingUp, Camera, Sparkles } from "lucide-react";
+import { TrendingUp, Camera, Sparkles, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useFavorites } from "@/hooks/useFavorites";
 
 interface Ingredient {
   id: number | string;
@@ -27,6 +29,8 @@ interface DirectorioGridProps {
 }
 
 const DirectorioGrid = ({ ingredients }: DirectorioGridProps) => {
+  const { toggleFavorite, isFavorite } = useFavorites();
+
   const getIngredientImage = (ingredient: Ingredient) => {
     // Usar la imagen disponible o fallback
     if (ingredient.image) {
@@ -62,61 +66,85 @@ const DirectorioGrid = ({ ingredients }: DirectorioGridProps) => {
     }
   };
 
+  const handleFavoriteClick = (e: React.MouseEvent, ingredientId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleFavorite(ingredientId);
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {ingredients.map((ingredient) => (
-        <Link key={ingredient.id} to={`/ingrediente/${ingredient.id}`}>
-          <Card className="clean-card group h-full overflow-hidden">
-            <div className="aspect-square overflow-hidden relative">
-              <img
-                src={getIngredientImage(ingredient)}
-                alt={ingredient.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                onError={(e) => {
-                  e.currentTarget.src = 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&h=400&fit=crop';
-                }}
-              />
-              {getImageBadge(ingredient)}
-              <div className="absolute top-2 right-2 flex items-center space-x-1 bg-background/90 rounded-md px-2 py-1">
-                <TrendingUp className="h-3 w-3 text-primary" />
-                <span className="text-xs font-medium text-foreground">
-                  {ingredient.popularity}%
-                </span>
-              </div>
-            </div>
-            <CardContent className="p-4">
-              <h3 className="font-medium text-base text-foreground mb-1">
-                {ingredient.name}
-              </h3>
-              
-              <p className="text-sm text-muted-foreground mb-2">{ingredient.nameEN}</p>
-              
-              <div className="flex items-center justify-between mb-3">
-                <Badge variant="secondary" className="text-xs capitalize">
-                  {ingredient.category}
-                </Badge>
-                <span className="text-xs text-muted-foreground">{ingredient.temporada}</span>
-              </div>
-              
-              <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                {ingredient.description}
-              </p>
-              
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Precio España:</span>
-                  <span className="font-medium text-primary">{ingredient.price}</span>
+        <div key={ingredient.id} className="relative">
+          <Link to={`/ingrediente/${ingredient.id}`}>
+            <Card className="clean-card group h-full overflow-hidden">
+              <div className="aspect-square overflow-hidden relative">
+                <img
+                  src={getIngredientImage(ingredient)}
+                  alt={ingredient.name}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  onError={(e) => {
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&h=400&fit=crop';
+                  }}
+                />
+                {getImageBadge(ingredient)}
+                <div className="absolute top-2 right-2 flex items-center space-x-1 bg-background/90 rounded-md px-2 py-1">
+                  <TrendingUp className="h-3 w-3 text-primary" />
+                  <span className="text-xs font-medium text-foreground">
+                    {ingredient.popularity}%
+                  </span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Rendimiento:</span>
-                  <Badge variant="outline" className="text-xs">
-                    {ingredient.rendimiento}%
+              </div>
+              <CardContent className="p-4">
+                <h3 className="font-medium text-base text-foreground mb-1">
+                  {ingredient.name}
+                </h3>
+                
+                <p className="text-sm text-muted-foreground mb-2">{ingredient.nameEN}</p>
+                
+                <div className="flex items-center justify-between mb-3">
+                  <Badge variant="secondary" className="text-xs capitalize">
+                    {ingredient.category}
                   </Badge>
+                  <span className="text-xs text-muted-foreground">{ingredient.temporada}</span>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
+                
+                <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                  {ingredient.description}
+                </p>
+                
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Precio España:</span>
+                    <span className="font-medium text-primary">{ingredient.price}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Rendimiento:</span>
+                    <Badge variant="outline" className="text-xs">
+                      {ingredient.rendimiento}%
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          
+          {/* Botón de favorito flotante */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`absolute top-2 right-12 z-10 h-8 w-8 p-0 bg-background/90 hover:bg-background ${
+              isFavorite(String(ingredient.id)) ? 'text-red-500' : 'text-muted-foreground'
+            }`}
+            onClick={(e) => handleFavoriteClick(e, String(ingredient.id))}
+          >
+            <Heart 
+              className={`h-4 w-4 ${
+                isFavorite(String(ingredient.id)) ? 'fill-current' : ''
+              }`} 
+            />
+          </Button>
+        </div>
       ))}
     </div>
   );

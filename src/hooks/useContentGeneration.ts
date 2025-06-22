@@ -60,6 +60,7 @@ export const useGenerateImage = () => {
       ingredientId?: string;
     }) => {
       console.log('🖼️ Iniciando generación de imagen para:', ingredientName);
+      console.log('📋 Parámetros recibidos:', { ingredientName, description, ingredientId });
       
       const requestBody = { 
         ingredientName: ingredientName,
@@ -93,18 +94,39 @@ export const useGenerateImage = () => {
       // Si tenemos un ingredientId, actualizar la base de datos
       if (ingredientId && data.imageUrl) {
         console.log('💾 Actualizando ingrediente con nueva imagen:', ingredientId);
+        console.log('🔗 URL de imagen a guardar:', data.imageUrl);
         
-        const { error: updateError } = await supabase
+        // Verificar que la URL sea válida
+        if (!data.imageUrl.startsWith('http')) {
+          console.error('❌ URL de imagen inválida:', data.imageUrl);
+          throw new Error('URL de imagen inválida recibida de Replicate');
+        }
+        
+        const { data: updateData, error: updateError } = await supabase
           .from('ingredients')
           .update({ image_url: data.imageUrl })
-          .eq('id', ingredientId);
+          .eq('id', ingredientId)
+          .select();
+
+        console.log('📊 Resultado de actualización:', { updateData, updateError });
 
         if (updateError) {
           console.error('❌ Error actualizando ingrediente:', updateError);
           throw new Error(`Error guardando imagen en ingrediente: ${updateError.message}`);
         }
 
+        if (!updateData || updateData.length === 0) {
+          console.error('❌ No se actualizó ningún registro. ID del ingrediente:', ingredientId);
+          throw new Error('No se encontró el ingrediente para actualizar');
+        }
+
         console.log('✅ Ingrediente actualizado con nueva imagen');
+        console.log('📄 Datos actualizados:', updateData[0]);
+      } else {
+        console.log('⚠️ No se actualizará la base de datos:', { 
+          tieneIngredientId: !!ingredientId, 
+          tieneImageUrl: !!data.imageUrl 
+        });
       }
 
       console.log('✅ Imagen generada exitosamente');

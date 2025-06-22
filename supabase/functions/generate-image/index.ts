@@ -7,43 +7,42 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  console.log('=== INICIO DE GENERATE-IMAGE FUNCTION ===');
+  console.log('🖼️ === GENERATE-IMAGE FUNCTION START ===');
   
   if (req.method === 'OPTIONS') {
-    console.log('Handling CORS preflight request');
+    console.log('⚡ Handling CORS preflight');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('1. Leyendo el body de la request...');
+    console.log('📋 Reading request body...');
     const body = await req.json();
-    console.log('Body recibido:', JSON.stringify(body, null, 2));
+    console.log('📥 Body received:', JSON.stringify(body, null, 2));
 
-    const { ingredientName, description, name } = body;
+    const { ingredientName, name, description } = body;
     const finalIngredientName = ingredientName || name;
 
-    console.log('2. Verificando REPLICATE_API_KEY...');
+    console.log('🔑 Checking REPLICATE_API_KEY...');
     const replicateApiKey = Deno.env.get('REPLICATE_API_KEY');
     
     if (!replicateApiKey) {
-      console.error('❌ REPLICATE_API_KEY no está configurado');
-      throw new Error('REPLICATE_API_KEY no está configurado');
+      console.error('❌ REPLICATE_API_KEY not configured');
+      throw new Error('REPLICATE_API_KEY not configured');
     }
-    console.log('✅ REPLICATE_API_KEY está configurado');
+    console.log('✅ REPLICATE_API_KEY is configured');
 
     if (!finalIngredientName) {
-      console.error('❌ Nombre del ingrediente es requerido');
-      throw new Error('Nombre del ingrediente es requerido');
+      console.error('❌ Ingredient name is required');
+      throw new Error('Ingredient name is required');
     }
-    console.log('✅ Nombre del ingrediente:', finalIngredientName);
+    console.log('✅ Ingredient name:', finalIngredientName);
 
-    console.log('3. Creando prompt profesional para Flux 1.1 Pro...');
+    console.log('📝 Creating professional prompt...');
     const prompt = `Professional food photography of ${finalIngredientName}, high-end culinary photography, macro lens, natural studio lighting, clean white background, food styling, commercial quality, ultra-detailed, realistic textures, fresh appearance`;
-    console.log('Prompt creado:', prompt);
+    console.log('📝 Prompt:', prompt);
 
-    console.log('4. Haciendo llamada a Replicate API con Flux 1.1 Pro...');
+    console.log('🚀 Making Replicate API call...');
     
-    // Usar el modelo Flux 1.1 Pro con parámetros correctos
     const replicateResponse = await fetch('https://api.replicate.com/v1/predictions', {
       method: 'POST',
       headers: {
@@ -63,30 +62,30 @@ serve(async (req) => {
       }),
     });
 
-    console.log('5. Respuesta de Replicate status:', replicateResponse.status);
+    console.log('📊 Replicate response status:', replicateResponse.status);
 
     if (!replicateResponse.ok) {
       const errorText = await replicateResponse.text();
-      console.error('❌ Error de Replicate API:', {
+      console.error('❌ Replicate API error:', {
         status: replicateResponse.status,
         statusText: replicateResponse.statusText,
         error: errorText
       });
-      throw new Error(`Error de Replicate: ${replicateResponse.status} - ${errorText}`);
+      throw new Error(`Replicate error: ${replicateResponse.status} - ${errorText}`);
     }
 
-    console.log('6. Parseando respuesta de predicción...');
+    console.log('⏳ Parsing prediction response...');
     const prediction = await replicateResponse.json();
-    console.log('Predicción inicial:', JSON.stringify(prediction, null, 2));
+    console.log('📋 Initial prediction:', { id: prediction.id, status: prediction.status });
 
-    console.log('7. Iniciando polling para resultado...');
+    console.log('🔄 Starting polling for result...');
     let result = prediction;
     let attempts = 0;
-    const maxAttempts = 20; // Aumentado para Flux 1.1 Pro que puede tomar más tiempo
+    const maxAttempts = 15;
 
     while ((result.status === 'starting' || result.status === 'processing') && attempts < maxAttempts) {
-      console.log(`Intento ${attempts + 1}/${maxAttempts} - Estado: ${result.status}`);
-      await new Promise(resolve => setTimeout(resolve, 3000)); // 3 segundos entre polls para Flux 1.1 Pro
+      console.log(`🔄 Attempt ${attempts + 1}/${maxAttempts} - Status: ${result.status}`);
+      await new Promise(resolve => setTimeout(resolve, 3000));
       attempts++;
       
       const pollResponse = await fetch(`https://api.replicate.com/v1/predictions/${result.id}`, {
@@ -96,40 +95,39 @@ serve(async (req) => {
       });
       
       if (!pollResponse.ok) {
-        console.error('❌ Error al verificar estado:', pollResponse.status);
-        throw new Error(`Error al verificar estado: ${pollResponse.status}`);
+        console.error('❌ Error polling status:', pollResponse.status);
+        throw new Error(`Error polling status: ${pollResponse.status}`);
       }
       
       result = await pollResponse.json();
-      console.log(`Estado actual: ${result.status}`);
+      console.log(`📊 Current status: ${result.status}`);
     }
 
-    console.log('8. Resultado final:', JSON.stringify(result, null, 2));
+    console.log('🏁 Final result:', { status: result.status, hasOutput: !!result.output });
 
     if (result.status === 'succeeded' && result.output) {
       const imageUrl = Array.isArray(result.output) ? result.output[0] : result.output;
       
-      console.log('✅ Imagen generada exitosamente con Flux 1.1 Pro:', imageUrl);
+      console.log('✅ Image generated successfully:', imageUrl.substring(0, 50) + '...');
       
       return new Response(JSON.stringify({ 
         success: true,
         imageUrl: imageUrl,
-        image_url: imageUrl, // Para compatibilidad
         prompt: prompt,
         model: "flux-1.1-pro"
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     } else if (attempts >= maxAttempts) {
-      console.error('❌ Timeout: La generación tomó demasiado tiempo');
-      throw new Error('Timeout: La generación de imagen tomó demasiado tiempo');
+      console.error('❌ Timeout: Generation took too long');
+      throw new Error('Timeout: Image generation took too long');
     } else {
-      console.error('❌ Error en la generación:', result.error || result.status);
-      throw new Error(`Error en la generación: ${result.error || 'Estado: ' + result.status}`);
+      console.error('❌ Generation failed:', result.error || result.status);
+      throw new Error(`Generation failed: ${result.error || 'Status: ' + result.status}`);
     }
 
   } catch (error) {
-    console.error('❌ ERROR GENERAL en generate-image:', {
+    console.error('❌ GENERAL ERROR in generate-image:', {
       message: error.message,
       stack: error.stack,
       name: error.name

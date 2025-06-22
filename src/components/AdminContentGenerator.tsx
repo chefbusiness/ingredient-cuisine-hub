@@ -6,9 +6,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader, Wand2, Save, Eye, Image, CheckCircle, AlertTriangle } from "lucide-react";
-import { useGenerateContent, useGenerateImage, useSaveGeneratedContent } from "@/hooks/useContentGeneration";
+import { Loader, Wand2, Save, Eye, Image, CheckCircle, AlertTriangle, Zap } from "lucide-react";
+import { useGenerateContent, useGenerateImage, useSaveContent } from "@/hooks/useContentGeneration";
 import { useCategories } from "@/hooks/useCategories";
+import { Progress } from "@/components/ui/progress";
 
 const AdminContentGenerator = () => {
   const [contentType, setContentType] = useState<'ingredient' | 'category' | 'price_update'>('ingredient');
@@ -17,12 +18,12 @@ const AdminContentGenerator = () => {
   const [count, setCount] = useState(5);
   const [generatedContent, setGeneratedContent] = useState<any[]>([]);
   const [previewMode, setPreviewMode] = useState(false);
-  const [isGeneratingImages, setIsGeneratingImages] = useState(false);
+  const [imageGenerationProgress, setImageGenerationProgress] = useState({ current: 0, total: 0, isGenerating: false });
 
   const { data: categories = [] } = useCategories();
   const generateContent = useGenerateContent();
   const generateImage = useGenerateImage();
-  const saveContent = useSaveGeneratedContent();
+  const saveContent = useSaveContent();
 
   const handleGenerateContent = async () => {
     try {
@@ -33,9 +34,6 @@ const AdminContentGenerator = () => {
         count: count
       });
 
-      console.log('Resultado de generación:', result);
-      
-      // Procesar los datos para verificar idiomas
       let processedData = result;
       if (contentType === 'ingredient' && selectedCategory !== 'all') {
         processedData = result.map((item: any) => ({
@@ -47,7 +45,80 @@ const AdminContentGenerator = () => {
       setGeneratedContent(processedData);
       setPreviewMode(true);
     } catch (error) {
-      console.error('Error generando contenido:', error);
+      console.error('❌ Error generating content:', error);
+    }
+  };
+
+  const handleSaveContentAndGenerateImages = async () => {
+    try {
+      console.log('🔄 Starting save and image generation process...');
+      
+      // Paso 1: Guardar contenido
+      const saveResult = await saveContent.mutateAsync({
+        type: contentType,
+        data: generatedContent
+      });
+      
+      // Paso 2: Si son ingredientes, generar imágenes
+      if (contentType === 'ingredient' && saveResult.data && saveResult.data.length > 0) {
+        console.log('🖼️ Starting automatic image generation...');
+        
+        const savedIngredients = saveResult.data;
+        setImageGenerationProgress({ 
+          current: 0, 
+          total: savedIngredients.length, 
+          isGenerating: true 
+        });
+        
+        let successCount = 0;
+        let errorCount = 0;
+        
+        for (let i = 0; i < savedIngredients.length; i++) {
+          const savedIngredient = savedIngredients[i];
+          
+          try {
+            console.log(`🔄 Generating image ${i + 1}/${savedIngredients.length} for: ${savedIngredient.name}`);
+            
+            setImageGenerationProgress(prev => ({ ...prev, current: i + 1 }));
+            
+            const originalContent = generatedContent.find(item => item.name === savedIngredient.name);
+            
+            const result = await generateImage.mutateAsync({
+              ingredientName: savedIngredient.name,
+              description: originalContent?.description,
+              ingredientId: savedIngredient.id
+            });
+
+            if (result.success) {
+              console.log(`✅ Image generated for: ${savedIngredient.name}`);
+              
+              // Actualizar vista previa con la imagen
+              setGeneratedContent(prev => 
+                prev.map(item => 
+                  item.name === savedIngredient.name 
+                    ? { ...item, image_url: result.imageUrl, id: savedIngredient.id }
+                    : item
+                )
+              );
+              successCount++;
+            }
+          } catch (error) {
+            console.error(`❌ Error generating image for ${savedIngredient.name}:`, error);
+            errorCount++;
+          }
+        }
+        
+        setImageGenerationProgress({ current: 0, total: 0, isGenerating: false });
+        console.log(`🎉 Image generation completed. Success: ${successCount}, Errors: ${errorCount}`);
+      }
+      
+      // Limpiar vista previa
+      setGeneratedContent([]);
+      setPreviewMode(false);
+      
+    } catch (error) {
+      console.error('❌ Error in complete process:', error);
+      setImageGenerationProgress({ current: 0, total: 0, isGenerating: false });
     }
   };
 
@@ -61,73 +132,6 @@ const AdminContentGenerator = () => {
     };
   };
 
-  const handleSaveContentAndGenerateImages = async () => {
-    try {
-      console.log('🔄 Iniciando guardado de contenido y generación de imágenes...');
-      
-      // Paso 1: Guardar contenido en la base de datos
-      const saveResult = await saveContent.mutateAsync({
-        type: contentType,
-        data: generatedContent
-      });
-      
-      console.log('✅ Contenido guardado, resultado:', saveResult);
-      
-      // Paso 2: Si son ingredientes, generar imágenes automáticamente
-      if (contentType === 'ingredient' && saveResult.data && saveResult.data.length > 0) {
-        console.log('🖼️ Iniciando generación automática de imágenes...');
-        setIsGeneratingImages(true);
-        
-        const savedIngredients = saveResult.data;
-        let successCount = 0;
-        let errorCount = 0;
-        
-        for (const savedIngredient of savedIngredients) {
-          try {
-            console.log(`🔄 Generando imagen para: ${savedIngredient.name} (ID: ${savedIngredient.id})`);
-            
-            // Encontrar el contenido original para obtener la descripción
-            const originalContent = generatedContent.find(item => item.name === savedIngredient.name);
-            
-            const result = await generateImage.mutateAsync({
-              ingredientName: savedIngredient.name,
-              description: originalContent?.description,
-              ingredientId: savedIngredient.id // ¡Ahora tenemos el ID!
-            });
-
-            if (result.success) {
-              console.log(`✅ Imagen generada exitosamente para: ${savedIngredient.name}`);
-              
-              // Actualizar el contenido generado con la URL de la imagen
-              setGeneratedContent(prev => 
-                prev.map(item => 
-                  item.name === savedIngredient.name 
-                    ? { ...item, image_url: result.imageUrl, id: savedIngredient.id }
-                    : item
-                )
-              );
-              successCount++;
-            }
-          } catch (error) {
-            console.error(`❌ Error generando imagen para ${savedIngredient.name}:`, error);
-            errorCount++;
-          }
-        }
-        
-        setIsGeneratingImages(false);
-        console.log(`🎉 Generación de imágenes completada. Éxitos: ${successCount}, Errores: ${errorCount}`);
-      }
-      
-      // Limpiar vista previa solo si no hubo errores graves
-      setGeneratedContent([]);
-      setPreviewMode(false);
-      
-    } catch (error) {
-      console.error('❌ Error en proceso completo:', error);
-      setIsGeneratingImages(false);
-    }
-  };
-
   const renderContentPreview = () => {
     if (!previewMode || generatedContent.length === 0) return null;
 
@@ -137,22 +141,44 @@ const AdminContentGenerator = () => {
           <CardTitle className="flex items-center gap-2">
             <Eye className="h-5 w-5" />
             Vista Previa del Contenido Generado
+            {imageGenerationProgress.isGenerating && (
+              <Badge variant="secondary" className="animate-pulse">
+                <Loader className="h-3 w-3 mr-1 animate-spin" />
+                Generando imágenes...
+              </Badge>
+            )}
           </CardTitle>
           <div className="flex gap-2">
             <Button 
               onClick={handleSaveContentAndGenerateImages}
-              disabled={saveContent.isPending || isGeneratingImages}
+              disabled={saveContent.isPending || imageGenerationProgress.isGenerating}
               size="sm"
             >
-              {saveContent.isPending || isGeneratingImages ? (
+              {saveContent.isPending || imageGenerationProgress.isGenerating ? (
                 <Loader className="h-4 w-4 animate-spin mr-2" />
               ) : (
                 <Save className="h-4 w-4 mr-2" />
               )}
-              {isGeneratingImages ? 'Generando Imágenes...' : 'Guardar y Generar Imágenes'}
+              {imageGenerationProgress.isGenerating ? 'Generando Imágenes...' : 'Guardar y Generar Imágenes'}
             </Button>
           </div>
         </CardHeader>
+        
+        {imageGenerationProgress.isGenerating && (
+          <CardContent className="pt-0">
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm text-muted-foreground">
+                <span>Generando imágenes con Flux 1.1 Pro</span>
+                <span>{imageGenerationProgress.current}/{imageGenerationProgress.total}</span>
+              </div>
+              <Progress 
+                value={(imageGenerationProgress.current / imageGenerationProgress.total) * 100} 
+                className="w-full" 
+              />
+            </div>
+          </CardContent>
+        )}
+        
         <CardContent>
           <div className="space-y-4">
             {generatedContent.map((item, index) => {
@@ -178,57 +204,18 @@ const AdminContentGenerator = () => {
                           </Badge>
                         )}
                         
-                        {/* Badges de idiomas presentes */}
-                        {item.name_en && <Badge variant="secondary">🇬🇧 EN</Badge>}
-                        {item.name_fr && <Badge variant="secondary">🇫🇷 FR</Badge>}
-                        {item.name_it && <Badge variant="secondary">🇮🇹 IT</Badge>}
-                        {item.name_pt && <Badge variant="secondary">🇵🇹 PT</Badge>}
-                        {item.name_zh && <Badge variant="secondary">🇨🇳 ZH</Badge>}
-                        
-                        {item.category && (
-                          <Badge className="bg-purple-100 text-purple-800">
-                            Categoría: {item.category}
-                          </Badge>
-                        )}
-                        {item.popularity && (
-                          <Badge variant="outline">Popularidad: {item.popularity}%</Badge>
-                        )}
                         {item.image_url && (
                           <Badge className="bg-green-100 text-green-800">
-                            <CheckCircle className="h-3 w-3 mr-1" />
+                            <Zap className="h-3 w-3 mr-1" />
                             Flux 1.1 Pro
                           </Badge>
                         )}
-                      </div>
-                      
-                      {/* Mostrar idiomas faltantes si los hay */}
-                      {languageStatus && !languageStatus.isComplete && (
-                        <div className="bg-red-50 p-3 rounded-lg">
-                          <p className="text-sm text-red-800">
-                            <strong>⚠️ Idiomas faltantes:</strong> {languageStatus.missing.map(lang => {
-                              const langNames: Record<string, string> = {
-                                'name_fr': 'Francés',
-                                'name_it': 'Italiano', 
-                                'name_pt': 'Portugués',
-                                'name_zh': 'Chino'
-                              };
-                              return langNames[lang] || lang;
-                            }).join(', ')}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {/* Mostrar todos los nombres en diferentes idiomas */}
-                      <div className="bg-blue-50 p-3 rounded-lg">
-                        <strong className="text-sm">Nombres en otros idiomas:</strong>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2 text-sm">
-                          {item.name_en && <div><strong>🇬🇧:</strong> {item.name_en}</div>}
-                          {item.name_fr && <div><strong>🇫🇷:</strong> {item.name_fr}</div>}
-                          {item.name_it && <div><strong>🇮🇹:</strong> {item.name_it}</div>}
-                          {item.name_pt && <div><strong>🇵🇹:</strong> {item.name_pt}</div>}
-                          {item.name_zh && <div><strong>🇨🇳:</strong> {item.name_zh}</div>}
-                          {item.name_la && <div><strong>🏛️:</strong> {item.name_la}</div>}
-                        </div>
+                        
+                        {item.category && (
+                          <Badge className="bg-purple-100 text-purple-800">
+                            {item.category}
+                          </Badge>
+                        )}
                       </div>
                       
                       {item.image_url && (
@@ -251,39 +238,6 @@ const AdminContentGenerator = () => {
                         <div><strong>Merma:</strong> {item.merma}%</div>
                         <div><strong>Rendimiento:</strong> {item.rendimiento}%</div>
                       </div>
-                      
-                      {item.uses && (
-                        <div className="bg-blue-50 p-3 rounded-lg">
-                          <strong className="text-sm">Usos culinarios:</strong>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {item.uses.map((use: string, i: number) => (
-                              <Badge key={i} variant="outline" className="text-xs">
-                                {use}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {item.nutritional_info && (
-                        <div className="bg-green-50 p-3 rounded-lg">
-                          <strong className="text-sm">Información nutricional (por 100g):</strong>
-                          <div className="grid grid-cols-3 md:grid-cols-6 gap-2 mt-2 text-xs">
-                            <div>Calorías: {item.nutritional_info.calories}</div>
-                            <div>Proteína: {item.nutritional_info.protein}g</div>
-                            <div>Carbos: {item.nutritional_info.carbs}g</div>
-                            <div>Grasa: {item.nutritional_info.fat}g</div>
-                            <div>Fibra: {item.nutritional_info.fiber}g</div>
-                            <div>Vit. C: {item.nutritional_info.vitamin_c}mg</div>
-                          </div>
-                        </div>
-                      )}
-
-                      {item.price_estimate && (
-                        <div className="bg-yellow-50 p-3 rounded-lg">
-                          <strong className="text-sm">Precio estimado:</strong> €{item.price_estimate}/kg
-                        </div>
-                      )}
                     </div>
                   )}
                   
@@ -321,8 +275,8 @@ const AdminContentGenerator = () => {
             <Wand2 className="h-5 w-5" />
             Generador de Contenido AI
             <Badge className="bg-green-100 text-green-800 ml-2">
-              <CheckCircle className="h-3 w-3 mr-1" />
-              Optimizado con 5 idiomas + Flux 1.1 Pro
+              <Zap className="h-3 w-3 mr-1" />
+              Flux 1.1 Pro + DeepSeek
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -407,8 +361,8 @@ const AdminContentGenerator = () => {
           {contentType === 'ingredient' && (
             <div className="mt-4 p-4 bg-blue-50 rounded-lg">
               <div className="flex items-center gap-2 text-sm text-blue-800">
-                <CheckCircle className="h-4 w-4" />
-                <span>✨ <strong>FLUJO OPTIMIZADO:</strong> Genera contenido → Guarda en DB → Genera imágenes automáticamente con <strong>Flux 1.1 Pro</strong></span>
+                <Zap className="h-4 w-4" />
+                <span><strong>FLUJO OPTIMIZADO:</strong> Genera contenido → Guarda en DB → Genera imágenes automáticamente con Flux 1.1 Pro</span>
               </div>
             </div>
           )}

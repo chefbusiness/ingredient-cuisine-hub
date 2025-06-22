@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -58,7 +57,7 @@ export const useGenerateImage = () => {
       
       const { data, error } = await supabase.functions.invoke('generate-image', {
         body: { 
-          name: ingredientName,
+          ingredientName: ingredientName,
           description: description 
         }
       });

@@ -19,6 +19,10 @@ serve(async (req) => {
       throw new Error('REPLICATE_API_KEY no está configurado');
     }
 
+    if (!ingredientName) {
+      throw new Error('ingredientName es requerido');
+    }
+
     // Prompt modificado para ilustraciones minimalistas
     const prompt = `Delicate minimalist illustration of ${ingredientName}, ${description || ''}. Clean vector-style artwork with natural colors, simple elegant lines, and accurate botanical/culinary representation. Subtle shadows, white background, professional food illustration style, recognizable ingredient characteristics, 800x800 resolution, high quality illustration.`;
     
@@ -34,7 +38,7 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        version: "4ac69054d7e15e45ce42f5e6f3b01c02e49d6b82c2e36c1f0ea7e8cb5f3d1e9a", // Flux 1.1 Pro
+        version: "671ac676df456e5c4cc11b5c5f3c169aed57b47e0816e99da0a71121e988e3ca", // Versión actualizada de Flux 1.1 Pro
         input: {
           prompt: prompt,
           negative_prompt: negativePrompt,
@@ -76,6 +80,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ 
         success: true,
         imageUrl: imageUrl,
+        image_url: imageUrl, // Para compatibilidad con el frontend
         prompt: prompt
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -12,8 +12,8 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
-// Security function to verify super admin access
-async function verifySuperAdminAccess(authHeader: string | null): Promise<{ authorized: boolean, userId?: string }> {
+// Security function to verify super admin access (synchronized with generate-content)
+async function verifySuperAdminAccess(authHeader: string | null): Promise<{ authorized: boolean, userEmail?: string }> {
   if (!authHeader) {
     console.log('❌ No authorization header provided');
     return { authorized: false };
@@ -28,22 +28,29 @@ async function verifySuperAdminAccess(authHeader: string | null): Promise<{ auth
       return { authorized: false };
     }
 
-    // Use the new security function to check super admin status
-    const { data: isSuperAdmin, error: roleError } = await supabase
-      .rpc('verify_super_admin_access');
+    console.log('✅ User authenticated:', user.email);
 
-    if (roleError) {
-      console.log('❌ Error checking super admin status:', roleError.message);
-      return { authorized: false };
+    // Check super admin status from profiles table (same as generate-content)
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role, email')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError) {
+      console.log('❌ Error fetching user profile:', profileError.message);
+      return { authorized: false, userEmail: user.email };
     }
 
-    if (!isSuperAdmin) {
-      console.log('❌ User is not a super admin:', user.email);
-      return { authorized: false };
+    console.log('📋 User profile:', { email: profile.email, role: profile.role });
+
+    if (profile.role !== 'super_admin') {
+      console.log('❌ User is not a super admin:', profile.email, 'Current role:', profile.role);
+      return { authorized: false, userEmail: profile.email };
     }
 
-    console.log('✅ Super admin access verified for:', user.email);
-    return { authorized: true, userId: user.id };
+    console.log('✅ Super admin access verified for:', profile.email);
+    return { authorized: true, userEmail: profile.email };
   } catch (error) {
     console.log('❌ Error verifying admin access:', error);
     return { authorized: false };
@@ -100,19 +107,29 @@ serve(async (req) => {
   }
 
   try {
-    // Security check: Verify super admin access
+    console.log('🔄 Processing save-generated-content request...');
+    
+    // Security check: Verify super admin access (updated to match generate-content)
     const authHeader = req.headers.get('authorization');
     const authResult = await verifySuperAdminAccess(authHeader);
     
     if (!authResult.authorized) {
+      const errorMessage = authResult.userEmail 
+        ? `Usuario ${authResult.userEmail} no tiene permisos de super admin. Contacta al administrador para obtener acceso.`
+        : 'Se requiere autenticación de super admin para acceder a esta función.';
+        
+      console.log('❌ Unauthorized access attempt');
       return new Response(JSON.stringify({ 
-        error: 'Unauthorized: Super admin access required',
-        code: 'UNAUTHORIZED'
+        error: errorMessage,
+        code: 'UNAUTHORIZED',
+        userEmail: authResult.userEmail
       }), {
         status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log('✅ Authorization successful, processing save request...');
 
     const { type, data } = await req.json();
 
@@ -148,10 +165,13 @@ serve(async (req) => {
       });
     }
 
+    console.log(`📋 Processing ${data.length} ${type}(s) for user: ${authResult.userEmail}`);
+
     if (type === 'ingredient') {
       // Validate all ingredients
       for (const ingredient of data) {
         if (!validateIngredientData(ingredient)) {
+          console.log('❌ Invalid ingredient data format for:', ingredient);
           return new Response(JSON.stringify({ 
             error: 'Invalid ingredient data format',
             code: 'INVALID_INGREDIENT'
@@ -172,12 +192,15 @@ serve(async (req) => {
         throw fetchError;
       }
 
+      console.log(`🔍 Found ${existingIngredients?.length || 0} existing ingredients for duplicate check`);
+
       const results = [];
+      const savedIngredientsData = []; // Para retornar en response.data
       let duplicatesFound = 0;
       let successfullyCreated = 0;
       
       for (const ingredient of data) {
-        console.log('Procesando ingrediente:', ingredient.name, 'con categoría:', ingredient.category);
+        console.log('🔄 Procesando ingrediente:', ingredient.name, 'con categoría:', ingredient.category);
         
         // Sanitize input data
         const sanitizedIngredient = {
@@ -230,7 +253,7 @@ serve(async (req) => {
         let categoryId = existingCategory?.id;
         
         if (!categoryId) {
-          console.log('Creando nueva categoría:', categoryName);
+          console.log('🆕 Creando nueva categoría:', categoryName);
           const { data: newCategory, error: categoryError } = await supabase
             .from('categories')
             .insert({
@@ -248,13 +271,13 @@ serve(async (req) => {
             .single();
 
           if (categoryError) {
-            console.error('Error creando categoría:', categoryError);
+            console.error('❌ Error creando categoría:', categoryError);
             throw categoryError;
           }
           categoryId = newCategory.id;
         }
 
-        console.log('Usando categoría ID:', categoryId, 'para ingrediente:', sanitizedIngredient.name);
+        console.log('📂 Usando categoría ID:', categoryId, 'para ingrediente:', sanitizedIngredient.name);
 
         // Crear el ingrediente con TODOS los campos de idiomas
         const ingredientData = {
@@ -277,15 +300,15 @@ serve(async (req) => {
         const { data: newIngredient, error: ingredientError } = await supabase
           .from('ingredients')
           .insert(ingredientData)
-          .select('id')
+          .select('id, name, created_at')
           .single();
 
         if (ingredientError) {
-          console.error('Error creando ingrediente:', ingredientError);
+          console.error('❌ Error creando ingrediente:', ingredientError);
           throw ingredientError;
         }
 
-        console.log('Ingrediente creado exitosamente:', newIngredient.id);
+        console.log('✅ Ingrediente creado exitosamente:', newIngredient.id, '- Name:', newIngredient.name);
 
         // Agregar información nutricional con sanitización
         if (ingredient.nutritional_info) {
@@ -362,6 +385,15 @@ serve(async (req) => {
         }
 
         successfullyCreated++;
+        
+        // Preparar datos para response.data (necesarios para generación de imágenes)
+        const savedIngredientData = {
+          id: newIngredient.id,
+          name: sanitizedIngredient.name,
+          created_at: newIngredient.created_at
+        };
+        savedIngredientsData.push(savedIngredientData);
+        
         results.push({
           id: newIngredient.id,
           name: sanitizedIngredient.name,
@@ -380,20 +412,23 @@ serve(async (req) => {
           action_details: {
             total_processed: data.length,
             successfully_created: successfullyCreated,
-            duplicates_skipped: duplicatesFound
+            duplicates_skipped: duplicatesFound,
+            user_email: authResult.userEmail
           }
         });
       } catch (logError) {
         console.log('⚠️ Failed to log admin action:', logError);
       }
 
-      console.log('=== RESUMEN DE PROCESAMIENTO ===');
+      console.log('🎉 === RESUMEN DE PROCESAMIENTO ===');
       console.log(`✅ Ingredientes creados exitosamente: ${successfullyCreated}`);
       console.log(`⚠️ Duplicados detectados y omitidos: ${duplicatesFound}`);
+      console.log(`📊 Datos preparados para generación de imágenes: ${savedIngredientsData.length}`);
 
       return new Response(JSON.stringify({ 
         success: true,
         results: results,
+        data: savedIngredientsData, // CRÍTICO: Datos para la generación de imágenes
         summary: {
           total_processed: data.length,
           successfully_created: successfullyCreated,
@@ -406,6 +441,7 @@ serve(async (req) => {
 
     if (type === 'category') {
       const results = [];
+      const savedCategoriesData = [];
       
       for (const category of data) {
         // Sanitize category data
@@ -418,11 +454,15 @@ serve(async (req) => {
         const { data: newCategory, error } = await supabase
           .from('categories')
           .insert(sanitizedCategory)
-          .select('id, name')
+          .select('id, name, created_at')
           .single();
 
         if (error && !error.message.includes('duplicate')) {
           throw error;
+        }
+
+        if (newCategory) {
+          savedCategoriesData.push(newCategory);
         }
 
         results.push({
@@ -439,7 +479,8 @@ serve(async (req) => {
           resource_type: 'category',
           action_details: {
             total_processed: data.length,
-            successfully_created: results.filter(r => r.success).length
+            successfully_created: results.filter(r => r.success).length,
+            user_email: authResult.userEmail
           }
         });
       } catch (logError) {
@@ -448,7 +489,8 @@ serve(async (req) => {
 
       return new Response(JSON.stringify({ 
         success: true,
-        results: results 
+        results: results,
+        data: savedCategoriesData
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -457,7 +499,7 @@ serve(async (req) => {
     throw new Error('Tipo de contenido no soportado');
 
   } catch (error) {
-    console.error('Error en save-generated-content:', error);
+    console.error('❌ Error en save-generated-content:', error);
     return new Response(JSON.stringify({ 
       error: error.message,
       success: false 

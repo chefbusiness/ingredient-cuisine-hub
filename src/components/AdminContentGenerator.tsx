@@ -7,7 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Loader, Wand2, Save, Eye, Image, CheckCircle, AlertTriangle, Zap } from "lucide-react";
-import { useGenerateContent, useGenerateImage, useSaveContent } from "@/hooks/useContentGeneration";
+import { useGenerateContent } from "@/hooks/useGenerateContent";
+import { useGenerateImage } from "@/hooks/useGenerateImage";
+import { useSaveContent } from "@/hooks/useSaveContent";
 import { useCategories } from "@/hooks/useCategories";
 import { Progress } from "@/components/ui/progress";
 

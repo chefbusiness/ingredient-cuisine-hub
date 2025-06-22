@@ -1,13 +1,11 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Wand2, Edit } from "lucide-react";
+import { Wand2, Trash2 } from "lucide-react";
 import AdminContentGenerator from "@/components/AdminContentGenerator";
 import AdminHeader from "@/components/admin/AdminHeader";
 import AdminStatusBanner from "@/components/admin/AdminStatusBanner";
 import AdminStatsOverview from "@/components/admin/AdminStatsOverview";
-import AdminContentTab from "@/components/admin/AdminContentTab";
-import AdminSettingsTab from "@/components/admin/AdminSettingsTab";
-import AdminManualManagement from "@/components/admin/AdminManualManagement";
+import AdminSimpleManagement from "@/components/admin/AdminSimpleManagement";
 import { useIngredients } from "@/hooks/useIngredients";
 import { useCategories } from "@/hooks/useCategories";
 
@@ -33,12 +31,10 @@ const Admin = () => {
               <Wand2 className="h-4 w-4 mr-2" />
               Generador AI
             </TabsTrigger>
-            <TabsTrigger value="manual" className="flex-1">
-              <Edit className="h-4 w-4 mr-2" />
-              Gestión Manual
+            <TabsTrigger value="management" className="flex-1">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Gestión Simple
             </TabsTrigger>
-            <TabsTrigger value="content" className="flex-1">Gestión de Contenido</TabsTrigger>
-            <TabsTrigger value="settings" className="flex-1">Configuración</TabsTrigger>
           </TabsList>
 
           <TabsContent value="generator" className="space-y-6">
@@ -51,25 +47,14 @@ const Admin = () => {
             <AdminContentGenerator />
           </TabsContent>
 
-          <TabsContent value="manual" className="space-y-6">
+          <TabsContent value="management" className="space-y-6">
             <div className="mb-6">
-              <h2 className="text-2xl font-bold mb-2">Gestión Manual de Ingredientes</h2>
+              <h2 className="text-2xl font-bold mb-2">Gestión Simple</h2>
               <p className="text-muted-foreground">
-                Edita, elimina y gestiona manualmente los ingredientes existentes en la base de datos.
+                Solo eliminación de ingredientes. Para cambios, elimina y regenera con IA.
               </p>
             </div>
-            <AdminManualManagement />
-          </TabsContent>
-
-          <TabsContent value="content" className="space-y-6">
-            <AdminContentTab 
-              ingredientsCount={ingredients.length}
-              categoriesCount={categories.length}
-            />
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-6">
-            <AdminSettingsTab />
+            <AdminSimpleManagement />
           </TabsContent>
         </Tabs>
       </div>

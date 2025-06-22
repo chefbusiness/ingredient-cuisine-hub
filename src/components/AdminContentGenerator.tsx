@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,7 @@ const AdminContentGenerator = () => {
   const [count, setCount] = useState(5);
   const [generatedContent, setGeneratedContent] = useState<any[]>([]);
   const [previewMode, setPreviewMode] = useState(false);
-  const [imageGenerationQueue, setImageGenerationQueue] = useState<string[]>([]);
+  const [isGeneratingImages, setIsGeneratingImages] = useState(false);
 
   const { data: categories = [] } = useCategories();
   const generateContent = useGenerateContent();
@@ -45,12 +46,6 @@ const AdminContentGenerator = () => {
       
       setGeneratedContent(processedData);
       setPreviewMode(true);
-      
-      // Si son ingredientes, agregar a cola de generación de imágenes
-      if (contentType === 'ingredient') {
-        const ingredientNames = processedData.map((item: any) => item.name);
-        setImageGenerationQueue(ingredientNames);
-      }
     } catch (error) {
       console.error('Error generando contenido:', error);
     }
@@ -66,43 +61,70 @@ const AdminContentGenerator = () => {
     };
   };
 
-  const handleGenerateImages = async () => {
-    for (const ingredientName of imageGenerationQueue) {
-      try {
-        const ingredient = generatedContent.find(item => item.name === ingredientName);
-        const result = await generateImage.mutateAsync({
-          ingredientName: ingredientName,
-          description: ingredient?.description
-        });
-
-        if (result.success) {
-          // Actualizar el contenido generado con la URL de la imagen
-          setGeneratedContent(prev => 
-            prev.map(item => 
-              item.name === ingredientName 
-                ? { ...item, image_url: result.image_url }
-                : item
-            )
-          );
-        }
-      } catch (error) {
-        console.error(`Error generando imagen para ${ingredientName}:`, error);
-      }
-    }
-    setImageGenerationQueue([]);
-  };
-
-  const handleSaveContent = async () => {
+  const handleSaveContentAndGenerateImages = async () => {
     try {
-      await saveContent.mutateAsync({
+      console.log('🔄 Iniciando guardado de contenido y generación de imágenes...');
+      
+      // Paso 1: Guardar contenido en la base de datos
+      const saveResult = await saveContent.mutateAsync({
         type: contentType,
         data: generatedContent
       });
       
+      console.log('✅ Contenido guardado, resultado:', saveResult);
+      
+      // Paso 2: Si son ingredientes, generar imágenes automáticamente
+      if (contentType === 'ingredient' && saveResult.data && saveResult.data.length > 0) {
+        console.log('🖼️ Iniciando generación automática de imágenes...');
+        setIsGeneratingImages(true);
+        
+        const savedIngredients = saveResult.data;
+        let successCount = 0;
+        let errorCount = 0;
+        
+        for (const savedIngredient of savedIngredients) {
+          try {
+            console.log(`🔄 Generando imagen para: ${savedIngredient.name} (ID: ${savedIngredient.id})`);
+            
+            // Encontrar el contenido original para obtener la descripción
+            const originalContent = generatedContent.find(item => item.name === savedIngredient.name);
+            
+            const result = await generateImage.mutateAsync({
+              ingredientName: savedIngredient.name,
+              description: originalContent?.description,
+              ingredientId: savedIngredient.id // ¡Ahora tenemos el ID!
+            });
+
+            if (result.success) {
+              console.log(`✅ Imagen generada exitosamente para: ${savedIngredient.name}`);
+              
+              // Actualizar el contenido generado con la URL de la imagen
+              setGeneratedContent(prev => 
+                prev.map(item => 
+                  item.name === savedIngredient.name 
+                    ? { ...item, image_url: result.imageUrl, id: savedIngredient.id }
+                    : item
+                )
+              );
+              successCount++;
+            }
+          } catch (error) {
+            console.error(`❌ Error generando imagen para ${savedIngredient.name}:`, error);
+            errorCount++;
+          }
+        }
+        
+        setIsGeneratingImages(false);
+        console.log(`🎉 Generación de imágenes completada. Éxitos: ${successCount}, Errores: ${errorCount}`);
+      }
+      
+      // Limpiar vista previa solo si no hubo errores graves
       setGeneratedContent([]);
       setPreviewMode(false);
+      
     } catch (error) {
-      console.error('Error guardando contenido:', error);
+      console.error('❌ Error en proceso completo:', error);
+      setIsGeneratingImages(false);
     }
   };
 
@@ -117,32 +139,17 @@ const AdminContentGenerator = () => {
             Vista Previa del Contenido Generado
           </CardTitle>
           <div className="flex gap-2">
-            {contentType === 'ingredient' && imageGenerationQueue.length > 0 && (
-              <Button 
-                onClick={handleGenerateImages}
-                disabled={generateImage.isPending}
-                variant="outline"
-                size="sm"
-              >
-                {generateImage.isPending ? (
-                  <Loader className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                  <Image className="h-4 w-4 mr-2" />
-                )}
-                Generar Imágenes con Flux 1.1 Pro ({imageGenerationQueue.length})
-              </Button>
-            )}
             <Button 
-              onClick={handleSaveContent}
-              disabled={saveContent.isPending}
+              onClick={handleSaveContentAndGenerateImages}
+              disabled={saveContent.isPending || isGeneratingImages}
               size="sm"
             >
-              {saveContent.isPending ? (
+              {saveContent.isPending || isGeneratingImages ? (
                 <Loader className="h-4 w-4 animate-spin mr-2" />
               ) : (
                 <Save className="h-4 w-4 mr-2" />
               )}
-              Guardar Todo
+              {isGeneratingImages ? 'Generando Imágenes...' : 'Guardar y Generar Imágenes'}
             </Button>
           </div>
         </CardHeader>
@@ -315,7 +322,7 @@ const AdminContentGenerator = () => {
             Generador de Contenido AI
             <Badge className="bg-green-100 text-green-800 ml-2">
               <CheckCircle className="h-3 w-3 mr-1" />
-              Optimizado con 5 idiomas
+              Optimizado con 5 idiomas + Flux 1.1 Pro
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -401,7 +408,7 @@ const AdminContentGenerator = () => {
             <div className="mt-4 p-4 bg-blue-50 rounded-lg">
               <div className="flex items-center gap-2 text-sm text-blue-800">
                 <CheckCircle className="h-4 w-4" />
-                <span>✨ <strong>NUEVO:</strong> Generación automática de ingredientes con <strong>5 idiomas completos</strong> (ES, EN, FR, IT, PT, ZH) + imágenes con <strong>Flux 1.1 Pro</strong></span>
+                <span>✨ <strong>FLUJO OPTIMIZADO:</strong> Genera contenido → Guarda en DB → Genera imágenes automáticamente con <strong>Flux 1.1 Pro</strong></span>
               </div>
             </div>
           )}

@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader, Save, Eye } from "lucide-react";
+import { Loader, Save, Eye, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
 import { useSaveContent } from "@/hooks/useSaveContent";
 import { useGenerateImage } from "@/hooks/useGenerateImage";
 import AdminImageGenerationProgress from "./AdminImageGenerationProgress";
@@ -34,19 +34,45 @@ const AdminContentPreview = ({
 
   if (generatedContent.length === 0) return null;
 
+  const handleSaveContentOnly = async () => {
+    try {
+      console.log('💾 === GUARDANDO CONTENIDO SIN GENERAR IMÁGENES ===');
+      
+      await saveContent.mutateAsync({
+        type: contentType,
+        data: generatedContent
+      });
+      
+      onContentCleared();
+      console.log('✅ Contenido guardado exitosamente');
+      
+    } catch (error) {
+      console.error('❌ Error guardando contenido:', error);
+    }
+  };
+
   const handleSaveContentAndGenerateImages = async () => {
     try {
-      console.log('🔄 Starting save and image generation process...');
+      console.log('🔄 === INICIANDO PROCESO COMPLETO: GUARDAR + GENERAR IMÁGENES ===');
       
-      // Paso 1: Guardar contenido
+      // Paso 1: Verificar configuración de Replicate
+      console.log('🔍 Paso 1: Verificando configuración de Replicate...');
+      
+      // Paso 2: Guardar contenido primero
+      console.log('💾 Paso 2: Guardando contenido en la base de datos...');
       const saveResult = await saveContent.mutateAsync({
         type: contentType,
         data: generatedContent
       });
       
-      // Paso 2: Si son ingredientes, generar imágenes
+      console.log('✅ Contenido guardado exitosamente:', {
+        type: contentType,
+        count: saveResult.data?.length || 0
+      });
+
+      // Paso 3: Si son ingredientes, proceder con generación de imágenes
       if (contentType === 'ingredient' && saveResult.data && saveResult.data.length > 0) {
-        console.log('🖼️ Starting automatic image generation...');
+        console.log('🖼️ Paso 3: Iniciando generación automática de imágenes...');
         
         const savedIngredients = saveResult.data;
         onImageProgressUpdate({ 
@@ -57,12 +83,13 @@ const AdminContentPreview = ({
         
         let successCount = 0;
         let errorCount = 0;
+        const imageErrors: string[] = [];
         
         for (let i = 0; i < savedIngredients.length; i++) {
           const savedIngredient = savedIngredients[i];
           
           try {
-            console.log(`🔄 Generating image ${i + 1}/${savedIngredients.length} for: ${savedIngredient.name}`);
+            console.log(`🔄 Generando imagen ${i + 1}/${savedIngredients.length} para: ${savedIngredient.name}`);
             
             onImageProgressUpdate({ 
               current: i + 1, 
@@ -72,6 +99,12 @@ const AdminContentPreview = ({
             
             const originalContent = generatedContent.find(item => item.name === savedIngredient.name);
             
+            console.log('📋 Datos para generación:', {
+              ingredientName: savedIngredient.name,
+              ingredientId: savedIngredient.id,
+              hasDescription: !!originalContent?.description
+            });
+
             const result = await generateImage.mutateAsync({
               ingredientName: savedIngredient.name,
               description: originalContent?.description,
@@ -79,7 +112,8 @@ const AdminContentPreview = ({
             });
 
             if (result.success) {
-              console.log(`✅ Image generated for: ${savedIngredient.name}`);
+              console.log(`✅ Imagen generada exitosamente para: ${savedIngredient.name}`);
+              console.log(`🔗 URL de imagen: ${result.imageUrl?.substring(0, 50)}...`);
               
               // Actualizar vista previa con la imagen
               const updatedContent = generatedContent.map(item => 
@@ -89,23 +123,73 @@ const AdminContentPreview = ({
               );
               onContentUpdated(updatedContent);
               successCount++;
+            } else {
+              console.error(`❌ Generación falló para ${savedIngredient.name}: No success flag`);
+              errorCount++;
+              imageErrors.push(`${savedIngredient.name}: Sin éxito en generación`);
             }
           } catch (error) {
-            console.error(`❌ Error generating image for ${savedIngredient.name}:`, error);
+            console.error(`❌ Error crítico generando imagen para ${savedIngredient.name}:`, {
+              message: error.message,
+              stack: error.stack
+            });
             errorCount++;
+            imageErrors.push(`${savedIngredient.name}: ${error.message}`);
+          }
+          
+          // Pequeña pausa entre generaciones para evitar rate limits
+          if (i < savedIngredients.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
           }
         }
         
         onImageProgressUpdate({ current: 0, total: 0, isGenerating: false });
-        console.log(`🎉 Image generation completed. Success: ${successCount}, Errors: ${errorCount}`);
+        
+        console.log('🎉 === PROCESO DE GENERACIÓN DE IMÁGENES COMPLETADO ===');
+        console.log(`✅ Exitosas: ${successCount}`);
+        console.log(`❌ Errores: ${errorCount}`);
+        
+        if (imageErrors.length > 0) {
+          console.error('📋 Errores de imágenes:', imageErrors);
+        }
       }
       
-      // Limpiar vista previa
+      // Limpiar vista previa al final
       onContentCleared();
       
     } catch (error) {
-      console.error('❌ Error in complete process:', error);
+      console.error('❌ === ERROR CRÍTICO EN PROCESO COMPLETO ===', {
+        message: error.message,
+        stack: error.stack
+      });
       onImageProgressUpdate({ current: 0, total: 0, isGenerating: false });
+    }
+  };
+
+  const handleGenerateImageManually = async (ingredientName: string, ingredientId: string) => {
+    try {
+      console.log(`🔄 Generación manual de imagen para: ${ingredientName}`);
+      
+      const originalContent = generatedContent.find(item => item.name === ingredientName);
+      
+      const result = await generateImage.mutateAsync({
+        ingredientName: ingredientName,
+        description: originalContent?.description,
+        ingredientId: ingredientId
+      });
+
+      if (result.success) {
+        console.log(`✅ Imagen manual generada para: ${ingredientName}`);
+        
+        const updatedContent = generatedContent.map(item => 
+          item.name === ingredientName 
+            ? { ...item, image_url: result.imageUrl, id: ingredientId }
+            : item
+        );
+        onContentUpdated(updatedContent);
+      }
+    } catch (error) {
+      console.error(`❌ Error en generación manual para ${ingredientName}:`, error);
     }
   };
 
@@ -124,6 +208,19 @@ const AdminContentPreview = ({
         </CardTitle>
         <div className="flex gap-2">
           <Button 
+            onClick={handleSaveContentOnly}
+            disabled={saveContent.isPending || imageGenerationProgress.isGenerating}
+            variant="outline"
+            size="sm"
+          >
+            {saveContent.isPending ? (
+              <Loader className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Save className="h-4 w-4 mr-2" />
+            )}
+            Solo Guardar
+          </Button>
+          <Button 
             onClick={handleSaveContentAndGenerateImages}
             disabled={saveContent.isPending || imageGenerationProgress.isGenerating}
             size="sm"
@@ -133,7 +230,7 @@ const AdminContentPreview = ({
             ) : (
               <Save className="h-4 w-4 mr-2" />
             )}
-            {imageGenerationProgress.isGenerating ? 'Generando Imágenes...' : 'Guardar y Generar Imágenes'}
+            Guardar + Generar Imágenes
           </Button>
         </div>
       </CardHeader>
@@ -141,15 +238,42 @@ const AdminContentPreview = ({
       <AdminImageGenerationProgress {...imageGenerationProgress} />
       
       <CardContent>
+        {contentType === 'ingredient' && (
+          <div className="mb-4 p-4 bg-blue-50 rounded-lg">
+            <div className="flex items-center gap-2 text-sm text-blue-800">
+              <AlertTriangle className="h-4 w-4" />
+              <span><strong>FLUJO MEJORADO:</strong> Puedes guardar solo el contenido o guardar + generar imágenes automáticamente</span>
+            </div>
+          </div>
+        )}
+
         <div className="space-y-4">
           {generatedContent.map((item, index) => {
             if (contentType === 'ingredient') {
               return (
-                <AdminIngredientPreviewCard 
-                  key={index}
-                  ingredient={item}
-                  index={index}
-                />
+                <div key={index} className="relative">
+                  <AdminIngredientPreviewCard 
+                    ingredient={item}
+                    index={index}
+                  />
+                  {item.id && (
+                    <div className="mt-2 flex justify-end">
+                      <Button
+                        onClick={() => handleGenerateImageManually(item.name, item.id)}
+                        disabled={generateImage.isPending}
+                        variant="outline"
+                        size="sm"
+                      >
+                        {generateImage.isPending ? (
+                          <Loader className="h-3 w-3 animate-spin mr-1" />
+                        ) : (
+                          <CheckCircle className="h-3 w-3 mr-1" />
+                        )}
+                        Generar Imagen
+                      </Button>
+                    </div>
+                  )}
+                </div>
               );
             }
             

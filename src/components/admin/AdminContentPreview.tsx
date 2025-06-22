@@ -36,7 +36,7 @@ const AdminContentPreview = ({
 
   const handleSaveContentOnly = async () => {
     try {
-      console.log('💾 === GUARDANDO CONTENIDO SIN GENERAR IMÁGENES ===');
+      console.log('💾 === SAVE CONTENT ONLY (NO IMAGES) ===');
       
       await saveContent.mutateAsync({
         type: contentType,
@@ -44,37 +44,56 @@ const AdminContentPreview = ({
       });
       
       onContentCleared();
-      console.log('✅ Contenido guardado exitosamente');
+      console.log('✅ Content saved successfully without images');
       
     } catch (error) {
-      console.error('❌ Error guardando contenido:', error);
+      console.error('❌ Error saving content:', error);
     }
   };
 
   const handleSaveContentAndGenerateImages = async () => {
     try {
-      console.log('🔄 === INICIANDO PROCESO COMPLETO: GUARDAR + GENERAR IMÁGENES ===');
+      console.log('🔄 === ENHANCED SAVE + GENERATE PROCESS ===');
       
-      // Paso 1: Verificar configuración de Replicate
-      console.log('🔍 Paso 1: Verificando configuración de Replicate...');
-      
-      // Paso 2: Guardar contenido primero
-      console.log('💾 Paso 2: Guardando contenido en la base de datos...');
+      // PASO 1: Guardar contenido con verificación mejorada
+      console.log('💾 Step 1: Enhanced content saving...');
       const saveResult = await saveContent.mutateAsync({
         type: contentType,
         data: generatedContent
       });
       
-      console.log('✅ Contenido guardado exitosamente:', {
-        type: contentType,
-        count: saveResult.data?.length || 0
+      console.log('✅ Save result analysis:', {
+        success: saveResult.success,
+        hasData: !!saveResult.data,
+        dataCount: saveResult.data?.length || 0,
+        dataType: Array.isArray(saveResult.data) ? 'array' : typeof saveResult.data
       });
 
-      // Paso 3: Si son ingredientes, proceder con generación de imágenes
-      if (contentType === 'ingredient' && saveResult.data && saveResult.data.length > 0) {
-        console.log('🖼️ Paso 3: Iniciando generación automática de imágenes...');
-        
+      // PASO 2: Validar datos para generación de imágenes
+      if (contentType === 'ingredient') {
+        if (!saveResult.data || !Array.isArray(saveResult.data) || saveResult.data.length === 0) {
+          console.error('❌ No valid ingredient data for image generation:', saveResult);
+          throw new Error('No se encontraron ingredientes válidos para generar imágenes');
+        }
+
         const savedIngredients = saveResult.data;
+        console.log('🔍 Saved ingredients analysis:', {
+          count: savedIngredients.length,
+          sampleIds: savedIngredients.slice(0, 3).map(i => ({ id: i.id, name: i.name })),
+          allHaveIds: savedIngredients.every(i => !!i.id),
+          allHaveNames: savedIngredients.every(i => !!i.name)
+        });
+
+        // PASO 3: Validación adicional de ingredientes
+        const invalidIngredients = savedIngredients.filter(i => !i.id || !i.name);
+        if (invalidIngredients.length > 0) {
+          console.error('❌ Found invalid ingredients:', invalidIngredients);
+          throw new Error(`${invalidIngredients.length} ingredientes no tienen ID o nombre válido`);
+        }
+
+        // PASO 4: Iniciar generación de imágenes con mejor coordinación
+        console.log('🖼️ Step 4: Starting coordinated image generation...');
+        
         onImageProgressUpdate({ 
           current: 0, 
           total: savedIngredients.length, 
@@ -89,22 +108,31 @@ const AdminContentPreview = ({
           const savedIngredient = savedIngredients[i];
           
           try {
-            console.log(`🔄 Generando imagen ${i + 1}/${savedIngredients.length} para: ${savedIngredient.name}`);
+            console.log(`\n🔄 [${i + 1}/${savedIngredients.length}] Processing: ${savedIngredient.name}`);
+            console.log(`📋 Ingredient data:`, {
+              id: savedIngredient.id,
+              name: savedIngredient.name,
+              hasCreatedAt: !!savedIngredient.created_at
+            });
             
+            // Actualizar progreso antes de procesar
             onImageProgressUpdate({ 
-              current: i + 1, 
+              current: i, 
               total: savedIngredients.length, 
               isGenerating: true 
             });
             
-            const originalContent = generatedContent.find(item => item.name === savedIngredient.name);
+            // Buscar descripción del contenido original
+            const originalContent = generatedContent.find(item => 
+              item.name.toLowerCase().trim() === savedIngredient.name.toLowerCase().trim()
+            );
             
-            console.log('📋 Datos para generación:', {
-              ingredientName: savedIngredient.name,
-              ingredientId: savedIngredient.id,
+            console.log(`📝 Original content match:`, {
+              found: !!originalContent,
               hasDescription: !!originalContent?.description
             });
 
+            // Generar imagen con datos mejorados
             const result = await generateImage.mutateAsync({
               ingredientName: savedIngredient.name,
               description: originalContent?.description,
@@ -112,56 +140,55 @@ const AdminContentPreview = ({
             });
 
             if (result.success) {
-              console.log(`✅ Imagen generada exitosamente para: ${savedIngredient.name}`);
-              console.log(`🔗 URL de imagen: ${result.imageUrl?.substring(0, 50)}...`);
+              console.log(`✅ [${i + 1}/${savedIngredients.length}] Image generated successfully for: ${savedIngredient.name}`);
               
-              // Actualizar vista previa con la imagen
+              // Actualizar vista previa con la nueva imagen
               const updatedContent = generatedContent.map(item => 
-                item.name === savedIngredient.name 
+                item.name.toLowerCase().trim() === savedIngredient.name.toLowerCase().trim()
                   ? { ...item, image_url: result.imageUrl, id: savedIngredient.id }
                   : item
               );
               onContentUpdated(updatedContent);
               successCount++;
             } else {
-              console.error(`❌ Generación falló para ${savedIngredient.name}: No success flag`);
+              console.error(`❌ [${i + 1}/${savedIngredients.length}] Generation failed for ${savedIngredient.name}`);
               errorCount++;
-              imageErrors.push(`${savedIngredient.name}: Sin éxito en generación`);
+              imageErrors.push(`${savedIngredient.name}: Generation failed`);
             }
           } catch (error) {
-            console.error(`❌ Error crítico generando imagen para ${savedIngredient.name}:`, {
-              message: error.message,
-              stack: error.stack
-            });
+            console.error(`❌ [${i + 1}/${savedIngredients.length}] Exception for ${savedIngredient.name}:`, error);
             errorCount++;
             imageErrors.push(`${savedIngredient.name}: ${error.message}`);
           }
           
-          // Pequeña pausa entre generaciones para evitar rate limits
+          // Pausa coordinada entre generaciones
           if (i < savedIngredients.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.log(`⏸️ [${i + 1}/${savedIngredients.length}] Coordinated pause before next generation...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
           }
         }
         
-        onImageProgressUpdate({ current: 0, total: 0, isGenerating: false });
+        // PASO 5: Finalizar proceso
+        onImageProgressUpdate({ current: savedIngredients.length, total: savedIngredients.length, isGenerating: false });
         
-        console.log('🎉 === PROCESO DE GENERACIÓN DE IMÁGENES COMPLETADO ===');
-        console.log(`✅ Exitosas: ${successCount}`);
-        console.log(`❌ Errores: ${errorCount}`);
+        console.log('🎉 === ENHANCED BATCH PROCESS COMPLETED ===');
+        console.log(`📊 Final results:`, {
+          total: savedIngredients.length,
+          successful: successCount,
+          failed: errorCount,
+          successRate: savedIngredients.length > 0 ? Math.round((successCount / savedIngredients.length) * 100) : 0
+        });
         
         if (imageErrors.length > 0) {
-          console.error('📋 Errores de imágenes:', imageErrors);
+          console.error('📋 Image generation errors:', imageErrors);
         }
       }
       
-      // Limpiar vista previa al final
+      // Limpiar vista previa
       onContentCleared();
       
     } catch (error) {
-      console.error('❌ === ERROR CRÍTICO EN PROCESO COMPLETO ===', {
-        message: error.message,
-        stack: error.stack
-      });
+      console.error('❌ === CRITICAL ERROR IN ENHANCED BATCH PROCESS ===', error);
       onImageProgressUpdate({ current: 0, total: 0, isGenerating: false });
     }
   };

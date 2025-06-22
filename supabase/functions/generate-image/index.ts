@@ -23,14 +23,13 @@ serve(async (req) => {
       throw new Error('ingredientName es requerido');
     }
 
-    // Prompt modificado para ilustraciones minimalistas
-    const prompt = `Delicate minimalist illustration of ${ingredientName}, ${description || ''}. Clean vector-style artwork with natural colors, simple elegant lines, and accurate botanical/culinary representation. Subtle shadows, white background, professional food illustration style, recognizable ingredient characteristics, 800x800 resolution, high quality illustration.`;
+    // Prompt optimizado para ilustraciones minimalistas
+    const prompt = `Professional food illustration of ${ingredientName}, ${description || ''}. Clean minimalist style, natural colors, simple elegant lines, accurate representation. White background, high quality, 800x800 resolution.`;
     
-    const negativePrompt = "photograph, photo, realistic, 3D render, camera, lens, shadows, complex background, cluttered, busy, ornate, decorative elements, text, watermarks";
-
     console.log('Generando ilustración para:', ingredientName);
     console.log('Prompt:', prompt);
 
+    // Usando Flux Schnell que es más confiable y gratuito
     const response = await fetch('https://api.replicate.com/v1/predictions', {
       method: 'POST',
       headers: {
@@ -38,21 +37,23 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        version: "671ac676df456e5c4cc11b5c5f3c169aed57b47e0816e99da0a71121e988e3ca", // Versión actualizada de Flux 1.1 Pro
+        version: "f2ab8a5569070ad56005b2fba7d8059c9887d8a6c5b8de55",  // Flux Schnell - modelo confiable
         input: {
           prompt: prompt,
-          negative_prompt: negativePrompt,
+          go_fast: true,
+          megapixels: "1",
+          num_outputs: 1,
           aspect_ratio: "1:1",
-          output_format: "jpeg",
-          output_quality: 90,
-          safety_tolerance: 5,
-          seed: Math.floor(Math.random() * 1000000),
+          output_format: "webp",
+          output_quality: 80,
+          num_inference_steps: 4
         },
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('Error de Replicate:', response.status, errorText);
       throw new Error(`Error de Replicate: ${response.status} - ${errorText}`);
     }
 
@@ -61,8 +62,12 @@ serve(async (req) => {
 
     // Polling para esperar el resultado
     let result = prediction;
-    while (result.status === 'starting' || result.status === 'processing') {
+    let attempts = 0;
+    const maxAttempts = 30; // Máximo 60 segundos de espera
+
+    while ((result.status === 'starting' || result.status === 'processing') && attempts < maxAttempts) {
       await new Promise(resolve => setTimeout(resolve, 2000));
+      attempts++;
       
       const pollResponse = await fetch(`https://api.replicate.com/v1/predictions/${result.id}`, {
         headers: {
@@ -70,12 +75,19 @@ serve(async (req) => {
         },
       });
       
+      if (!pollResponse.ok) {
+        console.error('Error al verificar estado:', pollResponse.status);
+        throw new Error(`Error al verificar estado: ${pollResponse.status}`);
+      }
+      
       result = await pollResponse.json();
-      console.log('Estado de la generación:', result.status);
+      console.log('Estado de la generación:', result.status, `(intento ${attempts}/${maxAttempts})`);
     }
 
     if (result.status === 'succeeded' && result.output) {
       const imageUrl = Array.isArray(result.output) ? result.output[0] : result.output;
+      
+      console.log('Imagen generada exitosamente:', imageUrl);
       
       return new Response(JSON.stringify({ 
         success: true,
@@ -85,6 +97,8 @@ serve(async (req) => {
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    } else if (attempts >= maxAttempts) {
+      throw new Error('Timeout: La generación de imagen tomó demasiado tiempo');
     } else {
       throw new Error(`Error en la generación: ${result.error || 'Estado: ' + result.status}`);
     }

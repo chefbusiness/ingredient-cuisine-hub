@@ -69,32 +69,31 @@ export const useGenerateImage = () => {
       
       console.log('✅ Image URL received:', data.imageUrl.substring(0, 50) + '...');
       
-      // Actualizar ingrediente con la nueva imagen
+      // Actualizar ingrediente con la nueva imagen (simplificado)
       console.log('💾 Updating ingredient with new image...');
-      const { data: updateResult, error: updateError } = await supabase
+      const { error: updateError, count } = await supabase
         .from('ingredients')
         .update({ 
           image_url: data.imageUrl,
           updated_at: new Date().toISOString()
         })
-        .eq('id', ingredientId)
-        .select('id, name, image_url');
+        .eq('id', ingredientId);
 
       if (updateError) {
         console.error('❌ Error updating ingredient:', updateError);
         throw new Error(`Error guardando imagen: ${updateError.message}`);
       }
 
-      if (!updateResult || updateResult.length === 0) {
-        console.error('❌ No records updated');
-        throw new Error('No se pudo actualizar el ingrediente');
+      // Verificar que se actualizó al menos un registro
+      if (count === 0) {
+        console.error('❌ No records were updated');
+        throw new Error('No se pudo actualizar el ingrediente - no se encontró el registro');
       }
 
-      const updatedIngredient = updateResult[0];
       console.log('✅ Ingredient updated successfully:', {
-        id: updatedIngredient.id,
-        name: updatedIngredient.name,
-        hasImageUrl: !!updatedIngredient.image_url
+        ingredientId,
+        count,
+        imageUrl: data.imageUrl.substring(0, 50) + '...'
       });
 
       return {

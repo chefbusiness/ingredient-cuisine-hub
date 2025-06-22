@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -76,13 +77,13 @@ export const useUpdateIngredient = () => {
         updated_at: finalUpdateData.updated_at
       });
 
-      // FIX: Usar single() directamente sin el count
+      // FIX: Usar maybeSingle() en lugar de single() para manejar el caso de 0 filas
       const { data, error } = await supabase
         .from('ingredients')
         .update(finalUpdateData)
         .eq('id', id)
         .select()
-        .single();
+        .maybeSingle();
 
       console.log('📤 Supabase update response:', {
         hasError: !!error,
@@ -101,9 +102,27 @@ export const useUpdateIngredient = () => {
         throw new Error(`Error actualizando ingrediente: ${error.message}`);
       }
 
+      // Con maybeSingle(), data puede ser null si no se encontró registro
       if (!data) {
-        console.error('❌ No data returned from update');
-        throw new Error('No se recibieron datos después de la actualización');
+        console.error('❌ No data returned from update - no matching record found or no changes made');
+        
+        // Intentar verificar si el registro aún existe
+        const { data: stillExists, error: existsError } = await supabase
+          .from('ingredients')
+          .select('id, name')
+          .eq('id', id)
+          .maybeSingle();
+        
+        if (existsError) {
+          console.error('❌ Error checking if record still exists:', existsError);
+        } else if (!stillExists) {
+          console.error('❌ Record no longer exists in database');
+          throw new Error('El ingrediente ya no existe en la base de datos');
+        } else {
+          console.log('✅ Record still exists, but update had no effect');
+          console.log('📋 Record that still exists:', stillExists);
+          throw new Error('La actualización no tuvo efecto. Es posible que no haya cambios o que haya un problema de permisos.');
+        }
       }
 
       console.log('✅ Database update successful:', {

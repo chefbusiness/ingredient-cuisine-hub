@@ -37,13 +37,13 @@ serve(async (req) => {
     }
     console.log('✅ Nombre del ingrediente:', finalIngredientName);
 
-    console.log('3. Creando prompt...');
-    const prompt = `Professional food photography of ${finalIngredientName}, high quality, clean white background, studio lighting`;
+    console.log('3. Creando prompt profesional para Flux 1.1 Pro...');
+    const prompt = `Professional food photography of ${finalIngredientName}, high-end culinary photography, macro lens, natural studio lighting, clean white background, food styling, commercial quality, ultra-detailed, realistic textures, fresh appearance`;
     console.log('Prompt creado:', prompt);
 
-    console.log('4. Haciendo llamada a Replicate API...');
+    console.log('4. Haciendo llamada a Replicate API con Flux 1.1 Pro...');
     
-    // Usar el modelo Flux Schnell que definitivamente funciona
+    // Usar el modelo Flux 1.1 Pro con parámetros correctos
     const replicateResponse = await fetch('https://api.replicate.com/v1/predictions', {
       method: 'POST',
       headers: {
@@ -51,16 +51,14 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        version: "black-forest-labs/flux-schnell", // Modelo público y funcional
+        version: "black-forest-labs/flux-1.1-pro",
         input: {
           prompt: prompt,
-          go_fast: true,
-          megapixels: "1",
-          num_outputs: 1,
           aspect_ratio: "1:1",
           output_format: "webp",
-          output_quality: 80,
-          num_inference_steps: 4
+          output_quality: 95,
+          safety_tolerance: 2,
+          prompt_upsampling: true
         },
       }),
     });
@@ -84,11 +82,11 @@ serve(async (req) => {
     console.log('7. Iniciando polling para resultado...');
     let result = prediction;
     let attempts = 0;
-    const maxAttempts = 15; // Reducido para evitar timeouts
+    const maxAttempts = 20; // Aumentado para Flux 1.1 Pro que puede tomar más tiempo
 
     while ((result.status === 'starting' || result.status === 'processing') && attempts < maxAttempts) {
       console.log(`Intento ${attempts + 1}/${maxAttempts} - Estado: ${result.status}`);
-      await new Promise(resolve => setTimeout(resolve, 2000)); // 2 segundos entre polls
+      await new Promise(resolve => setTimeout(resolve, 3000)); // 3 segundos entre polls para Flux 1.1 Pro
       attempts++;
       
       const pollResponse = await fetch(`https://api.replicate.com/v1/predictions/${result.id}`, {
@@ -111,13 +109,14 @@ serve(async (req) => {
     if (result.status === 'succeeded' && result.output) {
       const imageUrl = Array.isArray(result.output) ? result.output[0] : result.output;
       
-      console.log('✅ Imagen generada exitosamente:', imageUrl);
+      console.log('✅ Imagen generada exitosamente con Flux 1.1 Pro:', imageUrl);
       
       return new Response(JSON.stringify({ 
         success: true,
         imageUrl: imageUrl,
         image_url: imageUrl, // Para compatibilidad
-        prompt: prompt
+        prompt: prompt,
+        model: "flux-1.1-pro"
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

@@ -24,7 +24,8 @@ const IngredientActionButtons = ({ ingredient, setValue, trigger }: IngredientAc
   const handleRegenerateImage = () => {
     if (!ingredient) return;
     
-    console.log('🖼️ Starting image regeneration for:', ingredient.name);
+    console.log('🖼️ === REGENERATE IMAGE BUTTON CLICKED ===');
+    console.log('Ingredient:', ingredient.name);
     setIsRegeneratingImage(true);
     
     generateImage({
@@ -33,15 +34,28 @@ const IngredientActionButtons = ({ ingredient, setValue, trigger }: IngredientAc
       ingredientId: ingredient.id
     }, {
       onSuccess: (result) => {
-        console.log('✅ Image regenerated - updating form field only:', result.imageUrl.substring(0, 50) + '...');
+        console.log('✅ === IMAGE GENERATION SUCCESS ===');
+        console.log('New image URL received:', result.imageUrl.substring(0, 50) + '...');
         
-        // Solo actualizar el campo del formulario - NO la base de datos
-        setValue('image_url', result.imageUrl);
+        // SOLO actualizar el campo del formulario - NO la base de datos
+        console.log('📝 Setting form field image_url to new value...');
+        setValue('image_url', result.imageUrl, { 
+          shouldDirty: true, 
+          shouldTouch: true,
+          shouldValidate: true 
+        });
         
         // Trigger validation to ensure the field is properly updated
         if (trigger) {
+          console.log('🔄 Triggering form validation...');
           trigger('image_url');
         }
+        
+        // Verify the form field was actually updated
+        setTimeout(() => {
+          console.log('🔍 Checking if form field was updated...');
+          // Note: We can't access form.getValues() here directly, but the parent component will log this
+        }, 100);
         
         setIsRegeneratingImage(false);
         toast({
@@ -50,7 +64,8 @@ const IngredientActionButtons = ({ ingredient, setValue, trigger }: IngredientAc
         });
       },
       onError: (error) => {
-        console.error('❌ Image regeneration failed:', error);
+        console.error('❌ === IMAGE GENERATION ERROR ===');
+        console.error('Error details:', error);
         setIsRegeneratingImage(false);
         toast({
           title: "❌ Error al regenerar imagen",
@@ -63,6 +78,9 @@ const IngredientActionButtons = ({ ingredient, setValue, trigger }: IngredientAc
 
   const handleRegenerateContent = () => {
     if (!ingredient) return;
+    
+    console.log('📝 === REGENERATE CONTENT BUTTON CLICKED ===');
+    console.log('Ingredient:', ingredient.name);
     
     generateContent({
       type: 'ingredient',

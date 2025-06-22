@@ -27,10 +27,15 @@ export const useGenerateImage = () => {
         .from('ingredients')
         .select('id, name, image_url')
         .eq('id', ingredientId)
-        .single();
+        .maybeSingle();
       
-      if (checkError || !existingIngredient) {
-        console.error('❌ Ingredient not found:', checkError);
+      if (checkError) {
+        console.error('❌ Error checking ingredient:', checkError);
+        throw new Error(`Error verificando ingrediente: ${checkError.message}`);
+      }
+      
+      if (!existingIngredient) {
+        console.error('❌ Ingredient not found with ID:', ingredientId);
         throw new Error('Ingrediente no encontrado en la base de datos');
       }
       
@@ -67,9 +72,9 @@ export const useGenerateImage = () => {
         throw new Error('No se recibió URL de imagen');
       }
       
-      console.log('✅ Image URL received, now saving to database...', data.imageUrl.substring(0, 50) + '...');
+      console.log('✅ Image URL received, now saving to database...');
       
-      // GUARDAR AUTOMÁTICAMENTE EN LA BASE DE DATOS
+      // GUARDAR AUTOMÁTICAMENTE EN LA BASE DE DATOS - SIN .single()
       const { data: updateResult, error: updateError } = await supabase
         .from('ingredients')
         .update({ 
@@ -77,19 +82,19 @@ export const useGenerateImage = () => {
           updated_at: new Date().toISOString()
         })
         .eq('id', ingredientId)
-        .select('*')
-        .single();
+        .select('*');
 
       if (updateError) {
         console.error('❌ Error saving image URL to database:', updateError);
         throw new Error(`Error guardando imagen: ${updateError.message}`);
       }
 
-      if (!updateResult) {
+      if (!updateResult || updateResult.length === 0) {
         console.error('❌ No rows updated when saving image');
         throw new Error('No se pudo actualizar el ingrediente con la nueva imagen');
       }
 
+      const updatedIngredient = updateResult[0];
       console.log('✅ Image URL saved to database successfully');
       
       return {
@@ -98,7 +103,7 @@ export const useGenerateImage = () => {
         ingredientId: ingredientId,
         ingredientName: ingredientName,
         savedToDatabase: true,
-        updatedIngredient: updateResult
+        updatedIngredient: updatedIngredient
       };
     },
     onSuccess: (data) => {
@@ -109,7 +114,7 @@ export const useGenerateImage = () => {
       queryClient.invalidateQueries({ queryKey: ['ingredient', data.ingredientId] });
       
       toast({
-        title: "🎉 Imagen generada y guardada",
+        title: "✅ Imagen generada y guardada",
         description: `Nueva imagen guardada exitosamente para ${data.ingredientName}`,
       });
     },

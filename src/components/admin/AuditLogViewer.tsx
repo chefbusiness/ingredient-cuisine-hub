@@ -7,18 +7,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Shield, RefreshCw, Clock, User } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Tables } from '@/integrations/supabase/types';
 
-interface AuditLog {
-  id: string;
-  user_id: string;
-  action: string;
-  resource_type: string;
-  resource_id?: string;
-  details?: any;
-  ip_address?: string;
-  user_agent?: string;
-  created_at: string;
-}
+type AuditLog = Tables<'admin_audit_log'>;
 
 const AuditLogViewer = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
@@ -78,6 +69,18 @@ const AuditLogViewer = () => {
       hour: '2-digit',
       minute: '2-digit'
     });
+  };
+
+  const formatDetails = (details: any) => {
+    if (!details) return null;
+    
+    if (typeof details === 'object') {
+      return Object.entries(details).map(([key, value]) => 
+        `${key}: ${value}`
+      ).join(', ');
+    }
+    
+    return String(details);
   };
 
   return (
@@ -142,12 +145,7 @@ const AuditLogViewer = () => {
                     {log.details && (
                       <div className="text-xs text-gray-500 mt-1">
                         <strong>Detalles:</strong>{' '}
-                        {typeof log.details === 'object' 
-                          ? Object.entries(log.details).map(([key, value]) => 
-                              `${key}: ${value}`
-                            ).join(', ')
-                          : log.details
-                        }
+                        {formatDetails(log.details)}
                       </div>
                     )}
                   </div>

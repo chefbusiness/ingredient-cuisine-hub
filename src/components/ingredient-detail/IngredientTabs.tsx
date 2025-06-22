@@ -1,9 +1,10 @@
-import { Globe, ChefHat, Calculator, Camera, Clock, Star } from "lucide-react";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import RealImagesGallery from "@/components/RealImagesGallery";
 import { Ingredient } from "@/hooks/useIngredients";
+import NamesTab from "./tabs/NamesTab";
+import UsesTab from "./tabs/UsesTab";
+import PricesTab from "./tabs/PricesTab";
+import TechnicalTab from "./tabs/TechnicalTab";
 
 interface IngredientTabsProps {
   ingredient: Ingredient;
@@ -11,27 +12,6 @@ interface IngredientTabsProps {
 }
 
 const IngredientTabs = ({ ingredient, realImagesCount }: IngredientTabsProps) => {
-  const getRecipeIcon = (type: string) => {
-    switch (type.toLowerCase()) {
-      case 'entrante': return '🥗';
-      case 'principal': return '🍽️';
-      case 'guarnición': return '🥕';
-      case 'postre': return '🍰';
-      case 'salsa': return '🥄';
-      case 'especialidad': return '⭐';
-      default: return '🍴';
-    }
-  };
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty.toLowerCase()) {
-      case 'fácil': return 'bg-green-100 text-green-800';
-      case 'medio': return 'bg-yellow-100 text-yellow-800';
-      case 'difícil': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   return (
     <Tabs defaultValue="nombres" className="w-full">
       <TabsList className="grid w-full grid-cols-4">
@@ -42,258 +22,19 @@ const IngredientTabs = ({ ingredient, realImagesCount }: IngredientTabsProps) =>
       </TabsList>
 
       <TabsContent value="nombres" className="space-y-4">
-        <Card className="bg-white/90">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Globe className="h-5 w-5" />
-              <span>Nombres en Diferentes Idiomas</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <div>
-                  <span className="text-sm text-gray-600">Español (España)</span>
-                  <p className="font-medium">{ingredient.name}</p>
-                </div>
-                <div>
-                  <span className="text-sm text-gray-600">Inglés</span>
-                  <p className="font-medium">{ingredient.name_en}</p>
-                </div>
-                {ingredient.name_fr && (
-                  <div>
-                    <span className="text-sm text-gray-600">Francés</span>
-                    <p className="font-medium">{ingredient.name_fr}</p>
-                  </div>
-                )}
-                {ingredient.name_it && (
-                  <div>
-                    <span className="text-sm text-gray-600">Italiano</span>
-                    <p className="font-medium">{ingredient.name_it}</p>
-                  </div>
-                )}
-              </div>
-              <div className="space-y-3">
-                {ingredient.name_la && (
-                  <div>
-                    <span className="text-sm text-gray-600">Latinoamérica</span>
-                    <p className="font-medium">{ingredient.name_la}</p>
-                  </div>
-                )}
-                {ingredient.name_pt && (
-                  <div>
-                    <span className="text-sm text-gray-600">Portugués</span>
-                    <p className="font-medium">{ingredient.name_pt}</p>
-                  </div>
-                )}
-                {ingredient.name_zh && (
-                  <div>
-                    <span className="text-sm text-gray-600">Chino</span>
-                    <p className="font-medium">{ingredient.name_zh}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {realImagesCount > 0 && (
-          <Card className="bg-white/90">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Camera className="h-5 w-5" />
-                <span>Imágenes Reales</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <RealImagesGallery ingredientId={ingredient.id} />
-            </CardContent>
-          </Card>
-        )}
+        <NamesTab ingredient={ingredient} realImagesCount={realImagesCount} />
       </TabsContent>
 
       <TabsContent value="usos" className="space-y-4">
-        <Card className="bg-white/90">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <ChefHat className="h-5 w-5" />
-              <span>Usos en Cocina Profesional</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {ingredient.ingredient_uses && ingredient.ingredient_uses.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {ingredient.ingredient_uses.map((useItem, index) => (
-                  <div key={index} className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
-                    <Star className="h-4 w-4 text-green-600 flex-shrink-0" />
-                    <span className="text-gray-700">{useItem.use_description}</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-4">No hay usos registrados para este ingrediente</p>
-            )}
-          </CardContent>
-        </Card>
-
-        {ingredient.ingredient_recipes && ingredient.ingredient_recipes.length > 0 && (
-          <Card className="bg-white/90">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <ChefHat className="h-5 w-5" />
-                <span>Recetas Destacadas ({ingredient.ingredient_recipes.length})</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {ingredient.ingredient_recipes.map((recipe, index) => (
-                  <div key={index} className="p-4 border border-green-200 rounded-lg bg-white hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between mb-3">
-                      <h4 className="font-semibold text-gray-800 text-sm leading-tight flex-1">
-                        {recipe.name}
-                      </h4>
-                      <span className="text-lg ml-2 flex-shrink-0">
-                        {getRecipeIcon(recipe.type)}
-                      </span>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Badge variant="outline" className="text-xs capitalize">
-                          {recipe.type}
-                        </Badge>
-                        <Badge className={`text-xs ${getDifficultyColor(recipe.difficulty)}`}>
-                          {recipe.difficulty}
-                        </Badge>
-                      </div>
-                      
-                      <div className="flex items-center space-x-1 text-gray-600">
-                        <Clock className="h-3 w-3" />
-                        <span className="text-xs">{recipe.time}</span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {ingredient.ingredient_recipes.length === 6 && (
-                <div className="mt-4 p-3 bg-green-50 rounded-lg">
-                  <p className="text-sm text-green-700 text-center flex items-center justify-center gap-2">
-                    <ChefHat className="h-4 w-4" />
-                    Colección completa de 6 recetas profesionales para este ingrediente
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+        <UsesTab ingredient={ingredient} />
       </TabsContent>
 
       <TabsContent value="precios" className="space-y-4">
-        <Card className="bg-white/90">
-          <CardHeader>
-            <CardTitle>Precios por País</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {ingredient.ingredient_prices && ingredient.ingredient_prices.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {ingredient.ingredient_prices.map((priceData, index) => (
-                  <div key={index} className="p-4 border border-green-200 rounded-lg">
-                    <h4 className="font-semibold text-gray-800 mb-2">
-                      {priceData.countries?.name || 'País no especificado'}
-                    </h4>
-                    <p className="text-2xl font-bold text-green-600 mb-1">
-                      {priceData.countries?.currency_symbol || '€'}{priceData.price.toFixed(2)}/{priceData.unit}
-                    </p>
-                    <p className="text-sm text-gray-600">Precio actual</p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 text-center py-4">No hay precios registrados para este ingrediente</p>
-            )}
-          </CardContent>
-        </Card>
+        <PricesTab ingredient={ingredient} />
       </TabsContent>
 
       <TabsContent value="tecnico" className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="bg-white/90">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Calculator className="h-5 w-5" />
-                <span>Merma y Rendimiento</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
-                  <span className="text-gray-700">Merma</span>
-                  <span className="text-2xl font-bold text-red-600">{ingredient.merma.toFixed(1)}%</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                  <span className="text-gray-700">Rendimiento</span>
-                  <span className="text-2xl font-bold text-green-600">{ingredient.rendimiento.toFixed(1)}%</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {ingredient.nutritional_info && ingredient.nutritional_info.length > 0 && (
-            <Card className="bg-white/90">
-              <CardHeader>
-                <CardTitle>Información Nutricional (por 100g)</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {ingredient.nutritional_info.map((nutrition, index) => (
-                  <div key={index} className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>Calorías</span>
-                      <span className="font-medium">{nutrition.calories} kcal</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Proteínas</span>
-                      <span className="font-medium">{nutrition.protein}g</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Carbohidratos</span>
-                      <span className="font-medium">{nutrition.carbs}g</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Grasas</span>
-                      <span className="font-medium">{nutrition.fat}g</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Fibra</span>
-                      <span className="font-medium">{nutrition.fiber}g</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Vitamina C</span>
-                      <span className="font-medium">{nutrition.vitamin_c}mg</span>
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {ingredient.ingredient_varieties && ingredient.ingredient_varieties.length > 0 && (
-          <Card className="bg-white/90">
-            <CardHeader>
-              <CardTitle>Variedades</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {ingredient.ingredient_varieties.map((variety, index) => (
-                  <Badge key={index} variant="secondary">
-                    {variety.variety_name}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        <TechnicalTab ingredient={ingredient} />
       </TabsContent>
     </Tabs>
   );

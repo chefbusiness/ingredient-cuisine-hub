@@ -1,5 +1,4 @@
-
-import { Globe, ChefHat, Calculator, Camera, Clock, Star, Chef } from "lucide-react";
+import { Globe, ChefHat, Calculator, Camera, Clock, Star } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -141,7 +140,7 @@ const IngredientTabs = ({ ingredient, realImagesCount }: IngredientTabsProps) =>
           <Card className="bg-white/90">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
-                <Chef className="h-5 w-5" />
+                <ChefHat className="h-5 w-5" />
                 <span>Recetas Destacadas ({ingredient.ingredient_recipes.length})</span>
               </CardTitle>
             </CardHeader>
@@ -180,7 +179,7 @@ const IngredientTabs = ({ ingredient, realImagesCount }: IngredientTabsProps) =>
               {ingredient.ingredient_recipes.length === 6 && (
                 <div className="mt-4 p-3 bg-green-50 rounded-lg">
                   <p className="text-sm text-green-700 text-center flex items-center justify-center gap-2">
-                    <Chef className="h-4 w-4" />
+                    <ChefHat className="h-4 w-4" />
                     Colección completa de 6 recetas profesionales para este ingrediente
                   </p>
                 </div>

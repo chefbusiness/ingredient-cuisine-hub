@@ -1,137 +1,14 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { verifySuperAdminAccess } from './auth.ts';
+import { validateImageUrl } from './validation.ts';
+import { searchImagesWithDeepSeek } from './deepseek.ts';
+import { getIngredient, saveImageToDatabase, logAdminAction } from './database.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-);
-
-// Security function to verify super admin access
-async function verifySuperAdminAccess(authHeader: string | null): Promise<{ authorized: boolean, userEmail?: string }> {
-  if (!authHeader) {
-    console.log('❌ No authorization header provided');
-    return { authorized: false };
-  }
-
-  try {
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    
-    if (userError || !user) {
-      console.log('❌ Invalid or expired token:', userError?.message);
-      return { authorized: false };
-    }
-
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role, email')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError) {
-      console.log('❌ Error fetching user profile:', profileError.message);
-      return { authorized: false, userEmail: user.email };
-    }
-
-    if (profile.role !== 'super_admin') {
-      console.log('❌ User is not a super admin:', profile.email);
-      return { authorized: false, userEmail: profile.email };
-    }
-
-    return { authorized: true, userEmail: profile.email };
-  } catch (error) {
-    console.log('❌ Error verifying admin access:', error);
-    return { authorized: false };
-  }
-}
-
-// Improved image URL validation function
-async function validateImageUrl(url: string): Promise<boolean> {
-  try {
-    console.log(`🔍 Validating image URL: ${url}`);
-    
-    // Basic URL validation
-    const urlObj = new URL(url);
-    if (!['http:', 'https:'].includes(urlObj.protocol)) {
-      console.log(`❌ Invalid protocol: ${urlObj.protocol}`);
-      return false;
-    }
-
-    // Check if URL ends with common image extensions
-    const imageExtensions = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
-    const hasImageExtension = imageExtensions.some(ext => 
-      url.toLowerCase().includes(ext.toLowerCase())
-    );
-
-    // Try HTTP validation with relaxed settings
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-      
-      const response = await fetch(url, { 
-        method: 'GET',
-        signal: controller.signal,
-        redirect: 'follow', // Follow redirects
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; ImageBot/1.0)',
-          'Accept': 'image/*,*/*;q=0.8',
-          'Range': 'bytes=0-1023' // Only download first 1KB for validation
-        }
-      });
-      
-      clearTimeout(timeoutId);
-      
-      const contentType = response.headers.get('content-type');
-      const isValidResponse = response.ok || response.status === 206; // Accept partial content
-      
-      if (isValidResponse && contentType && contentType.startsWith('image/')) {
-        console.log(`✅ Valid image URL (HTTP): ${url} - Content-Type: ${contentType}`);
-        return true;
-      }
-      
-      // If content-type validation fails but has image extension, still allow it
-      if (isValidResponse && hasImageExtension) {
-        console.log(`✅ Valid image URL (extension): ${url}`);
-        return true;
-      }
-      
-      console.log(`⚠️ HTTP validation inconclusive for: ${url} - Status: ${response.status}, Content-Type: ${contentType}`);
-      
-    } catch (fetchError) {
-      console.log(`⚠️ HTTP validation failed for: ${url} - ${fetchError.message}`);
-    }
-
-    // Fallback: if HTTP validation fails but URL has image extension, allow it
-    if (hasImageExtension) {
-      console.log(`✅ Valid image URL (extension fallback): ${url}`);
-      return true;
-    }
-
-    // Final fallback: check if URL contains image-related keywords
-    const imageKeywords = ['image', 'img', 'photo', 'picture', 'pic'];
-    const hasImageKeyword = imageKeywords.some(keyword => 
-      url.toLowerCase().includes(keyword)
-    );
-    
-    if (hasImageKeyword) {
-      console.log(`✅ Valid image URL (keyword fallback): ${url}`);
-      return true;
-    }
-    
-    console.log(`❌ Could not validate image URL: ${url}`);
-    return false;
-    
-  } catch (error) {
-    console.log(`❌ Error validating URL ${url}:`, error.message);
-    return false;
-  }
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -182,122 +59,30 @@ serve(async (req) => {
     for (const ingredientId of idsToProcess) {
       console.log(`🔍 Researching images for ingredient: ${ingredientId}`);
 
-      // Get ingredient details
-      const { data: ingredient, error: ingredientError } = await supabase
-        .from('ingredients')
-        .select('name, name_en, description')
-        .eq('id', ingredientId)
-        .single();
-
-      if (ingredientError || !ingredient) {
-        console.log(`❌ Ingredient not found: ${ingredientId}`);
-        results.push({
-          ingredientId,
-          success: false,
-          error: 'Ingrediente no encontrado'
-        });
-        continue;
-      }
-
-      // DeepSeek prompt for image research
-      const researchPrompt = `
-      Eres un experto en investigación de imágenes de ingredientes culinarios. 
-      
-      INGREDIENTE: ${ingredient.name} (${ingredient.name_en})
-      DESCRIPCIÓN: ${ingredient.description}
-      
-      TAREA: Encuentra 4-6 URLs de imágenes REALES y de alta calidad de este ingrediente.
-      
-      CRITERIOS ESTRICTOS:
-      - Solo URLs de imágenes REALES (no ilustraciones, no AI)
-      - Alta resolución (mínimo 800x600)
-      - Fondo preferiblemente neutral
-      - Diferentes perspectivas: crudo, cocinado, cortado, entero
-      - Fuentes confiables (sitios culinarios, bancos de imágenes)
-      - URLs directas a archivos de imagen (.jpg, .png, .webp)
-      
-      FORMATO DE RESPUESTA (JSON):
-      {
-        "images": [
-          {
-            "url": "URL_DIRECTA_IMAGEN",
-            "description": "descripción_breve",
-            "category": "crudo|cocinado|cortado|entero|variedad"
-          }
-        ]
-      }
-      
-      IMPORTANTE: Responde SOLO con el JSON válido, sin texto adicional.
-      `;
-
       try {
-        const deepseekResponse = await fetch('https://api.deepseek.com/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'deepseek-chat',
-            messages: [
-              {
-                role: 'system',
-                content: 'Eres un investigador experto en imágenes de ingredientes culinarios. Responde solo con JSON válido.'
-              },
-              {
-                role: 'user',
-                content: researchPrompt
-              }
-            ],
-            temperature: 0.3,
-            max_tokens: 2000
-          }),
-        });
+        // Get ingredient details
+        const ingredient = await getIngredient(ingredientId);
 
-        if (!deepseekResponse.ok) {
-          throw new Error(`DeepSeek API error: ${deepseekResponse.status}`);
-        }
-
-        const deepseekData = await deepseekResponse.json();
-        const content = deepseekData.choices[0]?.message?.content;
-
-        if (!content) {
-          throw new Error('No content received from DeepSeek');
-        }
-
-        // Parse JSON response
-        let imagesData;
-        try {
-          imagesData = JSON.parse(content);
-        } catch {
-          // Try to extract JSON from response if it has extra text
-          const jsonMatch = content.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            imagesData = JSON.parse(jsonMatch[0]);
-          } else {
-            throw new Error('Invalid JSON response from DeepSeek');
-          }
-        }
+        // Search for images using DeepSeek
+        const foundImages = await searchImagesWithDeepSeek(ingredient, DEEPSEEK_API_KEY);
 
         const validImages = [];
         
         // Validate and filter images with improved validation
-        if (imagesData.images && Array.isArray(imagesData.images)) {
-          for (const imageInfo of imagesData.images.slice(0, 6)) { // Max 6 images
-            if (imageInfo.url && typeof imageInfo.url === 'string') {
-              console.log(`🔍 Validating image URL: ${imageInfo.url}`);
-              
-              const isValid = await validateImageUrl(imageInfo.url);
-              if (isValid) {
-                validImages.push({
-                  url: imageInfo.url,
-                  caption: imageInfo.description || '',
-                  category: imageInfo.category || 'general'
-                });
-                console.log(`✅ Valid image found: ${imageInfo.url}`);
-              } else {
-                console.log(`❌ Invalid image URL: ${imageInfo.url}`);
-              }
+        for (const imageInfo of foundImages.slice(0, 6)) { // Max 6 images
+          if (imageInfo.url && typeof imageInfo.url === 'string') {
+            console.log(`🔍 Validating image URL: ${imageInfo.url}`);
+            
+            const isValid = await validateImageUrl(imageInfo.url);
+            if (isValid) {
+              validImages.push({
+                url: imageInfo.url,
+                caption: imageInfo.description || '',
+                category: imageInfo.category || 'general'
+              });
+              console.log(`✅ Valid image found: ${imageInfo.url}`);
+            } else {
+              console.log(`❌ Invalid image URL: ${imageInfo.url}`);
             }
           }
         }
@@ -305,20 +90,11 @@ serve(async (req) => {
         // Save valid images to database
         let savedCount = 0;
         for (const imageInfo of validImages) {
-          const { error: insertError } = await supabase
-            .from('ingredient_real_images')
-            .insert({
-              ingredient_id: ingredientId,
-              image_url: imageInfo.url,
-              caption: imageInfo.caption,
-              uploaded_by: 'ai_research',
-              is_approved: true // Auto-approve AI researched images
-            });
-
-          if (!insertError) {
+          const saved = await saveImageToDatabase(ingredientId, imageInfo.url, imageInfo.caption);
+          if (saved) {
             savedCount++;
           } else {
-            console.log(`❌ Error saving image: ${insertError.message}`);
+            console.log(`❌ Error saving image: ${imageInfo.url}`);
           }
         }
 
@@ -335,6 +111,7 @@ serve(async (req) => {
 
       } catch (error) {
         console.error(`❌ Error processing ingredient ${ingredientId}:`, error);
+        const ingredient = await getIngredient(ingredientId).catch(() => ({ name: 'Unknown' }));
         results.push({
           ingredientId,
           ingredientName: ingredient.name,
@@ -345,22 +122,14 @@ serve(async (req) => {
     }
 
     // Log admin action
-    try {
-      await supabase.rpc('log_admin_action', {
-        action_type: 'research_real_images',
-        resource_type: 'ingredient_images',
-        action_details: {
-          mode,
-          processed_ingredients: idsToProcess.length,
-          successful_ingredients: results.filter(r => r.success).length,
-          total_images_found: results.reduce((sum, r) => sum + (r.imagesFound || 0), 0),
-          total_images_saved: results.reduce((sum, r) => sum + (r.imagesSaved || 0), 0),
-          user_email: authResult.userEmail
-        }
-      });
-    } catch (logError) {
-      console.log('⚠️ Failed to log admin action:', logError);
-    }
+    await logAdminAction({
+      mode,
+      processed_ingredients: idsToProcess.length,
+      successful_ingredients: results.filter(r => r.success).length,
+      total_images_found: results.reduce((sum, r) => sum + (r.imagesFound || 0), 0),
+      total_images_saved: results.reduce((sum, r) => sum + (r.imagesSaved || 0), 0),
+      user_email: authResult.userEmail
+    }, authResult.userEmail);
 
     const summary = {
       total_processed: idsToProcess.length,

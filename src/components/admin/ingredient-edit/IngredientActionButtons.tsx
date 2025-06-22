@@ -39,15 +39,18 @@ const IngredientActionButtons = ({ ingredient, onIngredientUpdated }: Ingredient
         console.log('✅ === IMAGE GENERATION SUCCESS ===');
         console.log('Image saved automatically:', result.savedToDatabase);
         
-        // Notificar al componente padre para cerrar el diálogo y refrescar
-        if (onIngredientUpdated) {
+        // Solo cerrar el diálogo si la imagen se guardó correctamente
+        if (result.savedToDatabase && onIngredientUpdated) {
           console.log('🔄 Notifying parent component of ingredient update...');
-          onIngredientUpdated();
+          setTimeout(() => {
+            onIngredientUpdated();
+          }, 500); // Pequeño delay para que se vea el toast de éxito
         }
       },
       onError: (error) => {
         console.error('❌ === IMAGE GENERATION ERROR ===');
         console.error('Error details:', error);
+        // NO cerrar el diálogo en caso de error para que el usuario pueda reintentar
       }
     });
   };

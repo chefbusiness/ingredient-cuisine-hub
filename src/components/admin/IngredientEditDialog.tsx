@@ -148,7 +148,7 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
             <IngredientQualityBadge ingredient={ingredient} />
           </DialogTitle>
           <DialogDescription>
-            Modifica los campos del ingrediente. Las imágenes se guardan automáticamente al generarlas.
+            Modifica los campos del ingrediente. Haz clic en "Regenerar Imagen" y espera a que se complete antes de cerrar el diálogo.
           </DialogDescription>
         </DialogHeader>
 

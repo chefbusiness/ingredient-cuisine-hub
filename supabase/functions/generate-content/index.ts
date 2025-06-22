@@ -24,7 +24,24 @@ serve(async (req) => {
     console.log('=== INICIO DE REQUEST ===');
     console.log('Parámetros recibidos:', params);
     
-    const prompt = generatePrompt(params);
+    // Obtener ingredientes existentes para evitar duplicados
+    let existingIngredients: any[] = [];
+    if (params.type === 'ingredient') {
+      console.log('🔍 Obteniendo ingredientes existentes...');
+      const { data: ingredients, error } = await supabase
+        .from('ingredients')
+        .select('name, name_en, name_fr, name_it, name_pt, name_zh, category_id, categories!inner(name)')
+        .order('name');
+      
+      if (error) {
+        console.error('❌ Error obteniendo ingredientes existentes:', error);
+      } else {
+        existingIngredients = ingredients || [];
+        console.log(`✅ Encontrados ${existingIngredients.length} ingredientes existentes`);
+      }
+    }
+    
+    const prompt = generatePrompt(params, existingIngredients);
     console.log('Prompt generado, longitud:', prompt.length);
     console.log('Primeros 200 caracteres del prompt:', prompt.substring(0, 200) + '...');
 

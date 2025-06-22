@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
@@ -11,6 +12,37 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
+// Función para verificar si un ingrediente es duplicado
+const isDuplicate = (newIngredient: any, existingIngredients: any[]): boolean => {
+  const normalizeText = (text: string) => text?.toLowerCase().trim() || '';
+  
+  return existingIngredients.some(existing => {
+    // Verificar nombres en todos los idiomas
+    const existingNames = [
+      normalizeText(existing.name),
+      normalizeText(existing.name_en),
+      normalizeText(existing.name_fr),
+      normalizeText(existing.name_it),
+      normalizeText(existing.name_pt),
+      normalizeText(existing.name_zh)
+    ].filter(Boolean);
+    
+    const newNames = [
+      normalizeText(newIngredient.name),
+      normalizeText(newIngredient.name_en),
+      normalizeText(newIngredient.name_fr),
+      normalizeText(newIngredient.name_it),
+      normalizeText(newIngredient.name_pt),
+      normalizeText(newIngredient.name_zh)
+    ].filter(Boolean);
+    
+    // Verificar si algún nombre coincide
+    return existingNames.some(existingName => 
+      newNames.includes(existingName)
+    );
+  });
+};
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -20,10 +52,36 @@ serve(async (req) => {
     const { type, data } = await req.json();
 
     if (type === 'ingredient') {
+      // Obtener ingredientes existentes para validación de duplicados
+      const { data: existingIngredients, error: fetchError } = await supabase
+        .from('ingredients')
+        .select('name, name_en, name_fr, name_it, name_pt, name_zh');
+      
+      if (fetchError) {
+        console.error('❌ Error obteniendo ingredientes existentes:', fetchError);
+        throw fetchError;
+      }
+
       const results = [];
+      let duplicatesFound = 0;
+      let successfullyCreated = 0;
       
       for (const ingredient of data) {
         console.log('Procesando ingrediente:', ingredient.name, 'con categoría:', ingredient.category);
+        
+        // Verificar duplicados
+        if (isDuplicate(ingredient, existingIngredients || [])) {
+          console.log(`⚠️ DUPLICADO DETECTADO: ${ingredient.name} ya existe, saltando...`);
+          duplicatesFound++;
+          results.push({
+            name: ingredient.name,
+            category: ingredient.category,
+            success: false,
+            reason: 'duplicate',
+            skipped: true
+          });
+          continue;
+        }
         
         // Verificar que todos los idiomas críticos estén presentes
         const requiredLanguages = ['name_fr', 'name_it', 'name_pt', 'name_zh'];
@@ -31,7 +89,6 @@ serve(async (req) => {
         
         if (missingLanguages.length > 0) {
           console.log(`⚠️ Ingrediente ${ingredient.name} falta idiomas:`, missingLanguages);
-          // Continuar pero registrar el problema
         }
         
         // Primero obtener o crear la categoría
@@ -179,6 +236,7 @@ serve(async (req) => {
           }
         }
 
+        successfullyCreated++;
         results.push({
           id: newIngredient.id,
           name: ingredient.name,
@@ -189,14 +247,26 @@ serve(async (req) => {
         });
       }
 
-      console.log('Resumen de procesamiento:');
+      console.log('=== RESUMEN DE PROCESAMIENTO ===');
+      console.log(`✅ Ingredientes creados exitosamente: ${successfullyCreated}`);
+      console.log(`⚠️ Duplicados detectados y omitidos: ${duplicatesFound}`);
+      
       results.forEach(result => {
-        console.log(`- ${result.name}: ${result.languages_complete ? '✅ Completo' : '⚠️ Faltan idiomas: ' + result.missing_languages.join(', ')}`);
+        if (result.skipped) {
+          console.log(`- ${result.name}: ⚠️ OMITIDO (duplicado)`);
+        } else {
+          console.log(`- ${result.name}: ${result.languages_complete ? '✅ Completo' : '⚠️ Faltan idiomas: ' + result.missing_languages.join(', ')}`);
+        }
       });
 
       return new Response(JSON.stringify({ 
         success: true,
-        results: results 
+        results: results,
+        summary: {
+          total_processed: data.length,
+          successfully_created: successfullyCreated,
+          duplicates_skipped: duplicatesFound
+        }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

@@ -10,12 +10,12 @@ import {
   generateSupplyChainPrompt
 } from './prompts/research-prompts.ts';
 
-export const generatePrompt = (params: GenerateContentParams): string => {
+export const generatePrompt = (params: GenerateContentParams, existingIngredients: any[] = []): string => {
   const { type, category, region = 'España', count = 1, ingredient } = params;
   
   switch (type) {
     case 'ingredient':
-      return generateIngredientPrompt(params);
+      return generateIngredientPrompt(params, existingIngredients);
       
     case 'category':
       return generateCategoryPrompt(count);

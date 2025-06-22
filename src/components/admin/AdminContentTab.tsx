@@ -1,9 +1,9 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Database, Package, Image, RefreshCw, Tag, Camera, AlertTriangle, CheckCircle } from "lucide-react";
-import { useRegenerateImages, useFixCategorization } from "@/hooks/useContentGeneration";
+import { useRegenerateImages } from "@/hooks/useRegenerateImages";
+import { useFixCategorization } from "@/hooks/useFixCategorization";
 
 interface AdminContentTabProps {
   ingredientsCount: number;

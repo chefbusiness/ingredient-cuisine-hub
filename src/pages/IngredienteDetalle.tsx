@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useIngredientById } from "@/hooks/useIngredients";
 import { useRealImages } from "@/hooks/useRealImages";
-import { useGenerateImage } from "@/hooks/useContentGeneration";
+import { useGenerateImage } from "@/hooks/useGenerateImage";
 import IngredientDetailHeader from "@/components/ingredient-detail/IngredientDetailHeader";
 import IngredientMainCard from "@/components/ingredient-detail/IngredientMainCard";
 import IngredientTabs from "@/components/ingredient-detail/IngredientTabs";

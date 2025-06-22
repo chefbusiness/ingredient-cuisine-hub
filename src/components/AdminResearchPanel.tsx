@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Loader, Search, TrendingUp, Cloud, Globe, BarChart3, Truck, Eye } from "lucide-react";
-import { useGenerateContent } from "@/hooks/useContentGeneration";
+import { useGenerateContent } from "@/hooks/useGenerateContent";
 
 const AdminResearchPanel = () => {
   const [researchType, setResearchType] = useState<'market_research' | 'weather_impact' | 'cultural_variants' | 'trend_analysis' | 'supply_chain'>('market_research');

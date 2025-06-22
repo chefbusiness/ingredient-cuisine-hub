@@ -74,19 +74,9 @@ export const useDataStatus = () => {
         if (!hasAllLanguages) stats.missingLanguages++;
         if (!hasPrices) stats.missingPrices++;
         if (!hasAllLanguages && !hasPrices && !hasUses && !hasRecipes) stats.missingAllData++;
-        
-        // Debug por ingrediente
-        if (!hasAllLanguages) {
-          console.log(`🔍 ${ingredient.name} falta idiomas:`, {
-            fr: !ingredient.name_fr,
-            it: !ingredient.name_it,
-            pt: !ingredient.name_pt,
-            zh: !ingredient.name_zh
-          });
-        }
       });
 
-      console.log('📊 Estado de datos corregido:', stats);
+      console.log('📊 Estado de datos:', stats);
       return { stats, ingredients: ingredients || [] };
     },
   });
@@ -98,22 +88,25 @@ export const useCompleteIngredientsData = () => {
 
   return useMutation({
     mutationFn: async ({ ingredientIds }: { ingredientIds: string[] }) => {
-      console.log('=== INICIANDO RECUPERACIÓN DE DATOS ===');
+      console.log('=== INICIANDO RECUPERACIÓN DEFINITIVA DE DATOS ===');
       console.log(`🔄 Procesando ${ingredientIds.length} ingredientes`);
 
       let completedCount = 0;
       let errorCount = 0;
       const errors: string[] = [];
+      const successDetails: string[] = [];
 
       // Mostrar toast de inicio
       toast({
-        title: "Recuperación iniciada",
-        description: `Procesando ${ingredientIds.length} ingredientes...`,
+        title: "🔄 Recuperación iniciada",
+        description: `Procesando ${ingredientIds.length} ingredientes con verificación completa...`,
       });
 
       for (const ingredientId of ingredientIds) {
         try {
-          // Obtener el ingrediente actual
+          console.log(`\n=== PROCESANDO INGREDIENTE ${ingredientId} ===`);
+          
+          // 1. OBTENER EL INGREDIENTE ACTUAL
           const { data: ingredient, error: fetchError } = await supabase
             .from('ingredients')
             .select('id, name, description, name_fr, name_it, name_pt, name_zh')
@@ -123,19 +116,34 @@ export const useCompleteIngredientsData = () => {
           if (fetchError || !ingredient) {
             console.error(`❌ Error obteniendo ingrediente ${ingredientId}:`, fetchError);
             errorCount++;
-            errors.push(`Error obteniendo ingrediente ${ingredientId}`);
+            errors.push(`Error obteniendo ingrediente ${ingredientId}: ${fetchError?.message || 'Ingrediente no encontrado'}`);
             continue;
           }
 
-          console.log(`🔄 Completando datos para: ${ingredient.name}`);
-          console.log(`📝 Idiomas actuales:`, {
-            fr: ingredient.name_fr,
-            it: ingredient.name_it,
-            pt: ingredient.name_pt,
-            zh: ingredient.name_zh
+          console.log(`📥 Ingrediente obtenido: ${ingredient.name}`);
+          console.log(`🔍 Estado actual idiomas:`, {
+            fr: ingredient.name_fr || 'FALTANTE',
+            it: ingredient.name_it || 'FALTANTE', 
+            pt: ingredient.name_pt || 'FALTANTE',
+            zh: ingredient.name_zh || 'FALTANTE'
           });
 
-          // Generar datos completos con DeepSeek
+          // Verificar si necesita completar idiomas
+          const needsFrench = !ingredient.name_fr;
+          const needsItalian = !ingredient.name_it;
+          const needsPortuguese = !ingredient.name_pt;
+          const needsChinese = !ingredient.name_zh;
+          
+          if (!needsFrench && !needsItalian && !needsPortuguese && !needsChinese) {
+            console.log(`✅ ${ingredient.name} ya tiene todos los idiomas completos`);
+            completedCount++;
+            successDetails.push(`${ingredient.name}: Ya completo`);
+            continue;
+          }
+
+          console.log(`🤖 Generando idiomas faltantes para: ${ingredient.name}`);
+
+          // 2. GENERAR DATOS CON DEEPSEEK
           const { data: generatedData, error: generateError } = await supabase.functions.invoke('generate-content', {
             body: {
               type: 'ingredient',
@@ -144,210 +152,158 @@ export const useCompleteIngredientsData = () => {
             }
           });
 
-          if (generateError || !generatedData?.success || !generatedData?.data?.[0]) {
-            console.error(`❌ Error generando datos para ${ingredient.name}:`, generateError);
+          if (generateError) {
+            console.error(`❌ Error en función de generación:`, generateError);
             errorCount++;
-            errors.push(`Error generando datos para ${ingredient.name}`);
+            errors.push(`Error generando para ${ingredient.name}: ${generateError.message}`);
+            continue;
+          }
+
+          if (!generatedData?.success || !generatedData?.data?.[0]) {
+            console.error(`❌ Respuesta inválida de generación para ${ingredient.name}:`, generatedData);
+            errorCount++;
+            errors.push(`Respuesta inválida para ${ingredient.name}`);
             continue;
           }
 
           const completedIngredient = generatedData.data[0];
-          
-          console.log(`📥 Datos generados para ${ingredient.name}:`, {
-            name_fr: completedIngredient.name_fr,
-            name_it: completedIngredient.name_it,
-            name_pt: completedIngredient.name_pt,
-            name_zh: completedIngredient.name_zh,
-            usos_nutritivos: completedIngredient.usos_nutritivos?.length || 0,
-            recetas: completedIngredient.recetas?.length || 0
+          console.log(`🎯 Datos generados:`, {
+            name_fr: completedIngredient.name_fr || 'NO GENERADO',
+            name_it: completedIngredient.name_it || 'NO GENERADO',
+            name_pt: completedIngredient.name_pt || 'NO GENERADO', 
+            name_zh: completedIngredient.name_zh || 'NO GENERADO'
           });
 
-          // Preparar datos de actualización - solo idiomas faltantes
+          // 3. PREPARAR ACTUALIZACIÓN SOLO DE IDIOMAS FALTANTES
           const updateData: any = {};
-          let hasUpdates = false;
+          let fieldsToUpdate: string[] = [];
 
-          // Solo actualizar idiomas que faltan
-          if (!ingredient.name_fr && completedIngredient.name_fr) {
+          if (needsFrench && completedIngredient.name_fr) {
             updateData.name_fr = completedIngredient.name_fr;
-            hasUpdates = true;
+            fieldsToUpdate.push('name_fr');
           }
-          if (!ingredient.name_it && completedIngredient.name_it) {
+          if (needsItalian && completedIngredient.name_it) {
             updateData.name_it = completedIngredient.name_it;
-            hasUpdates = true;
+            fieldsToUpdate.push('name_it');
           }
-          if (!ingredient.name_pt && completedIngredient.name_pt) {
+          if (needsPortuguese && completedIngredient.name_pt) {
             updateData.name_pt = completedIngredient.name_pt;
-            hasUpdates = true;
+            fieldsToUpdate.push('name_pt');
           }
-          if (!ingredient.name_zh && completedIngredient.name_zh) {
+          if (needsChinese && completedIngredient.name_zh) {
             updateData.name_zh = completedIngredient.name_zh;
-            hasUpdates = true;
+            fieldsToUpdate.push('name_zh');
           }
 
-          // Actualizar otros campos básicos si están disponibles
-          if (completedIngredient.merma !== undefined) {
-            updateData.merma = completedIngredient.merma;
-            hasUpdates = true;
-          }
-          if (completedIngredient.rendimiento !== undefined) {
-            updateData.rendimiento = completedIngredient.rendimiento;
-            hasUpdates = true;
+          if (fieldsToUpdate.length === 0) {
+            console.warn(`⚠️ No se generaron idiomas válidos para ${ingredient.name}`);
+            errorCount++;
+            errors.push(`No se generaron idiomas válidos para ${ingredient.name}`);
+            continue;
           }
 
-          console.log(`💾 Actualizando ingrediente ${ingredient.name} con:`, updateData);
+          console.log(`💾 Actualizando campos: [${fieldsToUpdate.join(', ')}]`);
+          console.log(`📝 Datos a actualizar:`, updateData);
 
-          if (hasUpdates) {
-            const { error: updateError } = await supabase
-              .from('ingredients')
-              .update(updateData)
-              .eq('id', ingredientId);
+          // 4. EJECUTAR UPDATE EN SUPABASE CON MANEJO DE ERRORES DETALLADO
+          const { data: updateResult, error: updateError } = await supabase
+            .from('ingredients')
+            .update(updateData)
+            .eq('id', ingredientId)
+            .select('id, name, name_fr, name_it, name_pt, name_zh');
 
-            if (updateError) {
-              console.error(`❌ Error actualizando ingrediente ${ingredient.name}:`, updateError);
-              errorCount++;
-              errors.push(`Error actualizando ${ingredient.name}: ${updateError.message}`);
-              continue;
-            }
-            console.log(`✅ Ingrediente ${ingredient.name} actualizado correctamente`);
-          } else {
-            console.log(`ℹ️ Ingrediente ${ingredient.name} ya tiene todos los idiomas`);
+          if (updateError) {
+            console.error(`❌ Error en UPDATE de Supabase:`, updateError);
+            errorCount++;
+            errors.push(`Error actualizando ${ingredient.name}: ${updateError.message}`);
+            continue;
           }
 
-          // Agregar precios para múltiples países si no existen
-          if (completedIngredient.precios && Array.isArray(completedIngredient.precios)) {
-            for (const precio of completedIngredient.precios) {
-              try {
-                // Buscar el país
-                const { data: country } = await supabase
-                  .from('countries')
-                  .select('id')
-                  .eq('code', precio.pais)
-                  .single();
+          if (!updateResult || updateResult.length === 0) {
+            console.error(`❌ UPDATE no retornó datos para ${ingredient.name}`);
+            errorCount++;
+            errors.push(`UPDATE sin resultados para ${ingredient.name}`);
+            continue;
+          }
 
-                if (country) {
-                  // Verificar si ya existe precio para este país
-                  const { data: existingPrice } = await supabase
-                    .from('ingredient_prices')
-                    .select('id')
-                    .eq('ingredient_id', ingredientId)
-                    .eq('country_id', country.id)
-                    .single();
+          console.log(`✅ UPDATE exitoso, datos retornados:`, updateResult[0]);
 
-                  if (!existingPrice) {
-                    await supabase
-                      .from('ingredient_prices')
-                      .insert({
-                        ingredient_id: ingredientId,
-                        country_id: country.id,
-                        price: precio.precio,
-                        unit: precio.unidad || 'kg'
-                      });
-                    console.log(`💰 Precio agregado para ${ingredient.name} en ${precio.pais}`);
-                  }
-                }
-              } catch (priceError) {
-                console.warn(`⚠️ Error agregando precio para ${ingredient.name}:`, priceError);
-              }
+          // 5. VERIFICACIÓN POST-UPDATE
+          const updatedIngredient = updateResult[0];
+          const verifySuccess: string[] = [];
+          const verifyFailed: string[] = [];
+
+          if (needsFrench) {
+            if (updatedIngredient.name_fr) {
+              verifySuccess.push(`Francés: ${updatedIngredient.name_fr}`);
+            } else {
+              verifyFailed.push('Francés');
             }
           }
-
-          // Agregar usos nutricionales si no existen
-          if (completedIngredient.usos_nutritivos && Array.isArray(completedIngredient.usos_nutritivos)) {
-            try {
-              const { data: existingUses } = await supabase
-                .from('ingredient_uses')
-                .select('id')
-                .eq('ingredient_id', ingredientId);
-
-              if (!existingUses || existingUses.length === 0) {
-                const usesToInsert = completedIngredient.usos_nutritivos.slice(0, 3).map((uso: string) => ({
-                  ingredient_id: ingredientId,
-                  use_description: uso
-                }));
-
-                if (usesToInsert.length > 0) {
-                  await supabase
-                    .from('ingredient_uses')
-                    .insert(usesToInsert);
-                  console.log(`🍃 ${usesToInsert.length} usos agregados para ${ingredient.name}`);
-                }
-              }
-            } catch (usesError) {
-              console.warn(`⚠️ Error agregando usos para ${ingredient.name}:`, usesError);
+          if (needsItalian) {
+            if (updatedIngredient.name_it) {
+              verifySuccess.push(`Italiano: ${updatedIngredient.name_it}`);
+            } else {
+              verifyFailed.push('Italiano');
+            }
+          }
+          if (needsPortuguese) {
+            if (updatedIngredient.name_pt) {
+              verifySuccess.push(`Portugués: ${updatedIngredient.name_pt}`);
+            } else {
+              verifyFailed.push('Portugués');
+            }
+          }
+          if (needsChinese) {
+            if (updatedIngredient.name_zh) {
+              verifySuccess.push(`Chino: ${updatedIngredient.name_zh}`);
+            } else {
+              verifyFailed.push('Chino');
             }
           }
 
-          // Agregar recetas si no existen
-          if (completedIngredient.recetas && Array.isArray(completedIngredient.recetas)) {
-            try {
-              const { data: existingRecipes } = await supabase
-                .from('ingredient_recipes')
-                .select('id')
-                .eq('ingredient_id', ingredientId);
-
-              if (!existingRecipes || existingRecipes.length === 0) {
-                const recipesToInsert = completedIngredient.recetas.slice(0, 3).map((receta: any) => ({
-                  ingredient_id: ingredientId,
-                  name: receta.nombre || receta.name || 'Receta',
-                  type: receta.tipo || receta.type || 'principal',
-                  difficulty: receta.dificultad || receta.difficulty || 'media',
-                  time: receta.tiempo || receta.time || '30 min'
-                }));
-
-                if (recipesToInsert.length > 0) {
-                  await supabase
-                    .from('ingredient_recipes')
-                    .insert(recipesToInsert);
-                  console.log(`👨‍🍳 ${recipesToInsert.length} recetas agregadas para ${ingredient.name}`);
-                }
-              }
-            } catch (recipesError) {
-              console.warn(`⚠️ Error agregando recetas para ${ingredient.name}:`, recipesError);
-            }
+          if (verifyFailed.length > 0) {
+            console.error(`❌ Verificación falló para ${ingredient.name}:`, verifyFailed);
+            errorCount++;
+            errors.push(`Verificación falló para ${ingredient.name}: ${verifyFailed.join(', ')}`);
+            continue;
           }
 
-          // Agregar información nutricional si no existe
-          if (completedIngredient.informacion_nutricional) {
-            try {
-              const { data: existingNutrition } = await supabase
-                .from('nutritional_info')
-                .select('id')
-                .eq('ingredient_id', ingredientId);
-
-              if (!existingNutrition || existingNutrition.length === 0) {
-                await supabase
-                  .from('nutritional_info')
-                  .insert({
-                    ingredient_id: ingredientId,
-                    calories: completedIngredient.informacion_nutricional.calorias || 0,
-                    protein: completedIngredient.informacion_nutricional.proteinas || 0,
-                    carbs: completedIngredient.informacion_nutricional.carbohidratos || 0,
-                    fat: completedIngredient.informacion_nutricional.grasas || 0,
-                    fiber: completedIngredient.informacion_nutricional.fibra || 0,
-                    vitamin_c: completedIngredient.informacion_nutricional.vitamina_c || 0
-                  });
-                console.log(`🥗 Información nutricional agregada para ${ingredient.name}`);
-              }
-            } catch (nutritionError) {
-              console.warn(`⚠️ Error agregando información nutricional para ${ingredient.name}:`, nutritionError);
-            }
-          }
-
+          console.log(`🎉 ÉXITO COMPLETO para ${ingredient.name}:`);
+          console.log(`   Idiomas guardados: ${verifySuccess.join(', ')}`);
+          
           completedCount++;
-          console.log(`✅ Completado: ${ingredient.name} (${completedCount}/${ingredientIds.length})`);
+          successDetails.push(`${ingredient.name}: ${verifySuccess.length} idiomas agregados`);
 
         } catch (error) {
-          console.error(`❌ Error procesando ingrediente ${ingredientId}:`, error);
+          console.error(`💥 Error crítico procesando ingrediente ${ingredientId}:`, error);
           errorCount++;
-          errors.push(`Error procesando ingrediente ${ingredientId}: ${error}`);
+          errors.push(`Error crítico en ${ingredientId}: ${error instanceof Error ? error.message : 'Error desconocido'}`);
         }
       }
 
-      console.log('🏁 RECUPERACIÓN TERMINADA:', { completedCount, errorCount, total: ingredientIds.length });
-      return { completedCount, errorCount, total: ingredientIds.length, errors };
+      console.log('\n🏁 RECUPERACIÓN TERMINADA:');
+      console.log(`   ✅ Exitosos: ${completedCount}`);
+      console.log(`   ❌ Errores: ${errorCount}`);
+      console.log(`   📊 Total: ${ingredientIds.length}`);
+      
+      if (successDetails.length > 0) {
+        console.log('📋 Detalles de éxito:', successDetails);
+      }
+      if (errors.length > 0) {
+        console.log('📋 Detalles de errores:', errors);
+      }
+
+      return { 
+        completedCount, 
+        errorCount, 
+        total: ingredientIds.length, 
+        errors,
+        successDetails
+      };
     },
     onSuccess: (result) => {
-      console.log('🎉 Recuperación exitosa:', result);
+      console.log('🎯 Recuperación finalizada:', result);
       
       // Invalidar queries para actualizar la UI
       queryClient.invalidateQueries({ queryKey: ['ingredients'] });
@@ -355,22 +311,30 @@ export const useCompleteIngredientsData = () => {
       
       if (result.completedCount > 0) {
         toast({
-          title: "✅ Recuperación completada",
-          description: `${result.completedCount} ingredientes completados exitosamente${result.errorCount > 0 ? `, ${result.errorCount} errores` : ''}`,
+          title: "🎉 ¡Recuperación exitosa!",
+          description: `${result.completedCount} ingredientes completados. ${result.errorCount > 0 ? `${result.errorCount} errores.` : '¡Sin errores!'}`,
         });
+        
+        if (result.successDetails.length > 0) {
+          console.log('🏆 INGREDIENTES ACTUALIZADOS:', result.successDetails);
+        }
       } else {
         toast({
-          title: "⚠️ Recuperación terminada",
-          description: `No se pudieron completar ingredientes. ${result.errorCount} errores.`,
+          title: "⚠️ Sin actualizaciones",
+          description: `No se completaron ingredientes. ${result.errorCount} errores encontrados.`,
           variant: "destructive",
         });
       }
+      
+      if (result.errors.length > 0) {
+        console.log('🔍 ERRORES DETALLADOS:', result.errors);
+      }
     },
     onError: (error) => {
-      console.error('❌ Error en recuperación de datos:', error);
+      console.error('💥 Error crítico en recuperación:', error);
       toast({
-        title: "❌ Error en recuperación",
-        description: error.message || "Error desconocido durante la recuperación",
+        title: "💥 Error crítico",
+        description: `Error en recuperación: ${error.message}`,
         variant: "destructive",
       });
     },

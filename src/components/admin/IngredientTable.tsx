@@ -10,7 +10,10 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Ingredient } from "@/hooks/useIngredients";
-import { Edit, Trash2 } from "lucide-react";
+import { Edit, Trash2, Wand2, Image, RefreshCw } from "lucide-react";
+import { useGenerateImage } from "@/hooks/useGenerateImage";
+import { useGenerateContent } from "@/hooks/useGenerateContent";
+import { useToast } from "@/hooks/use-toast";
 
 interface IngredientTableProps {
   ingredients: Ingredient[];
@@ -20,6 +23,57 @@ interface IngredientTableProps {
 }
 
 const IngredientTable = ({ ingredients, isLoading, onEdit, onDelete }: IngredientTableProps) => {
+  const { mutate: generateImage } = useGenerateImage();
+  const { mutate: generateContent } = useGenerateContent();
+  const { toast } = useToast();
+
+  const handleRegenerateImage = (ingredient: Ingredient) => {
+    generateImage({
+      ingredientName: ingredient.name,
+      description: ingredient.description,
+      ingredientId: ingredient.id
+    });
+  };
+
+  const handleRegenerateContent = (ingredient: Ingredient) => {
+    generateContent({
+      type: 'ingredient',
+      count: 1,
+      category: ingredient.categories?.name || 'otros'
+    }, {
+      onSuccess: () => {
+        toast({
+          title: "🔄 Contenido regenerado",
+          description: `Se ha actualizado el contenido para ${ingredient.name}`,
+        });
+      }
+    });
+  };
+
+  const getDataQuality = (ingredient: Ingredient) => {
+    let score = 100;
+    const issues = [];
+    
+    if (!ingredient.image_url) {
+      score -= 20;
+      issues.push("Sin imagen");
+    }
+    if (!ingredient.name_fr || !ingredient.name_it) {
+      score -= 15;
+      issues.push("Faltan traducciones");
+    }
+    if (!ingredient.temporada) {
+      score -= 10;
+      issues.push("Sin temporada");
+    }
+    if (!ingredient.origen) {
+      score -= 10;
+      issues.push("Sin origen");
+    }
+    
+    return { score: Math.max(0, score), issues };
+  };
+
   if (isLoading) {
     return (
       <div className="text-center py-8">
@@ -38,55 +92,122 @@ const IngredientTable = ({ ingredients, isLoading, onEdit, onDelete }: Ingredien
   }
 
   return (
-    <div className="border rounded-lg">
+    <div className="border rounded-lg overflow-auto">
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="w-16">Imagen</TableHead>
             <TableHead>Nombre</TableHead>
             <TableHead>Categoría</TableHead>
+            <TableHead>Calidad</TableHead>
+            <TableHead>Temporada</TableHead>
+            <TableHead>Merma</TableHead>
+            <TableHead>Rendimiento</TableHead>
             <TableHead>Popularidad</TableHead>
-            <TableHead>Merma %</TableHead>
-            <TableHead>Rendimiento %</TableHead>
-            <TableHead>Acciones</TableHead>
+            <TableHead className="w-48">Acciones</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {ingredients.map((ingredient) => (
-            <TableRow key={ingredient.id}>
-              <TableCell className="font-medium">
-                <div>
-                  <div>{ingredient.name}</div>
-                  <div className="text-xs text-muted-foreground">{ingredient.name_en}</div>
-                </div>
-              </TableCell>
-              <TableCell>
-                <Badge variant="secondary">
-                  {ingredient.categories?.name || 'Sin categoría'}
-                </Badge>
-              </TableCell>
-              <TableCell>{ingredient.popularity}</TableCell>
-              <TableCell>{ingredient.merma}%</TableCell>
-              <TableCell>{ingredient.rendimiento}%</TableCell>
-              <TableCell>
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onEdit(ingredient)}
-                  >
-                    <Edit className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onDelete(ingredient)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
+          {ingredients.map((ingredient) => {
+            const quality = getDataQuality(ingredient);
+            
+            return (
+              <TableRow key={ingredient.id}>
+                <TableCell>
+                  {ingredient.image_url ? (
+                    <img 
+                      src={ingredient.image_url} 
+                      alt={ingredient.name}
+                      className="w-12 h-12 object-cover rounded"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                      <Image className="h-4 w-4 text-gray-400" />
+                    </div>
+                  )}
+                </TableCell>
+                <TableCell className="font-medium">
+                  <div>
+                    <div className="font-medium">{ingredient.name}</div>
+                    <div className="text-xs text-muted-foreground">{ingredient.name_en}</div>
+                    {ingredient.origen && (
+                      <div className="text-xs text-blue-600">{ingredient.origen}</div>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Badge variant="secondary">
+                    {ingredient.categories?.name || 'Sin categoría'}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Badge 
+                      variant={quality.score >= 80 ? "default" : quality.score >= 60 ? "secondary" : "destructive"}
+                      className="text-xs"
+                    >
+                      {quality.score}%
+                    </Badge>
+                    {quality.issues.length > 0 && (
+                      <div className="text-xs text-orange-600" title={quality.issues.join(", ")}>
+                        {quality.issues.length} problema{quality.issues.length > 1 ? 's' : ''}
+                      </div>
+                    )}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {ingredient.temporada ? (
+                    <Badge variant="outline" className="text-xs">
+                      {ingredient.temporada}
+                    </Badge>
+                  ) : (
+                    <span className="text-gray-400 text-xs">-</span>
+                  )}
+                </TableCell>
+                <TableCell>{ingredient.merma}%</TableCell>
+                <TableCell>{ingredient.rendimiento}%</TableCell>
+                <TableCell>{ingredient.popularity}</TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onEdit(ingredient)}
+                      className="h-8 px-2"
+                    >
+                      <Edit className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRegenerateImage(ingredient)}
+                      className="h-8 px-2"
+                      title="Regenerar imagen"
+                    >
+                      <Image className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleRegenerateContent(ingredient)}
+                      className="h-8 px-2"
+                      title="Regenerar contenido"
+                    >
+                      <Wand2 className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onDelete(ingredient)}
+                      className="h-8 px-2 text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </TableBody>
       </Table>
     </div>

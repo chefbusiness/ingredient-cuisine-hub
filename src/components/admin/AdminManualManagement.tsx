@@ -8,9 +8,10 @@ import IngredientTable from "./IngredientTable";
 import IngredientEditDialog from "./IngredientEditDialog";
 import IngredientDeleteDialog from "./IngredientDeleteDialog";
 import DataRecoveryPanel from "./DataRecoveryPanel";
+import BatchOperations from "./BatchOperations";
 import { Ingredient } from "@/hooks/useIngredients";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Database, Edit } from "lucide-react";
+import { Database, Edit, RefreshCw } from "lucide-react";
 
 const AdminManualManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -38,10 +39,14 @@ const AdminManualManagement = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="management" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="management" className="flex items-center gap-2">
             <Edit className="h-4 w-4" />
             Gestión de Ingredientes
+          </TabsTrigger>
+          <TabsTrigger value="batch" className="flex items-center gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Operaciones en Lote
           </TabsTrigger>
           <TabsTrigger value="recovery" className="flex items-center gap-2">
             <Database className="h-4 w-4" />
@@ -54,17 +59,20 @@ const AdminManualManagement = () => {
             <CardHeader>
               <CardTitle>Gestión Manual de Ingredientes</CardTitle>
               <CardDescription>
-                Edita, elimina y gestiona los ingredientes existentes en la base de datos
+                Edita, elimina y gestiona los ingredientes existentes con herramientas avanzadas de IA
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center justify-between">
                 <Input
                   placeholder="Buscar ingredientes..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="max-w-sm"
                 />
+                <div className="text-sm text-muted-foreground">
+                  {ingredients.length} ingrediente{ingredients.length !== 1 ? 's' : ''} encontrado{ingredients.length !== 1 ? 's' : ''}
+                </div>
               </div>
               
               <IngredientTable
@@ -75,6 +83,10 @@ const AdminManualManagement = () => {
               />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="batch" className="space-y-6">
+          <BatchOperations totalIngredients={ingredients.length} />
         </TabsContent>
 
         <TabsContent value="recovery" className="space-y-6">

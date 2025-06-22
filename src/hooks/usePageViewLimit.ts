@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSuperAdmin } from './useSuperAdmin';
 
 const PAGE_VIEW_LIMIT = 20;
 const SESSION_STORAGE_KEY = 'ingredients_session_id';
@@ -9,11 +10,19 @@ const VIEWED_PAGES_KEY = 'viewed_ingredient_pages';
 
 export const usePageViewLimit = () => {
   const { user } = useAuth();
+  const { isSuperAdmin, loading: superAdminLoading } = useSuperAdmin();
   const [viewedPagesCount, setViewedPagesCount] = useState(0);
   const [hasReachedLimit, setHasReachedLimit] = useState(false);
   const [sessionId, setSessionId] = useState<string>('');
 
   useEffect(() => {
+    // Super admins have unlimited access
+    if (isSuperAdmin) {
+      setViewedPagesCount(0);
+      setHasReachedLimit(false);
+      return;
+    }
+
     // Generate or get session ID for non-authenticated users
     if (!user) {
       let storedSessionId = localStorage.getItem(SESSION_STORAGE_KEY);
@@ -28,15 +37,24 @@ export const usePageViewLimit = () => {
       setViewedPagesCount(viewedPages.length);
       setHasReachedLimit(viewedPages.length >= PAGE_VIEW_LIMIT);
     } else {
-      // Clear session tracking for authenticated users
+      // Clear session tracking for authenticated users (but not super admins)
       setViewedPagesCount(0);
       setHasReachedLimit(false);
     }
-  }, [user]);
+  }, [user, isSuperAdmin]);
 
   const recordPageView = async (ingredientId: string) => {
+    // Super admins have unlimited access
+    if (isSuperAdmin) {
+      await supabase.from('user_history').insert({
+        user_id: user!.id,
+        ingredient_id: ingredientId
+      });
+      return true;
+    }
+
     if (user) {
-      // For authenticated users, record in user_history
+      // For authenticated users (non super admin), record in user_history
       await supabase.from('user_history').insert({
         user_id: user.id,
         ingredient_id: ingredientId
@@ -74,15 +92,16 @@ export const usePageViewLimit = () => {
   };
 
   const getRemainingViews = () => {
-    if (user) return null; // Unlimited for authenticated users
+    if (user || isSuperAdmin) return null; // Unlimited for authenticated users and super admins
     return Math.max(0, PAGE_VIEW_LIMIT - viewedPagesCount);
   };
 
   return {
     viewedPagesCount,
-    hasReachedLimit,
+    hasReachedLimit: hasReachedLimit && !isSuperAdmin, // Never reached limit for super admins
     recordPageView,
     getRemainingViews,
-    pageViewLimit: PAGE_VIEW_LIMIT
+    pageViewLimit: PAGE_VIEW_LIMIT,
+    isSuperAdmin
   };
 };

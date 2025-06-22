@@ -411,6 +411,7 @@ export type Database = {
           id: string
           preferred_currency: string | null
           preferred_language: string | null
+          role: string | null
           updated_at: string
         }
         Insert: {
@@ -419,6 +420,7 @@ export type Database = {
           id: string
           preferred_currency?: string | null
           preferred_language?: string | null
+          role?: string | null
           updated_at?: string
         }
         Update: {
@@ -427,6 +429,7 @@ export type Database = {
           id?: string
           preferred_currency?: string | null
           preferred_language?: string | null
+          role?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -511,6 +514,14 @@ export type Database = {
       delete_ingredient_cascade: {
         Args: { ingredient_id: string }
         Returns: Json
+      }
+      is_super_admin: {
+        Args: { user_id: string }
+        Returns: boolean
+      }
+      set_super_admin: {
+        Args: { user_email: string }
+        Returns: boolean
       }
     }
     Enums: {

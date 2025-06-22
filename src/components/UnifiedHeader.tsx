@@ -4,6 +4,7 @@ import { ChefHat } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { SuperAdminBadge } from "@/components/auth/SuperAdminBadge";
 
 interface UnifiedHeaderProps {
   variant?: 'default' | 'ingredient-detail';
@@ -70,6 +71,7 @@ const UnifiedHeader = ({ variant = 'default' }: UnifiedHeaderProps) => {
                 </Link>
               </nav>
               
+              <SuperAdminBadge />
               <UserMenu onShowAuthModal={() => setShowAuthModal(true)} />
             </div>
           </div>

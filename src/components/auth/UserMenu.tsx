@@ -1,6 +1,7 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,7 +11,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { User, Heart, History, Settings, LogOut } from 'lucide-react';
+import { User, Heart, History, Settings, LogOut, Crown, Shield } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface UserMenuProps {
   onShowAuthModal: () => void;
@@ -18,6 +20,9 @@ interface UserMenuProps {
 
 export const UserMenu: React.FC<UserMenuProps> = ({ onShowAuthModal }) => {
   const { user, signOut } = useAuth();
+  const { isSuperAdmin, promoteSuperAdmin } = useSuperAdmin();
+  const { toast } = useToast();
+  const [promoting, setPromoting] = useState(false);
 
   if (!user) {
     return (
@@ -34,12 +39,51 @@ export const UserMenu: React.FC<UserMenuProps> = ({ onShowAuthModal }) => {
     await signOut();
   };
 
+  const handlePromoteSuperAdmin = async () => {
+    if (user.email !== 'john@chefbusiness.co') {
+      toast({
+        title: "No autorizado",
+        description: "Solo se puede promover el usuario específico",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setPromoting(true);
+    try {
+      const result = await promoteSuperAdmin(user.email);
+      if (result.success) {
+        toast({
+          title: "¡Promoción exitosa!",
+          description: "Usuario promovido a Super Admin"
+        });
+        // Reload to refresh super admin status
+        window.location.reload();
+      } else {
+        toast({
+          title: "Error",
+          description: result.error || "No se pudo promover el usuario",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error inesperado",
+        variant: "destructive"
+      });
+    } finally {
+      setPromoting(false);
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarFallback className="text-xs">
+            <AvatarFallback className={`text-xs ${isSuperAdmin ? 'bg-yellow-100 text-yellow-800' : ''}`}>
+              {isSuperAdmin && <Crown className="h-3 w-3 absolute top-0 right-0" />}
               {userInitials}
             </AvatarFallback>
           </Avatar>
@@ -50,11 +94,29 @@ export const UserMenu: React.FC<UserMenuProps> = ({ onShowAuthModal }) => {
           <div className="flex flex-col space-y-1 leading-none">
             <p className="font-medium text-sm">{user.email}</p>
             <p className="text-xs text-muted-foreground">
-              Cuenta Premium Gratuita
+              {isSuperAdmin ? (
+                <span className="flex items-center gap-1 text-yellow-600">
+                  <Crown className="h-3 w-3" />
+                  Super Admin
+                </span>
+              ) : (
+                "Cuenta Premium Gratuita"
+              )}
             </p>
           </div>
         </div>
         <DropdownMenuSeparator />
+        
+        {user.email === 'john@chefbusiness.co' && !isSuperAdmin && (
+          <>
+            <DropdownMenuItem onClick={handlePromoteSuperAdmin} disabled={promoting}>
+              <Shield className="mr-2 h-4 w-4" />
+              <span>{promoting ? 'Promoviendo...' : 'Activar Super Admin'}</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        )}
+        
         <DropdownMenuItem>
           <Heart className="mr-2 h-4 w-4" />
           <span>Mis Favoritos</span>

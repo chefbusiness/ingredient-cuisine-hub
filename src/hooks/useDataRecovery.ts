@@ -144,7 +144,7 @@ export const useCompleteIngredientsData = () => {
             }
           });
 
-          if (generateError || !generatedData.success) {
+          if (generateError || !generatedData?.success || !generatedData?.data?.[0]) {
             console.error(`❌ Error generando datos para ${ingredient.name}:`, generateError);
             errorCount++;
             errors.push(`Error generando datos para ${ingredient.name}`);
@@ -157,136 +157,179 @@ export const useCompleteIngredientsData = () => {
             name_fr: completedIngredient.name_fr,
             name_it: completedIngredient.name_it,
             name_pt: completedIngredient.name_pt,
-            name_zh: completedIngredient.name_zh
+            name_zh: completedIngredient.name_zh,
+            usos_nutritivos: completedIngredient.usos_nutritivos?.length || 0,
+            recetas: completedIngredient.recetas?.length || 0
           });
 
-          // Actualizar ingrediente con idiomas faltantes (solo si no existen)
-          const updateData: any = {
-            merma: completedIngredient.merma || 0,
-            rendimiento: completedIngredient.rendimiento || 100,
-            temporada: completedIngredient.temporada || null,
-            origen: completedIngredient.origen || null
-          };
+          // Preparar datos de actualización - solo idiomas faltantes
+          const updateData: any = {};
+          let hasUpdates = false;
 
           // Solo actualizar idiomas que faltan
           if (!ingredient.name_fr && completedIngredient.name_fr) {
             updateData.name_fr = completedIngredient.name_fr;
+            hasUpdates = true;
           }
           if (!ingredient.name_it && completedIngredient.name_it) {
             updateData.name_it = completedIngredient.name_it;
+            hasUpdates = true;
           }
           if (!ingredient.name_pt && completedIngredient.name_pt) {
             updateData.name_pt = completedIngredient.name_pt;
+            hasUpdates = true;
           }
           if (!ingredient.name_zh && completedIngredient.name_zh) {
             updateData.name_zh = completedIngredient.name_zh;
+            hasUpdates = true;
           }
 
-          const { error: updateError } = await supabase
-            .from('ingredients')
-            .update(updateData)
-            .eq('id', ingredientId);
+          // Actualizar otros campos básicos si están disponibles
+          if (completedIngredient.merma !== undefined) {
+            updateData.merma = completedIngredient.merma;
+            hasUpdates = true;
+          }
+          if (completedIngredient.rendimiento !== undefined) {
+            updateData.rendimiento = completedIngredient.rendimiento;
+            hasUpdates = true;
+          }
 
-          if (updateError) {
-            console.error(`❌ Error actualizando ingrediente ${ingredient.name}:`, updateError);
-            errorCount++;
-            errors.push(`Error actualizando ${ingredient.name}`);
-            continue;
+          console.log(`💾 Actualizando ingrediente ${ingredient.name} con:`, updateData);
+
+          if (hasUpdates) {
+            const { error: updateError } = await supabase
+              .from('ingredients')
+              .update(updateData)
+              .eq('id', ingredientId);
+
+            if (updateError) {
+              console.error(`❌ Error actualizando ingrediente ${ingredient.name}:`, updateError);
+              errorCount++;
+              errors.push(`Error actualizando ${ingredient.name}: ${updateError.message}`);
+              continue;
+            }
+            console.log(`✅ Ingrediente ${ingredient.name} actualizado correctamente`);
+          } else {
+            console.log(`ℹ️ Ingrediente ${ingredient.name} ya tiene todos los idiomas`);
           }
 
           // Agregar precios para múltiples países si no existen
           if (completedIngredient.precios && Array.isArray(completedIngredient.precios)) {
             for (const precio of completedIngredient.precios) {
-              // Buscar el país
-              const { data: country } = await supabase
-                .from('countries')
-                .select('id')
-                .eq('code', precio.pais)
-                .single();
-
-              if (country) {
-                // Verificar si ya existe precio para este país
-                const { data: existingPrice } = await supabase
-                  .from('ingredient_prices')
+              try {
+                // Buscar el país
+                const { data: country } = await supabase
+                  .from('countries')
                   .select('id')
-                  .eq('ingredient_id', ingredientId)
-                  .eq('country_id', country.id)
+                  .eq('code', precio.pais)
                   .single();
 
-                if (!existingPrice) {
-                  await supabase
+                if (country) {
+                  // Verificar si ya existe precio para este país
+                  const { data: existingPrice } = await supabase
                     .from('ingredient_prices')
-                    .insert({
-                      ingredient_id: ingredientId,
-                      country_id: country.id,
-                      price: precio.precio,
-                      unit: precio.unidad || 'kg'
-                    });
+                    .select('id')
+                    .eq('ingredient_id', ingredientId)
+                    .eq('country_id', country.id)
+                    .single();
+
+                  if (!existingPrice) {
+                    await supabase
+                      .from('ingredient_prices')
+                      .insert({
+                        ingredient_id: ingredientId,
+                        country_id: country.id,
+                        price: precio.precio,
+                        unit: precio.unidad || 'kg'
+                      });
+                    console.log(`💰 Precio agregado para ${ingredient.name} en ${precio.pais}`);
+                  }
                 }
+              } catch (priceError) {
+                console.warn(`⚠️ Error agregando precio para ${ingredient.name}:`, priceError);
               }
             }
           }
 
           // Agregar usos nutricionales si no existen
           if (completedIngredient.usos_nutritivos && Array.isArray(completedIngredient.usos_nutritivos)) {
-            const { data: existingUses } = await supabase
-              .from('ingredient_uses')
-              .select('id')
-              .eq('ingredient_id', ingredientId);
-
-            if (!existingUses || existingUses.length === 0) {
-              const usesToInsert = completedIngredient.usos_nutritivos.slice(0, 3).map((uso: string) => ({
-                ingredient_id: ingredientId,
-                use_description: uso
-              }));
-
-              await supabase
+            try {
+              const { data: existingUses } = await supabase
                 .from('ingredient_uses')
-                .insert(usesToInsert);
+                .select('id')
+                .eq('ingredient_id', ingredientId);
+
+              if (!existingUses || existingUses.length === 0) {
+                const usesToInsert = completedIngredient.usos_nutritivos.slice(0, 3).map((uso: string) => ({
+                  ingredient_id: ingredientId,
+                  use_description: uso
+                }));
+
+                if (usesToInsert.length > 0) {
+                  await supabase
+                    .from('ingredient_uses')
+                    .insert(usesToInsert);
+                  console.log(`🍃 ${usesToInsert.length} usos agregados para ${ingredient.name}`);
+                }
+              }
+            } catch (usesError) {
+              console.warn(`⚠️ Error agregando usos para ${ingredient.name}:`, usesError);
             }
           }
 
           // Agregar recetas si no existen
           if (completedIngredient.recetas && Array.isArray(completedIngredient.recetas)) {
-            const { data: existingRecipes } = await supabase
-              .from('ingredient_recipes')
-              .select('id')
-              .eq('ingredient_id', ingredientId);
-
-            if (!existingRecipes || existingRecipes.length === 0) {
-              const recipesToInsert = completedIngredient.recetas.slice(0, 3).map((receta: any) => ({
-                ingredient_id: ingredientId,
-                name: receta.nombre || receta.name,
-                type: receta.tipo || receta.type || 'principal',
-                difficulty: receta.dificultad || receta.difficulty || 'media',
-                time: receta.tiempo || receta.time || '30 min'
-              }));
-
-              await supabase
+            try {
+              const { data: existingRecipes } = await supabase
                 .from('ingredient_recipes')
-                .insert(recipesToInsert);
+                .select('id')
+                .eq('ingredient_id', ingredientId);
+
+              if (!existingRecipes || existingRecipes.length === 0) {
+                const recipesToInsert = completedIngredient.recetas.slice(0, 3).map((receta: any) => ({
+                  ingredient_id: ingredientId,
+                  name: receta.nombre || receta.name || 'Receta',
+                  type: receta.tipo || receta.type || 'principal',
+                  difficulty: receta.dificultad || receta.difficulty || 'media',
+                  time: receta.tiempo || receta.time || '30 min'
+                }));
+
+                if (recipesToInsert.length > 0) {
+                  await supabase
+                    .from('ingredient_recipes')
+                    .insert(recipesToInsert);
+                  console.log(`👨‍🍳 ${recipesToInsert.length} recetas agregadas para ${ingredient.name}`);
+                }
+              }
+            } catch (recipesError) {
+              console.warn(`⚠️ Error agregando recetas para ${ingredient.name}:`, recipesError);
             }
           }
 
           // Agregar información nutricional si no existe
           if (completedIngredient.informacion_nutricional) {
-            const { data: existingNutrition } = await supabase
-              .from('nutritional_info')
-              .select('id')
-              .eq('ingredient_id', ingredientId);
-
-            if (!existingNutrition || existingNutrition.length === 0) {
-              await supabase
+            try {
+              const { data: existingNutrition } = await supabase
                 .from('nutritional_info')
-                .insert({
-                  ingredient_id: ingredientId,
-                  calories: completedIngredient.informacion_nutricional.calorias || 0,
-                  protein: completedIngredient.informacion_nutricional.proteinas || 0,
-                  carbs: completedIngredient.informacion_nutricional.carbohidratos || 0,
-                  fat: completedIngredient.informacion_nutricional.grasas || 0,
-                  fiber: completedIngredient.informacion_nutricional.fibra || 0,
-                  vitamin_c: completedIngredient.informacion_nutricional.vitamina_c || 0
-                });
+                .select('id')
+                .eq('ingredient_id', ingredientId);
+
+              if (!existingNutrition || existingNutrition.length === 0) {
+                await supabase
+                  .from('nutritional_info')
+                  .insert({
+                    ingredient_id: ingredientId,
+                    calories: completedIngredient.informacion_nutricional.calorias || 0,
+                    protein: completedIngredient.informacion_nutricional.proteinas || 0,
+                    carbs: completedIngredient.informacion_nutricional.carbohidratos || 0,
+                    fat: completedIngredient.informacion_nutricional.grasas || 0,
+                    fiber: completedIngredient.informacion_nutricional.fibra || 0,
+                    vitamin_c: completedIngredient.informacion_nutricional.vitamina_c || 0
+                  });
+                console.log(`🥗 Información nutricional agregada para ${ingredient.name}`);
+              }
+            } catch (nutritionError) {
+              console.warn(`⚠️ Error agregando información nutricional para ${ingredient.name}:`, nutritionError);
             }
           }
 
@@ -300,9 +343,12 @@ export const useCompleteIngredientsData = () => {
         }
       }
 
+      console.log('🏁 RECUPERACIÓN TERMINADA:', { completedCount, errorCount, total: ingredientIds.length });
       return { completedCount, errorCount, total: ingredientIds.length, errors };
     },
     onSuccess: (result) => {
+      console.log('🎉 Recuperación exitosa:', result);
+      
       // Invalidar queries para actualizar la UI
       queryClient.invalidateQueries({ queryKey: ['ingredients'] });
       queryClient.invalidateQueries({ queryKey: ['data-status'] });

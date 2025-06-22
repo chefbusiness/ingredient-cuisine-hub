@@ -1,92 +1,109 @@
 
 import { useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useIngredients } from "@/hooks/useIngredients";
-import { useCategories } from "@/hooks/useCategories";
-import { Edit, Search, Trash2 } from "lucide-react";
-import SimpleIngredientEditDialog from "./SimpleIngredientEditDialog";
+import IngredientTable from "./IngredientTable";
+import IngredientEditDialog from "./IngredientEditDialog";
 import IngredientDeleteDialog from "./IngredientDeleteDialog";
+import DataRecoveryPanel from "./DataRecoveryPanel";
+import BatchOperations from "./BatchOperations";
 import { Ingredient } from "@/hooks/useIngredients";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Database, Edit, RefreshCw } from "lucide-react";
 
 const AdminManualManagement = () => {
-  const { data: ingredients = [], isLoading } = useIngredients();
-  const { data: categories = [] } = useCategories();
   const [searchTerm, setSearchTerm] = useState("");
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
   const [deletingIngredient, setDeletingIngredient] = useState<Ingredient | null>(null);
+  
+  const { data: ingredients = [], isLoading } = useIngredients(searchTerm);
 
-  const filteredIngredients = ingredients.filter(ingredient =>
-    ingredient.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleEdit = (ingredient: Ingredient) => {
+    setEditingIngredient(ingredient);
+  };
 
-  if (isLoading) {
-    return <div className="text-center py-8">Cargando ingredientes...</div>;
-  }
+  const handleDelete = (ingredient: Ingredient) => {
+    setDeletingIngredient(ingredient);
+  };
+
+  const handleCloseEdit = () => {
+    setEditingIngredient(null);
+  };
+
+  const handleCloseDelete = () => {
+    setDeletingIngredient(null);
+  };
 
   return (
     <div className="space-y-6">
-      <div className="flex gap-4 items-center">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-          <Input
-            placeholder="Buscar ingredientes..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-      </div>
+      <Tabs defaultValue="management" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="management" className="flex items-center gap-2">
+            <Edit className="h-4 w-4" />
+            Gestión de Ingredientes
+          </TabsTrigger>
+          <TabsTrigger value="batch" className="flex items-center gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Operaciones en Lote
+          </TabsTrigger>
+          <TabsTrigger value="recovery" className="flex items-center gap-2">
+            <Database className="h-4 w-4" />
+            Recuperación de Datos
+          </TabsTrigger>
+        </TabsList>
 
-      <div className="grid gap-4">
-        {filteredIngredients.map((ingredient) => (
-          <div key={ingredient.id} className="border rounded-lg p-4 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              {ingredient.image_url && (
-                <img 
-                  src={ingredient.image_url} 
-                  alt={ingredient.name}
-                  className="w-12 h-12 object-cover rounded"
+        <TabsContent value="management" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Gestión Manual de Ingredientes</CardTitle>
+              <CardDescription>
+                Edita, elimina y gestiona los ingredientes existentes con herramientas avanzadas de IA
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Input
+                  placeholder="Buscar ingredientes..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="max-w-sm"
                 />
-              )}
-              <div>
-                <h3 className="font-medium">{ingredient.name}</h3>
-                <p className="text-sm text-gray-500">
-                  {ingredient.categories?.name || 'Sin categoría'}
-                </p>
+                <div className="text-sm text-muted-foreground">
+                  {ingredients.length} ingrediente{ingredients.length !== 1 ? 's' : ''} encontrado{ingredients.length !== 1 ? 's' : ''}
+                </div>
               </div>
-            </div>
+              
+              <IngredientTable
+                ingredients={ingredients}
+                isLoading={isLoading}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setEditingIngredient(ingredient)}
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setDeletingIngredient(ingredient)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        ))}
-      </div>
+        <TabsContent value="batch" className="space-y-6">
+          <BatchOperations totalIngredients={ingredients.length} />
+        </TabsContent>
 
-      <SimpleIngredientEditDialog
+        <TabsContent value="recovery" className="space-y-6">
+          <DataRecoveryPanel />
+        </TabsContent>
+      </Tabs>
+
+      <IngredientEditDialog
         ingredient={editingIngredient}
         open={!!editingIngredient}
-        onClose={() => setEditingIngredient(null)}
+        onClose={handleCloseEdit}
       />
 
       <IngredientDeleteDialog
         ingredient={deletingIngredient}
         open={!!deletingIngredient}
-        onClose={() => setDeletingIngredient(null)}
+        onClose={handleCloseDelete}
       />
     </div>
   );

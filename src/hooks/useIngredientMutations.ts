@@ -9,19 +9,22 @@ export const useUpdateIngredient = () => {
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
-      const { data, error } = await supabase
+      const { error, count } = await supabase
         .from('ingredients')
         .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+        .eq('id', id);
 
       if (error) {
         console.error('Error updating ingredient:', error);
         throw error;
       }
 
-      return data;
+      if (count === 0) {
+        console.error('No records were updated');
+        throw new Error('No se pudo actualizar el ingrediente - no se encontró el registro');
+      }
+
+      return { id, updates, count };
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ingredients'] });

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import {
@@ -45,6 +44,7 @@ interface IngredientEditDialogProps {
 }
 
 const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialogProps) => {
+  const [isRegeneratingImage, setIsRegeneratingImage] = useState(false);
   const { mutate: updateIngredient, isPending } = useUpdateIngredient();
   const { mutate: generateImage, isPending: isGeneratingImage } = useGenerateImage();
   const { mutate: generateContent, isPending: isGeneratingContent } = useGenerateContent();
@@ -98,30 +98,33 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
   const onSubmit = (data: any) => {
     if (!ingredient) return;
     
-    updateIngredient(
-      {
-        id: ingredient.id,
-        updates: data,
-      },
-      {
-        onSuccess: () => {
-          toast({
-            title: "✅ Ingrediente actualizado",
-            description: "Los cambios se han guardado correctamente",
-          });
-          onClose();
-        },
-      }
-    );
+    updateIngredient({
+      id: ingredient.id,
+      updates: data,
+    });
   };
 
   const handleRegenerateImage = () => {
     if (!ingredient) return;
     
+    setIsRegeneratingImage(true);
     generateImage({
       ingredientName: ingredient.name,
       description: ingredient.description,
       ingredientId: ingredient.id
+    }, {
+      onSuccess: (result) => {
+        // Actualizar el formulario con la nueva URL de imagen
+        form.setValue('image_url', result.imageUrl);
+        setIsRegeneratingImage(false);
+        toast({
+          title: "✅ Imagen regenerada",
+          description: "La nueva imagen se ha aplicado al formulario",
+        });
+      },
+      onError: () => {
+        setIsRegeneratingImage(false);
+      }
     });
   };
 
@@ -162,6 +165,7 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
   };
 
   const quality = getDataQuality();
+  const currentImageUrl = form.watch('image_url');
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -189,10 +193,10 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
             variant="outline"
             size="sm"
             onClick={handleRegenerateImage}
-            disabled={isGeneratingImage}
+            disabled={isGeneratingImage || isRegeneratingImage}
           >
             <Image className="h-4 w-4 mr-1" />
-            {isGeneratingImage ? "Generando..." : "Regenerar Imagen"}
+            {(isGeneratingImage || isRegeneratingImage) ? "Generando..." : "Regenerar Imagen"}
           </Button>
           <Button
             type="button"
@@ -398,11 +402,11 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
                       <CardTitle className="text-sm">Imagen AI</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {ingredient?.image_url && (
+                      {currentImageUrl && (
                         <div className="mb-2">
                           <img 
-                            src={ingredient.image_url} 
-                            alt={ingredient.name}
+                            src={currentImageUrl} 
+                            alt={form.watch('name') || 'Ingredient'}
                             className="w-full h-32 object-cover rounded"
                           />
                         </div>
@@ -428,11 +432,11 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
                       <CardTitle className="text-sm">Imagen Real</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {ingredient?.real_image_url && (
+                      {form.watch('real_image_url') && (
                         <div className="mb-2">
                           <img 
-                            src={ingredient.real_image_url} 
-                            alt={`${ingredient.name} real`}
+                            src={form.watch('real_image_url')} 
+                            alt={`${form.watch('name')} real`}
                             className="w-full h-32 object-cover rounded"
                           />
                         </div>

@@ -58,8 +58,42 @@ export const useGenerateImage = () => {
       description?: string;
       ingredientId?: string;
     }) => {
-      console.log('🖼️ Iniciando generación de imagen para:', ingredientName);
-      console.log('📋 Parámetros recibidos:', { ingredientName, description, ingredientId });
+      console.log('🖼️ ===== INICIANDO GENERACIÓN DE IMAGEN =====');
+      console.log('📋 Parámetros recibidos:', { 
+        ingredientName, 
+        description: description?.substring(0, 100) + '...', 
+        ingredientId 
+      });
+      
+      // VERIFICACIÓN CRÍTICA: Validar que tenemos un ingredientId
+      if (!ingredientId) {
+        console.error('❌ FALTA INGREDIENT_ID - No se podrá guardar en DB');
+        throw new Error('ID del ingrediente es requerido para guardar la imagen');
+      }
+      
+      // VERIFICACIÓN CRÍTICA: Verificar que el ingrediente existe en la DB
+      console.log('🔍 Verificando que el ingrediente existe en la base de datos...');
+      const { data: existingIngredient, error: checkError } = await supabase
+        .from('ingredients')
+        .select('id, name, image_url')
+        .eq('id', ingredientId)
+        .single();
+      
+      if (checkError) {
+        console.error('❌ Error verificando ingrediente:', checkError);
+        throw new Error(`Error verificando ingrediente: ${checkError.message}`);
+      }
+      
+      if (!existingIngredient) {
+        console.error('❌ Ingrediente no encontrado con ID:', ingredientId);
+        throw new Error('Ingrediente no encontrado en la base de datos');
+      }
+      
+      console.log('✅ Ingrediente encontrado:', {
+        id: existingIngredient.id,
+        name: existingIngredient.name,
+        current_image_url: existingIngredient.image_url
+      });
       
       const requestBody = { 
         ingredientName: ingredientName,
@@ -67,13 +101,18 @@ export const useGenerateImage = () => {
         description: description 
       };
       
-      console.log('📤 Enviando request body:', requestBody);
+      console.log('📤 Enviando request a Supabase function...');
       
       const { data, error } = await supabase.functions.invoke('generate-image', {
         body: requestBody
       });
 
-      console.log('📥 Respuesta de Supabase function:', { data, error });
+      console.log('📥 Respuesta de Supabase function:', { 
+        success: data?.success, 
+        hasImageUrl: !!data?.imageUrl,
+        imageUrl: data?.imageUrl?.substring(0, 50) + '...',
+        error 
+      });
 
       if (error) {
         console.error('❌ Error de Supabase functions:', error);
@@ -90,45 +129,101 @@ export const useGenerateImage = () => {
         throw new Error(data.error || 'Error generating image');
       }
 
-      // Si tenemos un ingredientId, actualizar la base de datos
-      if (ingredientId && data.imageUrl) {
-        console.log('💾 Actualizando ingrediente con nueva imagen:', ingredientId);
-        console.log('🔗 URL de imagen a guardar:', data.imageUrl);
-        
-        // Verificar que la URL sea válida
-        if (!data.imageUrl.startsWith('http')) {
-          console.error('❌ URL de imagen inválida:', data.imageUrl);
-          throw new Error('URL de imagen inválida recibida de Replicate');
-        }
-        
-        // Simplificar la actualización - solo verificar errores, no la respuesta
-        const { error: updateError } = await supabase
-          .from('ingredients')
-          .update({ image_url: data.imageUrl })
-          .eq('id', ingredientId);
+      // VERIFICACIÓN CRÍTICA: Validar la URL de la imagen
+      if (!data.imageUrl) {
+        console.error('❌ No se recibió URL de imagen');
+        throw new Error('No se recibió URL de imagen de Replicate');
+      }
+      
+      if (!data.imageUrl.startsWith('http')) {
+        console.error('❌ URL de imagen inválida:', data.imageUrl);
+        throw new Error('URL de imagen inválida recibida de Replicate');
+      }
+      
+      console.log('✅ URL de imagen válida recibida:', data.imageUrl);
+      
+      // ACTUALIZACIÓN CRÍTICA: Guardar en la base de datos
+      console.log('💾 ===== INICIANDO ACTUALIZACIÓN EN BASE DE DATOS =====');
+      console.log('🔄 Actualizando ingrediente con ID:', ingredientId);
+      console.log('🔗 Nueva URL de imagen:', data.imageUrl);
+      
+      const { data: updateResult, error: updateError } = await supabase
+        .from('ingredients')
+        .update({ 
+          image_url: data.imageUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', ingredientId)
+        .select('id, name, image_url');
 
-        console.log('📊 Resultado de actualización:', { updateError });
+      console.log('📊 Resultado completo de actualización:', { 
+        updateResult, 
+        updateError,
+        affectedRows: updateResult?.length || 0
+      });
 
-        if (updateError) {
-          console.error('❌ Error actualizando ingrediente:', updateError);
-          throw new Error(`Error guardando imagen en ingrediente: ${updateError.message}`);
-        }
-
-        console.log('✅ Ingrediente actualizado con nueva imagen');
-      } else {
-        console.log('⚠️ No se actualizará la base de datos:', { 
-          tieneIngredientId: !!ingredientId, 
-          tieneImageUrl: !!data.imageUrl 
-        });
+      if (updateError) {
+        console.error('❌ Error en actualización de BD:', updateError);
+        throw new Error(`Error guardando imagen en ingrediente: ${updateError.message}`);
       }
 
-      console.log('✅ Imagen generada exitosamente');
-      return data;
+      if (!updateResult || updateResult.length === 0) {
+        console.error('❌ No se actualizó ningún registro');
+        console.error('❌ Posibles causas: RLS, ID incorrecto, o permisos');
+        
+        // Verificar si el ingrediente aún existe después del intento de actualización
+        const { data: recheckIngredient } = await supabase
+          .from('ingredients')
+          .select('id, name, image_url')
+          .eq('id', ingredientId)
+          .single();
+        
+        console.log('🔍 Re-verificación del ingrediente:', recheckIngredient);
+        throw new Error('No se pudo actualizar el ingrediente - verificar permisos RLS');
+      }
+
+      const updatedIngredient = updateResult[0];
+      console.log('✅ ===== ACTUALIZACIÓN EXITOSA =====');
+      console.log('📄 Ingrediente actualizado:', {
+        id: updatedIngredient.id,
+        name: updatedIngredient.name,
+        new_image_url: updatedIngredient.image_url
+      });
+      
+      // VERIFICACIÓN FINAL: Confirmar que la actualización se guardó
+      console.log('🔍 Verificación final - leyendo desde DB...');
+      const { data: finalCheck } = await supabase
+        .from('ingredients')
+        .select('image_url')
+        .eq('id', ingredientId)
+        .single();
+      
+      console.log('🏁 Verificación final completada:', {
+        savedImageUrl: finalCheck?.image_url,
+        matches: finalCheck?.image_url === data.imageUrl
+      });
+
+      return {
+        ...data,
+        ingredientUpdated: true,
+        finalImageUrl: finalCheck?.image_url
+      };
     },
     onSuccess: (data) => {
-      // Invalidar queries para que se actualice la UI
+      console.log('🎉 ===== MUTATION SUCCESS =====');
+      console.log('🔄 Invalidando queries...');
+      
+      // Invalidar queries específicas
       queryClient.invalidateQueries({ queryKey: ['ingredients'] });
       queryClient.invalidateQueries({ queryKey: ['ingredient'] });
+      
+      // Forzar refetch inmediato del ingrediente específico
+      const currentPath = window.location.pathname;
+      const ingredientIdFromPath = currentPath.split('/').pop();
+      if (ingredientIdFromPath) {
+        console.log('🔄 Forzando refetch del ingrediente:', ingredientIdFromPath);
+        queryClient.refetchQueries({ queryKey: ['ingredient', ingredientIdFromPath] });
+      }
       
       toast({
         title: "✅ Imagen generada exitosamente",
@@ -137,7 +232,8 @@ export const useGenerateImage = () => {
       console.log('🎉 Toast de éxito mostrado');
     },
     onError: (error) => {
-      console.error('❌ Error completo en generación de imagen:', error);
+      console.error('❌ ===== MUTATION ERROR =====');
+      console.error('❌ Error completo:', error);
       toast({
         title: "❌ Error al generar imagen",
         description: error.message,

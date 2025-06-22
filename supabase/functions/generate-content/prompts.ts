@@ -1,4 +1,3 @@
-
 import { GenerateContentParams } from './types.ts';
 
 export const generatePrompt = (params: GenerateContentParams): string => {
@@ -19,7 +18,11 @@ export const generatePrompt = (params: GenerateContentParams): string => {
       {
         "name": "nombre en español",
         "name_en": "nombre en inglés",
-        "name_la": "nombre en latín (opcional)",
+        "name_fr": "nombre en francés",
+        "name_it": "nombre en italiano", 
+        "name_pt": "nombre en portugués",
+        "name_zh": "nombre en chino (caracteres chinos)",
+        "name_la": "nombre científico en latín (opcional)",
         ${categoryResponse}
         "description": "descripción detallada (150-200 palabras)",
         "temporada": "temporada principal (ej: primavera, verano, otoño, invierno, todo el año)",
@@ -48,7 +51,12 @@ export const generatePrompt = (params: GenerateContentParams): string => {
         "price_estimate": número (precio estimado por kg en euros)
       }
       
-      ${category ? `IMPORTANTE: Todos los ingredientes DEBEN pertenecer a la categoría "${category}".` : ''}
+      IMPORTANTE: 
+      - Todos los ingredientes DEBEN tener name_fr, name_it, name_pt y name_zh completados
+      ${category ? `- Todos los ingredientes DEBEN pertenecer a la categoría "${category}"` : ''}
+      - Usa nombres reales y precisos en cada idioma
+      - Para name_zh usa caracteres chinos tradicionales o simplificados apropiados
+      
       Responde SOLO con un array JSON válido de ingredientes, sin texto adicional.`;
       
     case 'category':

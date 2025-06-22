@@ -25,6 +25,15 @@ serve(async (req) => {
       for (const ingredient of data) {
         console.log('Procesando ingrediente:', ingredient.name, 'con categoría:', ingredient.category);
         
+        // Verificar que todos los idiomas críticos estén presentes
+        const requiredLanguages = ['name_fr', 'name_it', 'name_pt', 'name_zh'];
+        const missingLanguages = requiredLanguages.filter(lang => !ingredient[lang]);
+        
+        if (missingLanguages.length > 0) {
+          console.log(`⚠️ Ingrediente ${ingredient.name} falta idiomas:`, missingLanguages);
+          // Continuar pero registrar el problema
+        }
+        
         // Primero obtener o crear la categoría
         let categoryName = ingredient.category || 'otros';
         const { data: existingCategory } = await supabase
@@ -41,7 +50,13 @@ serve(async (req) => {
             .from('categories')
             .insert({
               name: categoryName,
-              name_en: categoryName === 'especias' ? 'spices' : categoryName,
+              name_en: categoryName === 'especias' ? 'spices' : 
+                       categoryName === 'verduras' ? 'vegetables' :
+                       categoryName === 'frutas' ? 'fruits' :
+                       categoryName === 'carnes' ? 'meats' :
+                       categoryName === 'pescados' ? 'fish' :
+                       categoryName === 'lacteos' ? 'dairy' :
+                       categoryName === 'cereales' ? 'cereals' : categoryName,
               description: `Categoría de ${categoryName}`
             })
             .select('id')
@@ -56,21 +71,38 @@ serve(async (req) => {
 
         console.log('Usando categoría ID:', categoryId, 'para ingrediente:', ingredient.name);
 
-        // Crear el ingrediente
+        // Crear el ingrediente con TODOS los campos de idiomas
+        const ingredientData = {
+          name: ingredient.name,
+          name_en: ingredient.name_en,
+          name_la: ingredient.name_la,
+          name_fr: ingredient.name_fr || null,
+          name_it: ingredient.name_it || null,
+          name_pt: ingredient.name_pt || null,
+          name_zh: ingredient.name_zh || null,
+          description: ingredient.description,
+          category_id: categoryId,
+          temporada: ingredient.temporada,
+          origen: ingredient.origen,
+          merma: ingredient.merma,
+          rendimiento: ingredient.rendimiento,
+          popularity: ingredient.popularity
+        };
+
+        console.log('Datos del ingrediente a insertar:', {
+          name: ingredientData.name,
+          languages: {
+            name_en: ingredientData.name_en,
+            name_fr: ingredientData.name_fr,
+            name_it: ingredientData.name_it,
+            name_pt: ingredientData.name_pt,
+            name_zh: ingredientData.name_zh
+          }
+        });
+
         const { data: newIngredient, error: ingredientError } = await supabase
           .from('ingredients')
-          .insert({
-            name: ingredient.name,
-            name_en: ingredient.name_en,
-            name_la: ingredient.name_la,
-            description: ingredient.description,
-            category_id: categoryId,
-            temporada: ingredient.temporada,
-            origen: ingredient.origen,
-            merma: ingredient.merma,
-            rendimiento: ingredient.rendimiento,
-            popularity: ingredient.popularity
-          })
+          .insert(ingredientData)
           .select('id')
           .single();
 
@@ -151,9 +183,16 @@ serve(async (req) => {
           id: newIngredient.id,
           name: ingredient.name,
           category: categoryName,
+          languages_complete: missingLanguages.length === 0,
+          missing_languages: missingLanguages,
           success: true
         });
       }
+
+      console.log('Resumen de procesamiento:');
+      results.forEach(result => {
+        console.log(`- ${result.name}: ${result.languages_complete ? '✅ Completo' : '⚠️ Faltan idiomas: ' + result.missing_languages.join(', ')}`);
+      });
 
       return new Response(JSON.stringify({ 
         success: true,

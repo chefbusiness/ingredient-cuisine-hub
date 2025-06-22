@@ -3,12 +3,13 @@ import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader, BarChart3, Settings, Database, TrendingUp, Zap } from "lucide-react";
+import { Loader, BarChart3, Settings, Database, TrendingUp, Zap, Edit } from "lucide-react";
 import UnifiedHeader from "@/components/UnifiedHeader";
 import AdminStatsOverview from "@/components/admin/AdminStatsOverview";
 import AdminContentTab from "@/components/admin/AdminContentTab";
 import AdminAnalyticsTab from "@/components/admin/AdminAnalyticsTab";
 import AdminSettingsTab from "@/components/admin/AdminSettingsTab";
+import AdminManualManagement from "@/components/admin/AdminManualManagement";
 import BatchOperations from "@/components/admin/BatchOperations";
 import { useIngredients } from "@/hooks/useIngredients";
 import { useCategories } from "@/hooks/useCategories";
@@ -75,7 +76,7 @@ const Admin = () => {
 
         {/* Tabs Navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview" className="flex items-center space-x-2">
               <TrendingUp className="h-4 w-4" />
               <span>Resumen</span>
@@ -83,6 +84,10 @@ const Admin = () => {
             <TabsTrigger value="content" className="flex items-center space-x-2">
               <Database className="h-4 w-4" />
               <span>Contenido</span>
+            </TabsTrigger>
+            <TabsTrigger value="manual" className="flex items-center space-x-2">
+              <Edit className="h-4 w-4" />
+              <span>Gestión Manual</span>
             </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center space-x-2">
               <BarChart3 className="h-4 w-4" />
@@ -112,6 +117,10 @@ const Admin = () => {
                 ingredientsCount={ingredients.length}
                 categoriesCount={categories.length}
               />
+            </TabsContent>
+
+            <TabsContent value="manual">
+              <AdminManualManagement />
             </TabsContent>
 
             <TabsContent value="analytics">

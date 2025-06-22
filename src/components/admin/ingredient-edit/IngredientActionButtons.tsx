@@ -13,17 +13,22 @@ interface IngredientActionButtonsProps {
 }
 
 const IngredientActionButtons = ({ ingredient, onIngredientUpdated }: IngredientActionButtonsProps) => {
-  const [isRegeneratingImage, setIsRegeneratingImage] = useState(false);
   const { mutate: generateImage, isPending: isGeneratingImage } = useGenerateImage();
   const { mutate: generateContent, isPending: isGeneratingContent } = useGenerateContent();
   const { toast } = useToast();
 
   const handleRegenerateImage = () => {
-    if (!ingredient) return;
+    if (!ingredient) {
+      toast({
+        title: "Error",
+        description: "No hay ingrediente seleccionado",
+        variant: "destructive",
+      });
+      return;
+    }
     
     console.log('🖼️ === REGENERATE IMAGE BUTTON CLICKED ===');
     console.log('Ingredient:', ingredient.name);
-    setIsRegeneratingImage(true);
     
     generateImage({
       ingredientName: ingredient.name,
@@ -31,31 +36,18 @@ const IngredientActionButtons = ({ ingredient, onIngredientUpdated }: Ingredient
       ingredientId: ingredient.id
     }, {
       onSuccess: (result) => {
-        console.log('✅ === IMAGE GENERATION AND SAVE SUCCESS ===');
-        console.log('Image saved to database:', result.savedToDatabase);
+        console.log('✅ === IMAGE GENERATION SUCCESS ===');
+        console.log('Image saved automatically:', result.savedToDatabase);
         
-        setIsRegeneratingImage(false);
-        
-        // Notificar al componente padre que el ingrediente se ha actualizado
+        // Notificar al componente padre para cerrar el diálogo y refrescar
         if (onIngredientUpdated) {
           console.log('🔄 Notifying parent component of ingredient update...');
           onIngredientUpdated();
         }
-        
-        toast({
-          title: "✅ Imagen actualizada",
-          description: "La nueva imagen se ha guardado automáticamente en la base de datos",
-        });
       },
       onError: (error) => {
         console.error('❌ === IMAGE GENERATION ERROR ===');
         console.error('Error details:', error);
-        setIsRegeneratingImage(false);
-        toast({
-          title: "❌ Error al regenerar imagen",
-          description: error.message,
-          variant: "destructive",
-        });
       }
     });
   };
@@ -80,10 +72,10 @@ const IngredientActionButtons = ({ ingredient, onIngredientUpdated }: Ingredient
         variant="outline"
         size="sm"
         onClick={handleRegenerateImage}
-        disabled={isGeneratingImage || isRegeneratingImage}
+        disabled={isGeneratingImage}
       >
         <Image className="h-4 w-4 mr-1" />
-        {(isGeneratingImage || isRegeneratingImage) ? "Generando..." : "Regenerar Imagen"}
+        {isGeneratingImage ? "Generando imagen..." : "Regenerar Imagen"}
       </Button>
       <Button
         type="button"
@@ -93,7 +85,7 @@ const IngredientActionButtons = ({ ingredient, onIngredientUpdated }: Ingredient
         disabled={isGeneratingContent}
       >
         <Wand2 className="h-4 w-4 mr-1" />
-        {isGeneratingContent ? "Generando..." : "Regenerar Contenido"}
+        {isGeneratingContent ? "Generando contenido..." : "Regenerar Contenido"}
       </Button>
     </div>
   );

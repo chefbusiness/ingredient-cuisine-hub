@@ -1,11 +1,4 @@
 
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Ingredient } from "@/hooks/useIngredients";
 import IngredientBasicTab from "./IngredientBasicTab";
@@ -41,7 +34,7 @@ const IngredientEditForm = ({ ingredient, categories, control, watch }: Ingredie
       </TabsContent>
 
       <TabsContent value="images" className="space-y-4">
-        <IngredientImagesTab control={control} watch={watch} />
+        <IngredientImagesTab watch={watch} />
       </TabsContent>
 
       <TabsContent value="technical" className="space-y-4">

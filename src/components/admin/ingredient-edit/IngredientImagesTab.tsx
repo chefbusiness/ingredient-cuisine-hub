@@ -1,22 +1,13 @@
 
-import { Input } from "@/components/ui/input";
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Control, UseFormWatch } from "react-hook-form";
+import { UseFormWatch } from "react-hook-form";
 import { IngredientFormData } from "./types";
 
 interface IngredientImagesTabProps {
-  control: Control<IngredientFormData>;
   watch: UseFormWatch<IngredientFormData>;
 }
 
-const IngredientImagesTab = ({ control, watch }: IngredientImagesTabProps) => {
+const IngredientImagesTab = ({ watch }: IngredientImagesTabProps) => {
   const currentImageUrl = watch('image_url');
   const realImageUrl = watch('real_image_url');
   const ingredientName = watch('name');
@@ -26,43 +17,30 @@ const IngredientImagesTab = ({ control, watch }: IngredientImagesTabProps) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
-            <CardTitle className="text-sm">Imagen AI</CardTitle>
+            <CardTitle className="text-sm">Imagen Generada por IA</CardTitle>
           </CardHeader>
           <CardContent>
-            {currentImageUrl && (
-              <div className="mb-2">
+            {currentImageUrl ? (
+              <div className="space-y-2">
                 <img 
                   src={currentImageUrl} 
                   alt={ingredientName || 'Ingredient'}
-                  className="w-full h-32 object-cover rounded border"
+                  className="w-full h-48 object-cover rounded border"
                   onLoad={() => console.log('✅ AI Image loaded successfully')}
                   onError={(e) => {
                     console.error('❌ AI Image failed to load:', currentImageUrl);
                     e.currentTarget.style.display = 'none';
                   }}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Imagen generada automáticamente con IA
+                </p>
+              </div>
+            ) : (
+              <div className="w-full h-48 bg-gray-100 rounded border flex items-center justify-center">
+                <p className="text-gray-500">No hay imagen generada</p>
               </div>
             )}
-            <FormField
-              control={control}
-              name="image_url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>URL Imagen AI</FormLabel>
-                  <FormControl>
-                    <Input 
-                      {...field} 
-                      placeholder="URL de la imagen generada por IA"
-                      onChange={(e) => {
-                        field.onChange(e);
-                        console.log('🔄 AI Image URL changed:', e.target.value?.substring(0, 50) + '...');
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </CardContent>
         </Card>
 
@@ -71,35 +49,26 @@ const IngredientImagesTab = ({ control, watch }: IngredientImagesTabProps) => {
             <CardTitle className="text-sm">Imagen Real</CardTitle>
           </CardHeader>
           <CardContent>
-            {realImageUrl && (
-              <div className="mb-2">
+            {realImageUrl ? (
+              <div className="space-y-2">
                 <img 
                   src={realImageUrl} 
                   alt={`${ingredientName} real`}
-                  className="w-full h-32 object-cover rounded border"
+                  className="w-full h-48 object-cover rounded border"
                   onError={(e) => {
                     console.error('❌ Real Image failed to load:', realImageUrl);
                     e.currentTarget.style.display = 'none';
                   }}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Imagen real del ingrediente
+                </p>
+              </div>
+            ) : (
+              <div className="w-full h-48 bg-gray-100 rounded border flex items-center justify-center">
+                <p className="text-gray-500">No hay imagen real</p>
               </div>
             )}
-            <FormField
-              control={control}
-              name="real_image_url"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>URL Imagen Real</FormLabel>
-                  <FormControl>
-                    <Input 
-                      {...field} 
-                      placeholder="URL de la imagen real del ingrediente"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </CardContent>
         </Card>
       </div>

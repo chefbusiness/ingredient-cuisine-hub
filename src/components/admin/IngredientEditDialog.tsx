@@ -73,12 +73,6 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
       real_image_url: ingredient.real_image_url || "",
     };
     
-    console.log('📋 Form data being set:', {
-      name: formData.name,
-      image_url: formData.image_url ? formData.image_url.substring(0, 50) + '...' : 'EMPTY',
-      category_id: formData.category_id,
-    });
-    
     form.reset(formData);
   };
 
@@ -90,7 +84,7 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
 
   const handleIngredientUpdated = () => {
     console.log('🔄 === INGREDIENT UPDATED CALLBACK ===');
-    console.log('Ingredient updated externally, dialog will close and refresh');
+    console.log('Image was generated and saved, closing dialog and refreshing data');
     onClose();
   };
 
@@ -107,13 +101,19 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
     const hasRealChanges = Object.keys(data).some(key => {
       const formValue = data[key as keyof IngredientFormData];
       const originalValue = ingredient[key as keyof Ingredient];
-      return formValue !== (originalValue || "");
+      
+      // Manejar valores null/undefined
+      const normalizedFormValue = formValue === null || formValue === undefined ? "" : String(formValue);
+      const normalizedOriginalValue = originalValue === null || originalValue === undefined ? "" : String(originalValue);
+      
+      return normalizedFormValue !== normalizedOriginalValue;
     });
 
     console.log('📝 Has real changes:', hasRealChanges);
     
     if (!hasRealChanges) {
-      console.log('ℹ️ No changes detected, showing info message');
+      console.log('ℹ️ No changes detected, closing dialog');
+      onClose();
       return;
     }
     
@@ -122,22 +122,18 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
       updated_at: new Date().toISOString()
     };
     
-    console.log('💾 Final update data to send:', {
-      name: updateData.name,
-      image_url: updateData.image_url ? updateData.image_url.substring(0, 50) + '...' : 'EMPTY',
-      category_id: updateData.category_id,
-    });
+    console.log('💾 Updating ingredient with form data...');
     
     updateIngredient({
       id: ingredient.id,
       updates: updateData,
     }, {
       onSuccess: (result) => {
-        console.log('✅ === UPDATE SUCCESS CALLBACK ===');
+        console.log('✅ === INGREDIENT UPDATE SUCCESS ===');
         onClose();
       },
       onError: (error) => {
-        console.error('❌ === UPDATE ERROR CALLBACK ===');
+        console.error('❌ === INGREDIENT UPDATE ERROR ===');
         console.error('Error details:', error);
       },
     });
@@ -152,7 +148,7 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
             <IngredientQualityBadge ingredient={ingredient} />
           </DialogTitle>
           <DialogDescription>
-            Modifica los campos del ingrediente. La imagen se guarda automáticamente al generarla.
+            Modifica los campos del ingrediente. Las imágenes se guardan automáticamente al generarlas.
           </DialogDescription>
         </DialogHeader>
 

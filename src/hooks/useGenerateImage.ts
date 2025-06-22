@@ -54,12 +54,12 @@ export const useGenerateImage = () => {
 
       if (error) {
         console.error('❌ Supabase function error:', error);
-        throw new Error(`Error de función: ${error.message}`);
+        throw new Error(`Error en la función: ${error.message}`);
       }
 
       if (!data || !data.success) {
         console.error('❌ Function reported error:', data?.error);
-        throw new Error(data?.error || 'Error generating image');
+        throw new Error(data?.error || 'Error generando imagen');
       }
 
       if (!data.imageUrl) {
@@ -77,16 +77,17 @@ export const useGenerateImage = () => {
           updated_at: new Date().toISOString()
         })
         .eq('id', ingredientId)
-        .select('*');
+        .select('*')
+        .single();
 
       if (updateError) {
         console.error('❌ Error saving image URL to database:', updateError);
         throw new Error(`Error guardando imagen: ${updateError.message}`);
       }
 
-      if (!updateResult || updateResult.length === 0) {
+      if (!updateResult) {
         console.error('❌ No rows updated when saving image');
-        throw new Error('No se pudo guardar la imagen en la base de datos');
+        throw new Error('No se pudo actualizar el ingrediente con la nueva imagen');
       }
 
       console.log('✅ Image URL saved to database successfully');
@@ -97,11 +98,11 @@ export const useGenerateImage = () => {
         ingredientId: ingredientId,
         ingredientName: ingredientName,
         savedToDatabase: true,
-        updatedIngredient: updateResult[0]
+        updatedIngredient: updateResult
       };
     },
     onSuccess: (data) => {
-      console.log('🎉 Image generation and save success');
+      console.log('🎉 Image generation and save complete success');
       
       // Invalidar queries para actualizar la UI automáticamente
       queryClient.invalidateQueries({ queryKey: ['ingredients'] });
@@ -109,7 +110,7 @@ export const useGenerateImage = () => {
       
       toast({
         title: "🎉 Imagen generada y guardada",
-        description: `Nueva imagen guardada automáticamente para ${data.ingredientName}`,
+        description: `Nueva imagen guardada exitosamente para ${data.ingredientName}`,
       });
     },
     onError: (error) => {

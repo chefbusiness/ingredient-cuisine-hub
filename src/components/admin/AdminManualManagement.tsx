@@ -9,9 +9,10 @@ import IngredientEditDialog from "./IngredientEditDialog";
 import IngredientDeleteDialog from "./IngredientDeleteDialog";
 import DataRecoveryPanel from "./DataRecoveryPanel";
 import BatchOperations from "./BatchOperations";
+import BatchImageResearch from "./BatchImageResearch";
 import { Ingredient } from "@/hooks/useIngredients";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Database, Edit, RefreshCw } from "lucide-react";
+import { Database, Edit, RefreshCw, Image } from "lucide-react";
 
 const AdminManualManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -39,10 +40,14 @@ const AdminManualManagement = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="management" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="management" className="flex items-center gap-2">
             <Edit className="h-4 w-4" />
             Gestión de Ingredientes
+          </TabsTrigger>
+          <TabsTrigger value="images" className="flex items-center gap-2">
+            <Image className="h-4 w-4" />
+            Imágenes Reales
           </TabsTrigger>
           <TabsTrigger value="batch" className="flex items-center gap-2">
             <RefreshCw className="h-4 w-4" />
@@ -83,6 +88,18 @@ const AdminManualManagement = () => {
               />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="images" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Gestión de Imágenes Reales</CardTitle>
+              <CardDescription>
+                Investigación automática y upload manual de imágenes reales para ingredientes
+              </CardDescription>
+            </CardHeader>
+          </Card>
+          <BatchImageResearch />
         </TabsContent>
 
         <TabsContent value="batch" className="space-y-6">

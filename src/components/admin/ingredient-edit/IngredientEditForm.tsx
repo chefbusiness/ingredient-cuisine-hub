@@ -13,9 +13,16 @@ interface IngredientEditFormProps {
   categories: any[];
   control: Control<IngredientFormData>;
   watch: UseFormWatch<IngredientFormData>;
+  onImagesUpdated?: () => void;
 }
 
-const IngredientEditForm = ({ ingredient, categories, control, watch }: IngredientEditFormProps) => {
+const IngredientEditForm = ({ 
+  ingredient, 
+  categories, 
+  control, 
+  watch, 
+  onImagesUpdated 
+}: IngredientEditFormProps) => {
   return (
     <Tabs defaultValue="basic" className="w-full">
       <TabsList className="grid w-full grid-cols-4">
@@ -34,7 +41,11 @@ const IngredientEditForm = ({ ingredient, categories, control, watch }: Ingredie
       </TabsContent>
 
       <TabsContent value="images" className="space-y-4">
-        <IngredientImagesTab watch={watch} />
+        <IngredientImagesTab 
+          watch={watch} 
+          ingredientId={ingredient?.id}
+          onImagesUpdated={onImagesUpdated}
+        />
       </TabsContent>
 
       <TabsContent value="technical" className="space-y-4">

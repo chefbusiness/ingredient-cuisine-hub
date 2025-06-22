@@ -1,6 +1,7 @@
 
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,7 @@ interface IngredientEditDialogProps {
 const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialogProps) => {
   const { mutate: updateIngredient, isPending } = useUpdateIngredient();
   const { data: categories = [] } = useCategories();
+  const queryClient = useQueryClient();
   
   const form = useForm<IngredientFormData>({
     defaultValues: {
@@ -84,8 +86,21 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
 
   const handleIngredientUpdated = () => {
     console.log('🔄 === INGREDIENT UPDATED CALLBACK ===');
-    console.log('Image was generated and saved, closing dialog and refreshing data');
-    onClose();
+    console.log('Image was generated and saved, refreshing data');
+    // Refresh the ingredient data and real images
+    if (ingredient?.id) {
+      queryClient.invalidateQueries({ queryKey: ['ingredient', ingredient.id] });
+      queryClient.invalidateQueries({ queryKey: ['real-images', ingredient.id] });
+    }
+  };
+
+  const handleImagesUpdated = () => {
+    console.log('📸 === IMAGES UPDATED CALLBACK ===');
+    // Refresh the real images data
+    if (ingredient?.id) {
+      queryClient.invalidateQueries({ queryKey: ['real-images', ingredient.id] });
+      queryClient.invalidateQueries({ queryKey: ['ingredient', ingredient.id] });
+    }
   };
 
   const onSubmit = async (data: IngredientFormData) => {
@@ -141,14 +156,14 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-auto">
+      <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Editar Ingrediente
             <IngredientQualityBadge ingredient={ingredient} />
           </DialogTitle>
           <DialogDescription>
-            Modifica los campos del ingrediente. Haz clic en "Regenerar Imagen" y espera a que se complete antes de cerrar el diálogo.
+            Modifica los campos del ingrediente. En la pestaña "Imágenes" puedes gestionar la galería de imágenes reales.
           </DialogDescription>
         </DialogHeader>
 
@@ -164,6 +179,7 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
               categories={categories}
               control={form.control}
               watch={form.watch}
+              onImagesUpdated={handleImagesUpdated}
             />
 
             <DialogFooter>

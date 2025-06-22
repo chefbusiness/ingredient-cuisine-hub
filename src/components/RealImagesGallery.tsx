@@ -3,27 +3,77 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Heart, Star, User } from "lucide-react";
-import { useRealImages } from "@/hooks/useRealImages";
+import { Heart, Star, User, Filter, X } from "lucide-react";
+import { useRealImages, useUpdateIngredientRealImage } from "@/hooks/useRealImages";
 
 interface RealImagesGalleryProps {
   ingredientId: string;
   isAdmin?: boolean;
   onSetAsMain?: (imageUrl: string) => void;
+  maxImages?: number;
 }
 
 const RealImagesGallery = ({ 
   ingredientId, 
   isAdmin = false, 
-  onSetAsMain 
+  onSetAsMain,
+  maxImages = 6
 }: RealImagesGalleryProps) => {
   const { data: realImages = [], isLoading } = useRealImages(ingredientId);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const updateMainImage = useUpdateIngredientRealImage();
+
+  const categories = [
+    { value: 'all', label: 'Todas', count: realImages.length },
+    { value: 'general', label: 'General', count: realImages.filter(img => img.caption?.includes('general')).length },
+    { value: 'crudo', label: 'Crudo', count: realImages.filter(img => img.caption?.includes('crudo')).length },
+    { value: 'cocinado', label: 'Cocinado', count: realImages.filter(img => img.caption?.includes('cocinado')).length },
+    { value: 'cortado', label: 'Cortado', count: realImages.filter(img => img.caption?.includes('cortado')).length },
+    { value: 'entero', label: 'Entero', count: realImages.filter(img => img.caption?.includes('entero')).length },
+    { value: 'variedad', label: 'Variedad', count: realImages.filter(img => img.caption?.includes('variedad')).length },
+  ].filter(cat => cat.value === 'all' || cat.count > 0);
+
+  const filteredImages = selectedCategory === 'all' 
+    ? realImages.slice(0, maxImages)
+    : realImages.filter(img => img.caption?.includes(selectedCategory)).slice(0, maxImages);
+
+  const getCategoryFromCaption = (caption: string = '') => {
+    const categories = ['crudo', 'cocinado', 'cortado', 'entero', 'variedad'];
+    const found = categories.find(cat => caption.toLowerCase().includes(cat));
+    return found || 'general';
+  };
+
+  const getCategoryColor = (category: string) => {
+    const colors = {
+      general: 'bg-gray-100 text-gray-800',
+      crudo: 'bg-green-100 text-green-800',
+      cocinado: 'bg-orange-100 text-orange-800',
+      cortado: 'bg-blue-100 text-blue-800',
+      entero: 'bg-purple-100 text-purple-800',
+      variedad: 'bg-pink-100 text-pink-800'
+    };
+    return colors[category as keyof typeof colors] || colors.general;
+  };
+
+  const handleSetAsMain = async (imageUrl: string) => {
+    if (!onSetAsMain) return;
+    
+    try {
+      await updateMainImage.mutateAsync({
+        id: ingredientId,
+        real_image_url: imageUrl
+      });
+      onSetAsMain(imageUrl);
+    } catch (error) {
+      console.error('Error setting main image:', error);
+    }
+  };
 
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {[1, 2, 3].map((i) => (
+        {[1, 2, 3, 4, 5, 6].map((i) => (
           <div key={i} className="aspect-square bg-gray-200 animate-pulse rounded-lg" />
         ))}
       </div>
@@ -34,93 +84,145 @@ const RealImagesGallery = ({
     return (
       <div className="text-center py-8 text-gray-500">
         <User className="h-12 w-12 mx-auto mb-2 opacity-50" />
-        <p>No hay imágenes reales disponibles aún</p>
-        <p className="text-sm">¡Sé el primero en contribuir!</p>
+        <p className="font-medium">No hay imágenes reales disponibles</p>
+        <p className="text-sm">¡Sé el primero en contribuir con imágenes reales!</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
+      {/* Category Filter */}
+      {categories.length > 1 && (
+        <div className="flex flex-wrap gap-2">
+          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+            <Filter className="h-3 w-3" />
+            Filtrar:
+          </div>
+          {categories.map((category) => (
+            <Badge
+              key={category.value}
+              variant={selectedCategory === category.value ? "default" : "outline"}
+              className="cursor-pointer text-xs"
+              onClick={() => setSelectedCategory(category.value)}
+            >
+              {category.label} ({category.count})
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      {/* Images Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {realImages.map((image) => (
-          <Card 
-            key={image.id} 
-            className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={() => setSelectedImage(image.image_url)}
-          >
-            <CardContent className="p-0">
-              <div className="aspect-square relative">
-                <img
-                  src={image.image_url}
-                  alt={image.caption || "Imagen real del ingrediente"}
-                  className="w-full h-full object-cover"
-                />
-                
-                {/* Overlay con información */}
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-3">
-                  <div className="flex items-center justify-between text-white text-sm">
-                    <div className="flex items-center gap-1">
-                      <Heart className="h-3 w-3" />
-                      <span>{image.votes_count}</span>
+        {filteredImages.map((image) => {
+          const category = getCategoryFromCaption(image.caption);
+          
+          return (
+            <Card 
+              key={image.id} 
+              className="overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105"
+              onClick={() => setSelectedImage(image.image_url)}
+            >
+              <CardContent className="p-0">
+                <div className="aspect-square relative group">
+                  <img
+                    src={image.image_url}
+                    alt={image.caption || "Imagen real del ingrediente"}
+                    className="w-full h-full object-cover"
+                  />
+                  
+                  {/* Overlay con información */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-1">
+                          <Heart className="h-3 w-3" />
+                          <span className="text-xs">{image.votes_count}</span>
+                        </div>
+                        
+                        <Badge className={`text-xs ${getCategoryColor(category)}`}>
+                          {category}
+                        </Badge>
+                      </div>
+                      
+                      {isAdmin && onSetAsMain && (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="w-full text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSetAsMain(image.image_url);
+                          }}
+                          disabled={updateMainImage.isPending}
+                        >
+                          <Star className="h-3 w-3 mr-1" />
+                          {updateMainImage.isPending ? 'Actualizando...' : 'Establecer Principal'}
+                        </Button>
+                      )}
                     </div>
-                    {image.uploaded_by && (
-                      <Badge variant="secondary" className="text-xs">
-                        {image.uploaded_by}
-                      </Badge>
-                    )}
                   </div>
                   
-                  {isAdmin && onSetAsMain && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      className="mt-2 w-full text-xs"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSetAsMain(image.image_url);
-                      }}
-                    >
-                      <Star className="h-3 w-3 mr-1" />
-                      Establecer como Principal
-                    </Button>
+                  {/* Source badge */}
+                  {image.uploaded_by && (
+                    <div className="absolute top-2 right-2">
+                      <Badge 
+                        variant="secondary" 
+                        className={`text-xs ${
+                          image.uploaded_by === 'ai_research' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : 'bg-green-100 text-green-800'
+                        }`}
+                      >
+                        {image.uploaded_by === 'ai_research' ? 'AI' : 'Manual'}
+                      </Badge>
+                    </div>
                   )}
                 </div>
-              </div>
-              
-              {image.caption && (
-                <div className="p-3">
-                  <p className="text-sm text-gray-600 line-clamp-2">
-                    {image.caption}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
+                
+                {image.caption && (
+                  <div className="p-3">
+                    <p className="text-sm text-gray-600 line-clamp-2">
+                      {image.caption}
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
+
+      {/* Show more images indicator */}
+      {realImages.length > maxImages && filteredImages.length === maxImages && (
+        <div className="text-center py-4">
+          <Badge variant="outline">
+            +{realImages.length - maxImages} imágenes más disponibles
+          </Badge>
+        </div>
+      )}
 
       {/* Modal para imagen ampliada */}
       {selectedImage && (
         <div 
-          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
           onClick={() => setSelectedImage(null)}
         >
-          <div className="max-w-4xl max-h-full">
+          <div className="relative max-w-4xl max-h-full">
             <img
               src={selectedImage}
               alt="Imagen ampliada"
-              className="max-w-full max-h-full object-contain"
+              className="max-w-full max-h-full object-contain rounded-lg"
             />
+            <Button
+              variant="secondary"
+              size="sm"
+              className="absolute top-4 right-4"
+              onClick={() => setSelectedImage(null)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
-          <Button
-            variant="secondary"
-            size="sm"
-            className="absolute top-4 right-4"
-            onClick={() => setSelectedImage(null)}
-          >
-            Cerrar
-          </Button>
         </div>
       )}
     </div>

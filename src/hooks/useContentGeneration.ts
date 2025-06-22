@@ -1,3 +1,4 @@
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -65,10 +66,32 @@ export const useGenerateImage = () => {
         ingredientId 
       });
       
-      // VERIFICACIÓN CRÍTICA: Validar que tenemos un ingredientId
-      if (!ingredientId) {
-        console.error('❌ FALTA INGREDIENT_ID - No se podrá guardar en DB');
-        throw new Error('ID del ingrediente es requerido para guardar la imagen');
+      // Si no tenemos ingredientId, intentamos obtenerlo por nombre
+      let finalIngredientId = ingredientId;
+      
+      if (!finalIngredientId) {
+        console.log('🔍 No se proporcionó ingredientId, buscando por nombre...');
+        const { data: ingredient, error: searchError } = await supabase
+          .from('ingredients')
+          .select('id')
+          .eq('name', ingredientName)
+          .single();
+        
+        if (searchError) {
+          console.error('❌ Error buscando ingrediente por nombre:', searchError);
+          throw new Error(`No se pudo encontrar el ingrediente "${ingredientName}": ${searchError.message}`);
+        }
+        
+        if (!ingredient) {
+          console.error('❌ Ingrediente no encontrado con nombre:', ingredientName);
+          throw new Error(`Ingrediente "${ingredientName}" no encontrado en la base de datos`);
+        }
+        
+        finalIngredientId = ingredient.id;
+        console.log('✅ Ingrediente encontrado por nombre:', {
+          name: ingredientName,
+          id: finalIngredientId
+        });
       }
       
       // VERIFICACIÓN CRÍTICA: Verificar que el ingrediente existe en la DB
@@ -76,7 +99,7 @@ export const useGenerateImage = () => {
       const { data: existingIngredient, error: checkError } = await supabase
         .from('ingredients')
         .select('id, name, image_url')
-        .eq('id', ingredientId)
+        .eq('id', finalIngredientId)
         .single();
       
       if (checkError) {
@@ -85,7 +108,7 @@ export const useGenerateImage = () => {
       }
       
       if (!existingIngredient) {
-        console.error('❌ Ingrediente no encontrado con ID:', ingredientId);
+        console.error('❌ Ingrediente no encontrado con ID:', finalIngredientId);
         throw new Error('Ingrediente no encontrado en la base de datos');
       }
       
@@ -144,7 +167,7 @@ export const useGenerateImage = () => {
       
       // ACTUALIZACIÓN CRÍTICA: Guardar en la base de datos
       console.log('💾 ===== INICIANDO ACTUALIZACIÓN EN BASE DE DATOS =====');
-      console.log('🔄 Actualizando ingrediente con ID:', ingredientId);
+      console.log('🔄 Actualizando ingrediente con ID:', finalIngredientId);
       console.log('🔗 Nueva URL de imagen:', data.imageUrl);
       
       const { data: updateResult, error: updateError } = await supabase
@@ -153,7 +176,7 @@ export const useGenerateImage = () => {
           image_url: data.imageUrl,
           updated_at: new Date().toISOString()
         })
-        .eq('id', ingredientId)
+        .eq('id', finalIngredientId)
         .select('id, name, image_url');
 
       console.log('📊 Resultado completo de actualización:', { 
@@ -175,7 +198,7 @@ export const useGenerateImage = () => {
         const { data: recheckIngredient } = await supabase
           .from('ingredients')
           .select('id, name, image_url')
-          .eq('id', ingredientId)
+          .eq('id', finalIngredientId)
           .single();
         
         console.log('🔍 Re-verificación del ingrediente:', recheckIngredient);
@@ -195,7 +218,7 @@ export const useGenerateImage = () => {
       const { data: finalCheck } = await supabase
         .from('ingredients')
         .select('image_url')
-        .eq('id', ingredientId)
+        .eq('id', finalIngredientId)
         .single();
       
       console.log('🏁 Verificación final completada:', {
@@ -206,7 +229,8 @@ export const useGenerateImage = () => {
       return {
         ...data,
         ingredientUpdated: true,
-        finalImageUrl: finalCheck?.image_url
+        finalImageUrl: finalCheck?.image_url,
+        ingredientId: finalIngredientId
       };
     },
     onSuccess: (data) => {
@@ -217,11 +241,17 @@ export const useGenerateImage = () => {
       queryClient.invalidateQueries({ queryKey: ['ingredients'] });
       queryClient.invalidateQueries({ queryKey: ['ingredient'] });
       
-      // Forzar refetch inmediato del ingrediente específico
+      // Forzar refetch inmediato del ingrediente específico si tenemos el ID
+      if (data.ingredientId) {
+        console.log('🔄 Forzando refetch del ingrediente:', data.ingredientId);
+        queryClient.refetchQueries({ queryKey: ['ingredient', data.ingredientId] });
+      }
+      
+      // También invalidar por path si es posible
       const currentPath = window.location.pathname;
       const ingredientIdFromPath = currentPath.split('/').pop();
-      if (ingredientIdFromPath) {
-        console.log('🔄 Forzando refetch del ingrediente:', ingredientIdFromPath);
+      if (ingredientIdFromPath && ingredientIdFromPath !== data.ingredientId) {
+        console.log('🔄 Forzando refetch del ingrediente desde path:', ingredientIdFromPath);
         queryClient.refetchQueries({ queryKey: ['ingredient', ingredientIdFromPath] });
       }
       

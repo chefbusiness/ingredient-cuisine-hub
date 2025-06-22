@@ -64,7 +64,11 @@ const AdminContentPreview = ({
           try {
             console.log(`🔄 Generating image ${i + 1}/${savedIngredients.length} for: ${savedIngredient.name}`);
             
-            onImageProgressUpdate(prev => ({ ...prev, current: i + 1 }));
+            onImageProgressUpdate({ 
+              current: i + 1, 
+              total: savedIngredients.length, 
+              isGenerating: true 
+            });
             
             const originalContent = generatedContent.find(item => item.name === savedIngredient.name);
             
@@ -78,13 +82,12 @@ const AdminContentPreview = ({
               console.log(`✅ Image generated for: ${savedIngredient.name}`);
               
               // Actualizar vista previa con la imagen
-              onContentUpdated(prev => 
-                prev.map(item => 
-                  item.name === savedIngredient.name 
-                    ? { ...item, image_url: result.imageUrl, id: savedIngredient.id }
-                    : item
-                )
+              const updatedContent = generatedContent.map(item => 
+                item.name === savedIngredient.name 
+                  ? { ...item, image_url: result.imageUrl, id: savedIngredient.id }
+                  : item
               );
+              onContentUpdated(updatedContent);
               successCount++;
             }
           } catch (error) {

@@ -1,7 +1,6 @@
-
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import DirectorioHeader from "@/components/DirectorioHeader";
+import UnifiedHeader from "@/components/UnifiedHeader";
 import DirectorioFilters from "@/components/DirectorioFilters";
 import DirectorioResults from "@/components/DirectorioResults";
 import DirectorioGrid from "@/components/DirectorioGrid";
@@ -48,7 +47,7 @@ const Directorio = () => {
   // Convertir ingredientes al formato esperado por DirectorioGrid
   const formattedIngredients = useMemo(() => {
     return ingredients.map(ingredient => ({
-      id: ingredient.id, // Mantener el UUID como string
+      id: ingredient.id,
       name: ingredient.name,
       nameEN: ingredient.name_en,
       nameLA: ingredient.name_la || "",
@@ -57,12 +56,14 @@ const Directorio = () => {
       price: ingredient.ingredient_prices?.[0] 
         ? `${ingredient.ingredient_prices[0].countries?.currency_symbol || "€"}${ingredient.ingredient_prices[0].price}/${ingredient.ingredient_prices[0].unit}`
         : "Precio no disponible",
-      priceUS: "$0.00/kg", // Placeholder por ahora
+      priceUS: "$0.00/kg",
       description: ingredient.description,
-      image: ingredient.image_url || "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&h=400&fit=crop",
+      image: ingredient.real_image_url || ingredient.image_url || "",
       merma: Number(ingredient.merma),
       rendimiento: Number(ingredient.rendimiento),
-      temporada: ingredient.temporada || "Todo el año"
+      temporada: ingredient.temporada || "Todo el año",
+      hasAIImage: !!ingredient.image_url,
+      hasRealImage: !!ingredient.real_image_url
     }));
   }, [ingredients]);
 
@@ -74,7 +75,7 @@ const Directorio = () => {
   const handleSeedData = async () => {
     try {
       await seedIngredients();
-      window.location.reload(); // Recargar para ver los nuevos datos
+      window.location.reload();
     } catch (error) {
       console.error('Error seeding data:', error);
     }
@@ -83,7 +84,7 @@ const Directorio = () => {
   if (isLoadingIngredients || isLoadingCategories) {
     return (
       <div className="min-h-screen bg-background">
-        <DirectorioHeader />
+        <UnifiedHeader />
         <div className="container mx-auto px-6 py-8">
           <div className="flex items-center justify-center py-16">
             <Loader className="h-8 w-8 animate-spin text-primary" />
@@ -97,7 +98,7 @@ const Directorio = () => {
   if (ingredientsError) {
     return (
       <div className="min-h-screen bg-background">
-        <DirectorioHeader />
+        <UnifiedHeader />
         <div className="container mx-auto px-6 py-8">
           <div className="text-center py-16">
             <p className="text-muted-foreground mb-4">Error cargando los datos</p>
@@ -113,7 +114,7 @@ const Directorio = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <DirectorioHeader />
+      <UnifiedHeader />
 
       <div className="container mx-auto px-6 py-8">
         <div className="text-center mb-8">

@@ -1,5 +1,5 @@
 
-import Header from "@/components/Header";
+import UnifiedHeader from "@/components/UnifiedHeader";
 import HeroSection from "@/components/HeroSection";
 import CategoriesSection from "@/components/CategoriesSection";
 import FeaturedIngredientsSection from "@/components/FeaturedIngredientsSection";
@@ -9,7 +9,7 @@ import Footer from "@/components/Footer";
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <UnifiedHeader />
       <HeroSection />
       <CategoriesSection />
       <FeaturedIngredientsSection />

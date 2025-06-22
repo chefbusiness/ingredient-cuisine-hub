@@ -4,10 +4,10 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import UnifiedHeader from "@/components/UnifiedHeader";
 import { useIngredientById } from "@/hooks/useIngredients";
 import { useRealImages } from "@/hooks/useRealImages";
 import { useGenerateImage } from "@/hooks/useGenerateImage";
-import IngredientDetailHeader from "@/components/ingredient-detail/IngredientDetailHeader";
 import IngredientMainCard from "@/components/ingredient-detail/IngredientMainCard";
 import IngredientTabs from "@/components/ingredient-detail/IngredientTabs";
 import IngredientSidebar from "@/components/ingredient-detail/IngredientSidebar";
@@ -24,13 +24,14 @@ const IngredienteDetalle = () => {
     await generateImage.mutateAsync({
       ingredientName: ingredient.name,
       description: ingredient.description,
-      ingredientId: ingredient.id // Pasar el ID del ingrediente
+      ingredientId: ingredient.id
     });
   };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50">
+        <UnifiedHeader variant="ingredient-detail" />
         <div className="container mx-auto px-4 py-8">
           <div className="space-y-6">
             <Skeleton className="h-8 w-64" />
@@ -53,6 +54,7 @@ const IngredienteDetalle = () => {
   if (error || !ingredient) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50">
+        <UnifiedHeader variant="ingredient-detail" />
         <div className="container mx-auto px-4 py-8">
           <Alert className="max-w-md mx-auto">
             <AlertDescription>
@@ -74,14 +76,33 @@ const IngredienteDetalle = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50">
-      <IngredientDetailHeader />
+      <UnifiedHeader variant="ingredient-detail" />
 
       <div className="container mx-auto px-4 py-8">
-        {/* Breadcrumb */}
-        <div className="flex items-center space-x-2 mb-6">
+        {/* Breadcrumb mejorado */}
+        <nav className="flex items-center space-x-2 mb-6 text-sm">
+          <Link 
+            to="/" 
+            className="text-green-600 hover:text-green-700 transition-colors"
+          >
+            Inicio
+          </Link>
+          <span className="text-gray-400">/</span>
           <Link 
             to="/directorio" 
-            className="flex items-center space-x-1 text-green-600 hover:text-green-700 transition-colors"
+            className="text-green-600 hover:text-green-700 transition-colors"
+          >
+            Directorio
+          </Link>
+          <span className="text-gray-400">/</span>
+          <span className="text-gray-600 font-medium">{ingredient.name}</span>
+        </nav>
+
+        {/* Botón volver */}
+        <div className="mb-6">
+          <Link 
+            to="/directorio" 
+            className="inline-flex items-center space-x-2 text-green-600 hover:text-green-700 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Volver al directorio</span>

@@ -24,7 +24,7 @@ export const useUpdateIngredient = () => {
         .from('ingredients')
         .select('*')
         .eq('id', id)
-        .single();
+        .maybeSingle();
 
       if (checkError) {
         console.error('❌ Error checking existing ingredient:', checkError);
@@ -38,7 +38,7 @@ export const useUpdateIngredient = () => {
 
       console.log('📋 Current values in DB:', existing);
 
-      // Preparar datos de actualización, excluyendo campos que no deben cambiarse
+      // Preparar datos de actualización
       const updateData = {
         name: updates.name,
         name_en: updates.name_en,
@@ -62,17 +62,17 @@ export const useUpdateIngredient = () => {
       console.log('💾 === EXECUTING SUPABASE UPDATE ===');
       console.log('Update data to send:', updateData);
 
-      // Ejecutar la actualización
+      // Ejecutar la actualización SIN .single() para evitar el error JSON
       const { data, error } = await supabase
         .from('ingredients')
         .update(updateData)
         .eq('id', id)
-        .select('*')
-        .single();
+        .select('*');
 
       console.log('📤 Supabase update response:', {
         hasError: !!error,
         hasData: !!data,
+        dataLength: data?.length || 0,
         errorDetails: error
       });
 
@@ -81,17 +81,26 @@ export const useUpdateIngredient = () => {
         throw new Error(`Error actualizando ingrediente: ${error.message}`);
       }
 
-      if (!data) {
-        console.error('❌ No data returned from update');
-        throw new Error('No se recibieron datos después de la actualización');
+      // Verificar que se actualizó al menos una fila
+      if (!data || data.length === 0) {
+        console.log('⚠️ No rows updated - possibly no changes detected');
+        // En lugar de error, retornar los datos existentes
+        return { 
+          id, 
+          updates: updateData, 
+          data: existing,
+          noChanges: true
+        };
       }
 
-      console.log('✅ Database update successful:', data);
+      const updatedRow = data[0];
+      console.log('✅ Database update successful:', updatedRow);
 
       return { 
         id, 
         updates: updateData, 
-        data: data
+        data: updatedRow,
+        noChanges: false
       };
     },
     onSuccess: (result) => {
@@ -101,10 +110,17 @@ export const useUpdateIngredient = () => {
       queryClient.invalidateQueries({ queryKey: ['ingredients'] });
       queryClient.invalidateQueries({ queryKey: ['ingredient', result.id] });
       
-      toast({
-        title: "✅ Ingrediente actualizado",
-        description: "Los cambios se han guardado correctamente en la base de datos",
-      });
+      if (result.noChanges) {
+        toast({
+          title: "ℹ️ Sin cambios",
+          description: "No se detectaron cambios en los datos del ingrediente",
+        });
+      } else {
+        toast({
+          title: "✅ Ingrediente actualizado",
+          description: "Los cambios se han guardado correctamente en la base de datos",
+        });
+      }
     },
     onError: (error) => {
       console.error('❌ === MUTATION ERROR ===');

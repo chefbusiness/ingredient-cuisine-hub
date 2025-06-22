@@ -1,3 +1,4 @@
+
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import UnifiedHeader from "@/components/UnifiedHeader";
@@ -17,11 +18,17 @@ const Directorio = () => {
   const [selectedCategory, setSelectedCategory] = useState("todos");
   const [sortBy, setSortBy] = useState("popularidad");
 
-  // Inicializar búsqueda desde URL
+  // Inicializar búsqueda y filtros desde URL
   useEffect(() => {
     const searchFromUrl = searchParams.get('search');
+    const categoryFromUrl = searchParams.get('categoria');
+    
     if (searchFromUrl) {
       setSearchQuery(searchFromUrl);
+    }
+    
+    if (categoryFromUrl) {
+      setSelectedCategory(categoryFromUrl);
     }
   }, [searchParams]);
 

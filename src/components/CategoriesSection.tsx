@@ -3,34 +3,48 @@ import { Leaf, Beef, Wheat, Utensils } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useCategories } from "@/hooks/useCategories";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const CategoriesSection = () => {
-  const categories = [
-    { 
-      name: "Verduras", 
-      icon: Leaf, 
-      count: 35, 
-      description: "Vegetales frescos y de temporada"
+  const { data: categories = [] } = useCategories();
+
+  // Get ingredient counts for each category
+  const { data: categoryCounts = {} } = useQuery({
+    queryKey: ['category-counts'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ingredients')
+        .select('category_id, categories!inner(name)')
+        .order('category_id');
+
+      if (error) {
+        console.error('Error fetching category counts:', error);
+        return {};
+      }
+
+      // Count ingredients per category
+      const counts: Record<string, number> = {};
+      data.forEach(ingredient => {
+        const categoryName = ingredient.categories?.name;
+        if (categoryName) {
+          counts[categoryName] = (counts[categoryName] || 0) + 1;
+        }
+      });
+
+      return counts;
     },
-    { 
-      name: "Carnes", 
-      icon: Beef, 
-      count: 25, 
-      description: "Cortes profesionales y especialidades"
-    },
-    { 
-      name: "Hierbas y Especias", 
-      icon: Wheat, 
-      count: 40, 
-      description: "Aromáticos y condimentos"
-    },
-    { 
-      name: "Lácteos", 
-      icon: Utensils, 
-      count: 20, 
-      description: "Quesos, cremas y productos lácteos"
-    }
-  ];
+  });
+
+  // Icon mapping for categories
+  const getIconForCategory = (categoryName: string) => {
+    const name = categoryName.toLowerCase();
+    if (name.includes('verdura') || name.includes('vegetal')) return Leaf;
+    if (name.includes('carne') || name.includes('meat')) return Beef;
+    if (name.includes('hierba') || name.includes('especia') || name.includes('herb')) return Wheat;
+    return Utensils; // Default icon
+  };
 
   return (
     <section className="py-12 bg-muted/20">
@@ -45,10 +59,15 @@ const CategoriesSection = () => {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {categories.map((category, index) => {
-            const IconComponent = category.icon;
+          {categories.slice(0, 4).map((category) => {
+            const IconComponent = getIconForCategory(category.name);
+            const count = categoryCounts[category.name] || 0;
+            
             return (
-              <Link key={index} to={`/categoria/${category.name.toLowerCase().replace(/\s+/g, '-')}`}>
+              <Link 
+                key={category.id} 
+                to={`/directorio?categoria=${encodeURIComponent(category.name)}`}
+              >
                 <Card className="border border-border bg-background hover:bg-muted/30 transition-colors group h-full">
                   <CardHeader className="text-center pb-3">
                     <div className="w-10 h-10 bg-muted rounded flex items-center justify-center mx-auto mb-3 group-hover:bg-muted/80 transition-colors">
@@ -60,10 +79,10 @@ const CategoriesSection = () => {
                   </CardHeader>
                   <CardContent className="text-center pt-0">
                     <p className="text-xs text-muted-foreground mb-2">
-                      {category.description}
+                      {category.description || `Ingredientes de ${category.name.toLowerCase()}`}
                     </p>
                     <Badge variant="secondary" className="text-xs">
-                      {category.count} ingredientes
+                      {count} ingredientes
                     </Badge>
                   </CardContent>
                 </Card>

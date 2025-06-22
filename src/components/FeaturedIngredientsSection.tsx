@@ -1,48 +1,50 @@
 
-import { TrendingUp } from "lucide-react";
+import { TrendingUp, Camera, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { useIngredients } from "@/hooks/useIngredients";
 
 const FeaturedIngredientsSection = () => {
-  const featuredIngredients = [
-    {
-      id: 1,
-      name: "Tomate Cherry",
-      category: "Verduras",
-      popularity: 95,
-      price: "€3.50/kg",
-      image: "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&h=400&fit=crop",
-      trending: true
-    },
-    {
-      id: 2,
-      name: "Salmón Noruego",
-      category: "Pescados",
-      popularity: 88,
-      price: "€24.00/kg",
-      image: "https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=400&h=400&fit=crop",
-      trending: false
-    },
-    {
-      id: 3,
-      name: "Trufa Negra",
-      category: "Hongos",
-      popularity: 92,
-      price: "€800.00/kg",
-      image: "https://images.unsplash.com/photo-1604908176997-125f25cc6f3d?w=400&h=400&fit=crop",
-      trending: true
-    },
-    {
-      id: 4,
-      name: "Albahaca Fresca",
-      category: "Hierbas",
-      popularity: 85,
-      price: "€12.00/kg",
-      image: "https://images.unsplash.com/photo-1618160702438-9b02ab6515c9?w=400&h=400&fit=crop",
-      trending: false
+  // Get the most popular ingredients (sorted by popularity, limited to 4)
+  const { data: ingredients = [] } = useIngredients(undefined, undefined, 'popularidad');
+
+  // Take the top 4 most popular ingredients
+  const featuredIngredients = ingredients.slice(0, 4);
+
+  const getIngredientImage = (ingredient: any) => {
+    // Use real image if available, then AI image, then fallback
+    if (ingredient.real_image_url) {
+      return ingredient.real_image_url;
     }
-  ];
+    if (ingredient.image_url) {
+      return ingredient.image_url;
+    }
+    return 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&h=400&fit=crop';
+  };
+
+  const getImageBadge = (ingredient: any) => {
+    if (ingredient.real_image_url) {
+      return (
+        <Badge className="absolute top-2 right-2 bg-green-500 text-white text-xs">
+          <Camera className="w-3 h-3 mr-1" />
+          Real
+        </Badge>
+      );
+    } else if (ingredient.image_url) {
+      return (
+        <Badge className="absolute top-2 right-2 bg-blue-500 text-white text-xs">
+          <Sparkles className="w-3 h-3 mr-1" />
+          IA
+        </Badge>
+      );
+    }
+    return null;
+  };
+
+  if (!featuredIngredients.length) {
+    return null; // Don't render if no ingredients are available
+  }
 
   return (
     <section className="py-12">
@@ -62,12 +64,16 @@ const FeaturedIngredientsSection = () => {
               <Card className="border border-border bg-background hover:bg-muted/30 transition-colors group overflow-hidden h-full">
                 <div className="aspect-square overflow-hidden relative">
                   <img
-                    src={ingredient.image}
+                    src={getIngredientImage(ingredient)}
                     alt={ingredient.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&h=400&fit=crop';
+                    }}
                   />
-                  {ingredient.trending && (
-                    <Badge className="absolute top-2 right-2 bg-primary text-primary-foreground text-xs">
+                  {getImageBadge(ingredient)}
+                  {ingredient.popularity > 90 && (
+                    <Badge className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs">
                       <TrendingUp className="w-3 h-3 mr-1" />
                       Trending
                     </Badge>
@@ -77,9 +83,13 @@ const FeaturedIngredientsSection = () => {
                   <h4 className="font-medium text-sm text-foreground mb-1">
                     {ingredient.name}
                   </h4>
-                  <p className="text-xs text-muted-foreground mb-2">{ingredient.category}</p>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    {ingredient.categories?.name}
+                  </p>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-primary">{ingredient.price}</span>
+                    <span className="text-xs font-medium text-primary">
+                      {ingredient.price}
+                    </span>
                     <Badge variant="outline" className="text-xs">
                       {ingredient.popularity}% popular
                     </Badge>

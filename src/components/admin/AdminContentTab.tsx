@@ -1,9 +1,11 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Database, Package, Image, RefreshCw, Tag, Camera, AlertTriangle, CheckCircle } from "lucide-react";
+import { Database, Package, Image, RefreshCw, Tag, Camera, AlertTriangle, CheckCircle, Wand2, Zap } from "lucide-react";
 import { useRegenerateImages } from "@/hooks/useRegenerateImages";
 import { useFixCategorization } from "@/hooks/useFixCategorization";
+import AdminContentGenerator from "@/components/AdminContentGenerator";
 
 interface AdminContentTabProps {
   ingredientsCount: number;
@@ -32,7 +34,24 @@ const AdminContentTab = ({ ingredientsCount, categoriesCount }: AdminContentTabP
         </p>
       </div>
 
-      {/* Banner de corrección de categorización mejorado */}
+      {/* Generador de Contenido Principal */}
+      <Card className="border-blue-200 bg-blue-50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-blue-800">
+            <Wand2 className="h-5 w-5" />
+            Generador de Contenido con IA
+            <Badge className="bg-green-100 text-green-800 ml-2">
+              <Zap className="h-3 w-3 mr-1" />
+              DeepSeek + Flux
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <AdminContentGenerator />
+        </CardContent>
+      </Card>
+
+      {/* Banner de corrección de categorización */}
       <Card className="border-orange-200 bg-orange-50">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-orange-800">

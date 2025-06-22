@@ -1,3 +1,4 @@
+
 import { GenerateContentParams } from './types.ts';
 
 export const generatePrompt = (params: GenerateContentParams): string => {
@@ -12,8 +13,19 @@ export const generatePrompt = (params: GenerateContentParams): string => {
       const categoryResponse = category 
         ? `"category": "${category}",`
         : `"category": "determina la categoría apropiada basada en el ingrediente",`;
+
+      // Instrucciones específicas de merma por categoría
+      const mermaInstructions = category ? getMermaInstructionsByCategory(category) : getGeneralMermaInstructions();
       
       return `${categoryInstruction}
+      
+      IMPORTANTE: Realiza una INVESTIGACIÓN PROFUNDA en internet para obtener datos PRECISOS y ACTUALES sobre cada ingrediente. Busca información de:
+      - Manuales profesionales de gastronomía y hostelería
+      - Estudios de rendimiento culinario
+      - Bases de datos de la industria alimentaria
+      - Publicaciones especializadas en food service
+      - Datos de proveedores profesionales
+      
       Para cada ingrediente, proporciona la siguiente información en formato JSON:
       {
         "name": "nombre en español",
@@ -27,8 +39,8 @@ export const generatePrompt = (params: GenerateContentParams): string => {
         "description": "descripción detallada (150-200 palabras)",
         "temporada": "temporada principal (ej: primavera, verano, otoño, invierno, todo el año)",
         "origen": "región de origen",
-        "merma": número entre 5-30 (porcentaje de merma típico),
-        "rendimiento": número entre 70-95 (porcentaje de rendimiento),
+        "merma": ${mermaInstructions},
+        "rendimiento": número entre 20-95 (100 - merma, calculado automáticamente basado en la merma real),
         "popularity": número entre 1-100,
         "nutritional_info": {
           "calories": número,
@@ -51,11 +63,20 @@ export const generatePrompt = (params: GenerateContentParams): string => {
         "price_estimate": número (precio estimado por kg en euros)
       }
       
+      CRÍTICO - CÁLCULO DE MERMAS:
+      - BUSCA DATOS REALES de mermas en internet de fuentes profesionales
+      - USA RANGOS REALISTAS: pescados enteros (50-80%), carnes con hueso (30-60%), verduras (5-40%)
+      - ESPECIFICA el tipo de procesamiento: limpieza, desespinado, deshuesado, pelado, etc.
+      - CONSIDERA: producto fresco vs. congelado vs. procesado
+      - VALIDA con múltiples fuentes profesionales antes de asignar el porcentaje
+      - Si no encuentras datos específicos, usa promedios de la categoría e INDICA que es estimado
+      
       IMPORTANTE: 
       - Todos los ingredientes DEBEN tener name_fr, name_it, name_pt y name_zh completados
       ${category ? `- Todos los ingredientes DEBEN pertenecer a la categoría "${category}"` : ''}
       - Usa nombres reales y precisos en cada idioma
       - Para name_zh usa caracteres chinos tradicionales o simplificados apropiados
+      - Las mermas DEBEN ser precisas y basadas en investigación real, no estimaciones genéricas
       
       Responde SOLO con un array JSON válido de ingredientes, sin texto adicional.`;
       
@@ -204,4 +225,41 @@ export const generatePrompt = (params: GenerateContentParams): string => {
     default:
       throw new Error(`Tipo de contenido no soportado: ${type}`);
   }
+};
+
+// Función auxiliar para obtener instrucciones específicas de merma por categoría
+const getMermaInstructionsByCategory = (category: string): string => {
+  const categoryLower = category.toLowerCase();
+  
+  if (categoryLower.includes('pescado') || categoryLower.includes('mariscos')) {
+    return `número entre 35-80 (INVESTIGAR: pescados enteros 50-80%, filetes 10-25%, mariscos con cáscara 40-70%, buscar datos específicos por especie y presentación)`;
+  }
+  
+  if (categoryLower.includes('carne') || categoryLower.includes('aves')) {
+    return `número entre 15-60 (INVESTIGAR: carnes con hueso 25-50%, sin hueso 5-20%, aves enteras 30-45%, buscar datos por corte específico)`;
+  }
+  
+  if (categoryLower.includes('verdura') || categoryLower.includes('hortaliza')) {
+    return `número entre 5-40 (INVESTIGAR: verduras de hoja 15-30%, raíces 10-25%, frutos 5-15%, buscar datos por tipo de limpieza requerida)`;
+  }
+  
+  if (categoryLower.includes('fruta')) {
+    return `número entre 8-35 (INVESTIGAR: frutas con hueso 15-25%, cítricas 20-35%, tropicales 25-45%, buscar datos por método de pelado/procesamiento)`;
+  }
+  
+  if (categoryLower.includes('legumbre') || categoryLower.includes('cereal')) {
+    return `número entre 2-15 (INVESTIGAR: productos secos 2-8%, frescos 10-20%, buscar datos específicos por preparación)`;
+  }
+  
+  if (categoryLower.includes('lácteo') || categoryLower.includes('queso')) {
+    return `número entre 2-10 (INVESTIGAR: productos procesados 2-5%, quesos con corteza 8-15%, buscar datos específicos)`;
+  }
+  
+  // Categoría general o no específica
+  return `número entre 5-70 (INVESTIGAR en internet: buscar datos reales de merma profesional, considerar tipo de procesamiento, limpieza, desecho, etc.)`;
+};
+
+// Función auxiliar para instrucciones generales de merma
+const getGeneralMermaInstructions = (): string => {
+  return `número entre 5-80 (INVESTIGAR PROFUNDAMENTE: buscar datos reales de merma profesional en internet, considerar categoría del ingrediente, tipo de procesamiento, nivel de limpieza requerido, descartes, etc. Usar rangos específicos por tipo)`;
 };

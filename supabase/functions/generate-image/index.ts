@@ -37,8 +37,8 @@ serve(async (req) => {
     }
     console.log('✅ Ingredient name:', finalIngredientName);
 
-    console.log('📝 Creating professional prompt...');
-    const prompt = `Professional food photography of ${finalIngredientName}, high-end culinary photography, macro lens, natural studio lighting, clean white background, food styling, commercial quality, ultra-detailed, realistic textures, fresh appearance`;
+    console.log('📝 Creating botanical illustration prompt...');
+    const prompt = `Botanical illustration of ${finalIngredientName}, scientific botanical drawing style, watercolor and digital art technique, detailed textures, vibrant natural colors, clean white background, professional culinary illustration, ultra-detailed, artistic rendering`;
     console.log('📝 Prompt:', prompt);
 
     console.log('🚀 Making Replicate API call...');

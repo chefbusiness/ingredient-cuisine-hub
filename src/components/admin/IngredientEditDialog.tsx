@@ -50,65 +50,49 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
     },
   });
 
-  // Watch all form values for debugging
-  const watchedValues = form.watch();
-
-  useEffect(() => {
-    console.log('🔍 === FORM VALUES CHANGED ===');
-    console.log('All form values:', watchedValues);
-  }, [watchedValues]);
+  const resetFormWithIngredient = (ingredient: Ingredient) => {
+    console.log('🔄 === RESETTING FORM WITH INGREDIENT DATA ===');
+    console.log('📋 Ingredient:', ingredient.name);
+    
+    const formData = {
+      name: ingredient.name || "",
+      name_en: ingredient.name_en || "",
+      name_la: ingredient.name_la || "",
+      name_fr: ingredient.name_fr || "",
+      name_it: ingredient.name_it || "",
+      name_pt: ingredient.name_pt || "",
+      name_zh: ingredient.name_zh || "",
+      description: ingredient.description || "",
+      category_id: ingredient.category_id || "",
+      temporada: ingredient.temporada || "",
+      origen: ingredient.origen || "",
+      merma: ingredient.merma || 0,
+      rendimiento: ingredient.rendimiento || 100,
+      popularity: ingredient.popularity || 0,
+      image_url: ingredient.image_url || "",
+      real_image_url: ingredient.real_image_url || "",
+    };
+    
+    console.log('📋 Form data being set:', {
+      name: formData.name,
+      image_url: formData.image_url ? formData.image_url.substring(0, 50) + '...' : 'EMPTY',
+      category_id: formData.category_id,
+    });
+    
+    form.reset(formData);
+  };
 
   useEffect(() => {
     if (ingredient) {
-      console.log('🔄 === RESETTING FORM WITH INGREDIENT DATA ===');
-      console.log('📋 Ingredient:', ingredient.name);
-      console.log('📋 Original ingredient data:', {
-        id: ingredient.id,
-        name: ingredient.name,
-        image_url: ingredient.image_url ? ingredient.image_url.substring(0, 50) + '...' : 'NULL',
-        category_id: ingredient.category_id,
-        description: ingredient.description ? ingredient.description.substring(0, 100) + '...' : 'NULL'
-      });
-      
-      const formData = {
-        name: ingredient.name || "",
-        name_en: ingredient.name_en || "",
-        name_la: ingredient.name_la || "",
-        name_fr: ingredient.name_fr || "",
-        name_it: ingredient.name_it || "",
-        name_pt: ingredient.name_pt || "",
-        name_zh: ingredient.name_zh || "",
-        description: ingredient.description || "",
-        category_id: ingredient.category_id || "",
-        temporada: ingredient.temporada || "",
-        origen: ingredient.origen || "",
-        merma: ingredient.merma || 0,
-        rendimiento: ingredient.rendimiento || 100,
-        popularity: ingredient.popularity || 0,
-        image_url: ingredient.image_url || "",
-        real_image_url: ingredient.real_image_url || "",
-      };
-      
-      console.log('📋 Form data being set:', {
-        name: formData.name,
-        image_url: formData.image_url ? formData.image_url.substring(0, 50) + '...' : 'EMPTY',
-        category_id: formData.category_id,
-        description: formData.description ? formData.description.substring(0, 100) + '...' : 'EMPTY'
-      });
-      
-      form.reset(formData);
-      
-      // Verify form was actually set
-      setTimeout(() => {
-        const currentValues = form.getValues();
-        console.log('✅ Form values after reset:', {
-          name: currentValues.name,
-          image_url: currentValues.image_url ? currentValues.image_url.substring(0, 50) + '...' : 'EMPTY',
-          category_id: currentValues.category_id
-        });
-      }, 100);
+      resetFormWithIngredient(ingredient);
     }
   }, [ingredient, form]);
+
+  const handleIngredientUpdated = () => {
+    console.log('🔄 === INGREDIENT UPDATED CALLBACK ===');
+    console.log('Ingredient updated externally, dialog will close and refresh');
+    onClose();
+  };
 
   const onSubmit = async (data: IngredientFormData) => {
     if (!ingredient) {
@@ -118,53 +102,31 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
     
     console.log('🚀 === FORM SUBMIT INITIATED ===');
     console.log('📋 Ingredient ID:', ingredient.id);
-    console.log('📋 Raw form data received:', data);
     
-    // Check if form is dirty (has changes)
-    const isDirty = form.formState.isDirty;
-    const dirtyFields = form.formState.dirtyFields;
-    console.log('📝 Form dirty status:', { isDirty, dirtyFields });
-    
-    // Get current form values directly
-    const currentValues = form.getValues();
-    console.log('📋 Current form values:', {
-      name: currentValues.name,
-      image_url: currentValues.image_url ? currentValues.image_url.substring(0, 50) + '...' : 'EMPTY',
-      real_image_url: currentValues.real_image_url ? currentValues.real_image_url.substring(0, 50) + '...' : 'EMPTY',
-      category_id: currentValues.category_id,
-      description: currentValues.description ? currentValues.description.substring(0, 100) + '...' : 'EMPTY',
-      popularity: currentValues.popularity,
-      merma: currentValues.merma,
-      rendimiento: currentValues.rendimiento
+    // Verificar si hay cambios reales comparando con los datos originales
+    const hasRealChanges = Object.keys(data).some(key => {
+      const formValue = data[key as keyof IngredientFormData];
+      const originalValue = ingredient[key as keyof Ingredient];
+      return formValue !== (originalValue || "");
     });
+
+    console.log('📝 Has real changes:', hasRealChanges);
     
-    // Compare with original data
-    console.log('🔍 Comparing with original:', {
-      nameChanged: currentValues.name !== ingredient.name,
-      imageChanged: currentValues.image_url !== (ingredient.image_url || ''),
-      categoryChanged: currentValues.category_id !== ingredient.category_id,
-      descriptionChanged: currentValues.description !== (ingredient.description || '')
-    });
+    if (!hasRealChanges) {
+      console.log('ℹ️ No changes detected, showing info message');
+      return;
+    }
     
-    // Prepare update data with explicit logging
     const updateData = {
-      ...currentValues,
+      ...data,
       updated_at: new Date().toISOString()
     };
     
     console.log('💾 Final update data to send:', {
       name: updateData.name,
       image_url: updateData.image_url ? updateData.image_url.substring(0, 50) + '...' : 'EMPTY',
-      real_image_url: updateData.real_image_url ? updateData.real_image_url.substring(0, 50) + '...' : 'EMPTY',
       category_id: updateData.category_id,
-      description: updateData.description ? updateData.description.substring(0, 100) + '...' : 'EMPTY',
-      popularity: updateData.popularity,
-      merma: updateData.merma,
-      rendimiento: updateData.rendimiento,
-      updated_at: updateData.updated_at
     });
-    
-    console.log('🎯 About to call updateIngredient mutation...');
     
     updateIngredient({
       id: ingredient.id,
@@ -172,14 +134,11 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
     }, {
       onSuccess: (result) => {
         console.log('✅ === UPDATE SUCCESS CALLBACK ===');
-        console.log('Success result:', result);
         onClose();
       },
       onError: (error) => {
         console.error('❌ === UPDATE ERROR CALLBACK ===');
         console.error('Error details:', error);
-        console.error('Error message:', error.message);
-        console.error('Error stack:', error.stack);
       },
     });
   };
@@ -193,14 +152,13 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
             <IngredientQualityBadge ingredient={ingredient} />
           </DialogTitle>
           <DialogDescription>
-            Modifica todos los campos del ingrediente. Usa "Regenerar Imagen" para crear una nueva imagen, luego haz clic en "Guardar Cambios" para aplicar todo.
+            Modifica los campos del ingrediente. La imagen se guarda automáticamente al generarla.
           </DialogDescription>
         </DialogHeader>
 
         <IngredientActionButtons 
           ingredient={ingredient} 
-          setValue={form.setValue} 
-          trigger={form.trigger}
+          onIngredientUpdated={handleIngredientUpdated}
         />
 
         <Form {...form}>
@@ -219,15 +177,6 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
               <Button 
                 type="submit" 
                 disabled={isPending}
-                onClick={() => {
-                  console.log('🔴 SAVE BUTTON CLICKED');
-                  console.log('Form state:', {
-                    isValid: form.formState.isValid,
-                    isDirty: form.formState.isDirty,
-                    errors: form.formState.errors,
-                    isSubmitting: form.formState.isSubmitting
-                  });
-                }}
               >
                 {isPending ? "Guardando..." : "Guardar Cambios"}
               </Button>

@@ -6,16 +6,13 @@ import { useGenerateContent } from "@/hooks/useGenerateContent";
 import { useToast } from "@/hooks/use-toast";
 import { Wand2, Image } from "lucide-react";
 import { Ingredient } from "@/hooks/useIngredients";
-import { UseFormSetValue, UseFormTrigger } from "react-hook-form";
-import { IngredientFormData } from "./types";
 
 interface IngredientActionButtonsProps {
   ingredient: Ingredient | null;
-  setValue: UseFormSetValue<IngredientFormData>;
-  trigger?: UseFormTrigger<IngredientFormData>;
+  onIngredientUpdated?: () => void;
 }
 
-const IngredientActionButtons = ({ ingredient, setValue, trigger }: IngredientActionButtonsProps) => {
+const IngredientActionButtons = ({ ingredient, onIngredientUpdated }: IngredientActionButtonsProps) => {
   const [isRegeneratingImage, setIsRegeneratingImage] = useState(false);
   const { mutate: generateImage, isPending: isGeneratingImage } = useGenerateImage();
   const { mutate: generateContent, isPending: isGeneratingContent } = useGenerateContent();
@@ -34,33 +31,20 @@ const IngredientActionButtons = ({ ingredient, setValue, trigger }: IngredientAc
       ingredientId: ingredient.id
     }, {
       onSuccess: (result) => {
-        console.log('✅ === IMAGE GENERATION SUCCESS ===');
-        console.log('New image URL received:', result.imageUrl.substring(0, 50) + '...');
-        
-        // SOLO actualizar el campo del formulario - NO la base de datos
-        console.log('📝 Setting form field image_url to new value...');
-        setValue('image_url', result.imageUrl, { 
-          shouldDirty: true, 
-          shouldTouch: true,
-          shouldValidate: true 
-        });
-        
-        // Trigger validation to ensure the field is properly updated
-        if (trigger) {
-          console.log('🔄 Triggering form validation...');
-          trigger('image_url');
-        }
-        
-        // Verify the form field was actually updated
-        setTimeout(() => {
-          console.log('🔍 Checking if form field was updated...');
-          // Note: We can't access form.getValues() here directly, but the parent component will log this
-        }, 100);
+        console.log('✅ === IMAGE GENERATION AND SAVE SUCCESS ===');
+        console.log('Image saved to database:', result.savedToDatabase);
         
         setIsRegeneratingImage(false);
+        
+        // Notificar al componente padre que el ingrediente se ha actualizado
+        if (onIngredientUpdated) {
+          console.log('🔄 Notifying parent component of ingredient update...');
+          onIngredientUpdated();
+        }
+        
         toast({
-          title: "✅ Nueva imagen lista",
-          description: "La imagen se ha actualizado en el formulario. Haz clic en 'Guardar Cambios' para aplicar todos los cambios.",
+          title: "✅ Imagen actualizada",
+          description: "La nueva imagen se ha guardado automáticamente en la base de datos",
         });
       },
       onError: (error) => {

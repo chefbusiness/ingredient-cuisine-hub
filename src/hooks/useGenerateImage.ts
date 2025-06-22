@@ -1,10 +1,11 @@
 
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export const useGenerateImage = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ ingredientName, description, ingredientId }: { 
@@ -12,7 +13,7 @@ export const useGenerateImage = () => {
       description?: string;
       ingredientId?: string;
     }) => {
-      console.log('🖼️ === STARTING IMAGE GENERATION (NO DB UPDATE) ===');
+      console.log('🖼️ === STARTING IMAGE GENERATION AND AUTO-SAVE ===');
       console.log('📋 Parameters:', { ingredientName, ingredientId });
       
       if (!ingredientId) {
@@ -24,7 +25,7 @@ export const useGenerateImage = () => {
       console.log('🔍 Verifying ingredient exists...');
       const { data: existingIngredient, error: checkError } = await supabase
         .from('ingredients')
-        .select('id, name')
+        .select('id, name, image_url')
         .eq('id', ingredientId)
         .single();
       
@@ -66,22 +67,49 @@ export const useGenerateImage = () => {
         throw new Error('No se recibió URL de imagen');
       }
       
-      console.log('✅ Image URL received (NOT SAVING TO DB):', data.imageUrl.substring(0, 50) + '...');
+      console.log('✅ Image URL received, now saving to database...', data.imageUrl.substring(0, 50) + '...');
       
-      // NO ACTUALIZAR LA BASE DE DATOS - Solo retornar la URL
+      // GUARDAR AUTOMÁTICAMENTE EN LA BASE DE DATOS
+      const { data: updateResult, error: updateError } = await supabase
+        .from('ingredients')
+        .update({ 
+          image_url: data.imageUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', ingredientId)
+        .select('*');
+
+      if (updateError) {
+        console.error('❌ Error saving image URL to database:', updateError);
+        throw new Error(`Error guardando imagen: ${updateError.message}`);
+      }
+
+      if (!updateResult || updateResult.length === 0) {
+        console.error('❌ No rows updated when saving image');
+        throw new Error('No se pudo guardar la imagen en la base de datos');
+      }
+
+      console.log('✅ Image URL saved to database successfully');
+      
       return {
         success: true,
         imageUrl: data.imageUrl,
         ingredientId: ingredientId,
-        ingredientName: ingredientName
+        ingredientName: ingredientName,
+        savedToDatabase: true,
+        updatedIngredient: updateResult[0]
       };
     },
     onSuccess: (data) => {
-      console.log('🎉 Image generation success (URL only)');
+      console.log('🎉 Image generation and save success');
+      
+      // Invalidar queries para actualizar la UI automáticamente
+      queryClient.invalidateQueries({ queryKey: ['ingredients'] });
+      queryClient.invalidateQueries({ queryKey: ['ingredient', data.ingredientId] });
       
       toast({
-        title: "🎉 Imagen generada",
-        description: `Nueva imagen lista para ${data.ingredientName}. Recuerda hacer clic en "Guardar Cambios".`,
+        title: "🎉 Imagen generada y guardada",
+        description: `Nueva imagen guardada automáticamente para ${data.ingredientName}`,
       });
     },
     onError: (error) => {

@@ -17,9 +17,7 @@ export const useSuperAdmin = () => {
       }
 
       try {
-        const { data, error } = await supabase.rpc('is_super_admin', {
-          user_id: user.id
-        });
+        const { data, error } = await supabase.rpc('verify_super_admin_access');
 
         if (error) {
           console.error('Error checking super admin status:', error);
@@ -38,27 +36,8 @@ export const useSuperAdmin = () => {
     checkSuperAdminStatus();
   }, [user]);
 
-  const promoteSuperAdmin = async (email: string) => {
-    try {
-      const { data, error } = await supabase.rpc('set_super_admin', {
-        user_email: email
-      });
-
-      if (error) {
-        console.error('Error promoting to super admin:', error);
-        return { success: false, error: error.message };
-      }
-
-      return { success: true, promoted: data };
-    } catch (error) {
-      console.error('Error promoting to super admin:', error);
-      return { success: false, error: 'Error inesperado' };
-    }
-  };
-
   return {
     isSuperAdmin,
-    loading,
-    promoteSuperAdmin
+    loading
   };
 };

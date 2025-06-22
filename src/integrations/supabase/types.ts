@@ -9,6 +9,42 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          resource_id: string | null
+          resource_type: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -519,8 +555,21 @@ export type Database = {
         Args: { user_id: string }
         Returns: boolean
       }
-      set_super_admin: {
-        Args: { user_email: string }
+      log_admin_action: {
+        Args: {
+          action_type: string
+          resource_type: string
+          resource_id?: string
+          action_details?: Json
+        }
+        Returns: undefined
+      }
+      promote_to_super_admin: {
+        Args: { target_email: string }
+        Returns: boolean
+      }
+      verify_super_admin_access: {
+        Args: Record<PropertyKey, never>
         Returns: boolean
       }
     }

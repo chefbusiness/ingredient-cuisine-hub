@@ -1,13 +1,16 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Settings, Database, Languages, Zap } from "lucide-react";
+import { Settings, Database, Zap } from "lucide-react";
 import LanguageCorrection from "./LanguageCorrection";
+import AuditLogViewer from "./AuditLogViewer";
 
 const AdminSettingsTab = () => {
   return (
     <div className="space-y-6">
+      {/* Audit Log Viewer - Security Feature */}
+      <AuditLogViewer />
+
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -31,6 +34,10 @@ const AdminSettingsTab = () => {
             <div className="flex items-center justify-between">
               <span className="text-sm">Índices de búsqueda</span>
               <Badge variant="outline">Optimizado</Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Políticas RLS</span>
+              <Badge className="bg-green-100 text-green-800">Habilitadas</Badge>
             </div>
           </CardContent>
         </Card>
@@ -57,6 +64,10 @@ const AdminSettingsTab = () => {
             <div className="flex items-center justify-between">
               <span className="text-sm">Generación de imágenes</span>
               <Badge className="bg-green-100 text-green-800">Operativo</Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Autenticación segura</span>
+              <Badge className="bg-green-100 text-green-800">Habilitada</Badge>
             </div>
           </CardContent>
         </Card>

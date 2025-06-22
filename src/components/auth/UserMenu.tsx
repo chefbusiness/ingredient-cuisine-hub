@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
 import { Button } from '@/components/ui/button';
@@ -11,8 +11,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { User, Heart, History, Settings, LogOut, Crown, Shield } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+import { User, Heart, History, Settings, LogOut, Crown } from 'lucide-react';
 
 interface UserMenuProps {
   onShowAuthModal: () => void;
@@ -20,9 +19,7 @@ interface UserMenuProps {
 
 export const UserMenu: React.FC<UserMenuProps> = ({ onShowAuthModal }) => {
   const { user, signOut } = useAuth();
-  const { isSuperAdmin, promoteSuperAdmin } = useSuperAdmin();
-  const { toast } = useToast();
-  const [promoting, setPromoting] = useState(false);
+  const { isSuperAdmin } = useSuperAdmin();
 
   if (!user) {
     return (
@@ -37,44 +34,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({ onShowAuthModal }) => {
 
   const handleSignOut = async () => {
     await signOut();
-  };
-
-  const handlePromoteSuperAdmin = async () => {
-    if (user.email !== 'john@chefbusiness.co') {
-      toast({
-        title: "No autorizado",
-        description: "Solo se puede promover el usuario específico",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setPromoting(true);
-    try {
-      const result = await promoteSuperAdmin(user.email);
-      if (result.success) {
-        toast({
-          title: "¡Promoción exitosa!",
-          description: "Usuario promovido a Super Admin"
-        });
-        // Reload to refresh super admin status
-        window.location.reload();
-      } else {
-        toast({
-          title: "Error",
-          description: result.error || "No se pudo promover el usuario",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Error inesperado",
-        variant: "destructive"
-      });
-    } finally {
-      setPromoting(false);
-    }
   };
 
   return (
@@ -106,16 +65,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({ onShowAuthModal }) => {
           </div>
         </div>
         <DropdownMenuSeparator />
-        
-        {user.email === 'john@chefbusiness.co' && !isSuperAdmin && (
-          <>
-            <DropdownMenuItem onClick={handlePromoteSuperAdmin} disabled={promoting}>
-              <Shield className="mr-2 h-4 w-4" />
-              <span>{promoting ? 'Promoviendo...' : 'Activar Super Admin'}</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-          </>
-        )}
         
         <DropdownMenuItem>
           <Heart className="mr-2 h-4 w-4" />

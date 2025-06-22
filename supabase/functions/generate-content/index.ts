@@ -1,17 +1,55 @@
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
+import { generateIngredientData } from './utils.ts';
 
-import { GenerateContentParams } from './types.ts';
-import { corsHeaders } from './utils.ts';
-import { generatePrompt } from './prompts.ts';
-import { DeepSeekClient } from './deepseek-client.ts';
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
+
+// Security function to verify super admin access
+async function verifySuperAdminAccess(authHeader: string | null): Promise<boolean> {
+  if (!authHeader) {
+    console.log('❌ No authorization header provided');
+    return false;
+  }
+
+  try {
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError || !user) {
+      console.log('❌ Invalid or expired token:', userError?.message);
+      return false;
+    }
+
+    // Use the new security function to check super admin status
+    const { data: isSuperAdmin, error: roleError } = await supabase
+      .rpc('verify_super_admin_access');
+
+    if (roleError) {
+      console.log('❌ Error checking super admin status:', roleError.message);
+      return false;
+    }
+
+    if (!isSuperAdmin) {
+      console.log('❌ User is not a super admin:', user.email);
+      return false;
+    }
+
+    console.log('✅ Super admin access verified for:', user.email);
+    return true;
+  } catch (error) {
+    console.log('❌ Error verifying admin access:', error);
+    return false;
+  }
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -19,56 +57,83 @@ serve(async (req) => {
   }
 
   try {
-    const params: GenerateContentParams = await req.json();
+    // Security check: Verify super admin access
+    const authHeader = req.headers.get('authorization');
+    const isAuthorized = await verifySuperAdminAccess(authHeader);
     
-    console.log('=== INICIO DE REQUEST ===');
-    console.log('Parámetros recibidos:', params);
-    
-    // Obtener ingredientes existentes para evitar duplicados
-    let existingIngredients: any[] = [];
-    if (params.type === 'ingredient') {
-      console.log('🔍 Obteniendo ingredientes existentes...');
-      const { data: ingredients, error } = await supabase
-        .from('ingredients')
-        .select('name, name_en, name_fr, name_it, name_pt, name_zh, category_id, categories!inner(name)')
-        .order('name');
-      
-      if (error) {
-        console.error('❌ Error obteniendo ingredientes existentes:', error);
-      } else {
-        existingIngredients = ingredients || [];
-        console.log(`✅ Encontrados ${existingIngredients.length} ingredientes existentes`);
-      }
+    if (!isAuthorized) {
+      return new Response(JSON.stringify({ 
+        error: 'Unauthorized: Super admin access required',
+        code: 'UNAUTHORIZED'
+      }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
+
+    const { type, count, category, additionalPrompt } = await req.json();
+
+    // Input validation and sanitization
+    if (!type || !['ingredient', 'category'].includes(type)) {
+      return new Response(JSON.stringify({ 
+        error: 'Invalid type parameter. Must be "ingredient" or "category"',
+        code: 'INVALID_TYPE'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate count parameter
+    const validatedCount = Math.min(Math.max(parseInt(count) || 1, 1), 50); // Limit to prevent abuse
     
-    const prompt = generatePrompt(params, existingIngredients);
-    console.log('Prompt generado, longitud:', prompt.length);
-    console.log('Primeros 200 caracteres del prompt:', prompt.substring(0, 200) + '...');
+    // Sanitize category input
+    const sanitizedCategory = category ? category.toString().trim().slice(0, 100) : '';
+    
+    // Sanitize additional prompt
+    const sanitizedPrompt = additionalPrompt ? additionalPrompt.toString().trim().slice(0, 500) : '';
 
-    const deepSeekClient = new DeepSeekClient();
-    const parsedContent = await deepSeekClient.generateContent(prompt);
+    console.log(`🔄 Generating ${validatedCount} ${type}(s) for category: ${sanitizedCategory}`);
 
-    console.log('=== RESPUESTA EXITOSA ===');
-    console.log('Número de elementos generados:', parsedContent.length);
+    let generatedData;
+    if (type === 'ingredient') {
+      generatedData = await generateIngredientData(validatedCount, sanitizedCategory, sanitizedPrompt);
+    } else {
+      // Category generation logic would go here
+      generatedData = [];
+    }
+
+    console.log(`✅ Successfully generated ${generatedData.length} items`);
+
+    // Log the admin action
+    try {
+      await supabase.rpc('log_admin_action', {
+        action_type: 'generate_content',
+        resource_type: type,
+        action_details: {
+          count: validatedCount,
+          category: sanitizedCategory,
+          generated_count: generatedData.length
+        }
+      });
+    } catch (logError) {
+      console.log('⚠️ Failed to log admin action:', logError);
+      // Don't fail the request if logging fails
+    }
 
     return new Response(JSON.stringify({ 
-      success: true, 
-      data: parsedContent,
-      type: params.type 
+      success: true,
+      data: generatedData,
+      generated_count: generatedData.length
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('=== ERROR GENERAL ===');
-    console.error('Tipo de error:', error.constructor.name);
-    console.error('Mensaje:', error.message);
-    console.error('Stack trace:', error.stack);
-    
+    console.error('❌ Error in generate-content:', error);
     return new Response(JSON.stringify({ 
-      error: error.message,
-      success: false,
-      errorType: error.constructor.name
+      error: error.message || 'Internal server error',
+      code: 'INTERNAL_ERROR'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

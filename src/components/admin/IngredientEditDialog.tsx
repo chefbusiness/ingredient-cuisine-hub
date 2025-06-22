@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Form } from "@/components/ui/form";
 import { Ingredient } from "@/hooks/useIngredients";
 import { useUpdateIngredient } from "@/hooks/useIngredientMutations";
 import { useCategories } from "@/hooks/useCategories";
@@ -78,7 +79,9 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
     
     console.log('💾 Submitting ingredient update with data:', {
       id: ingredient.id,
-      imageUrl: data.image_url?.substring(0, 50) + '...'
+      name: data.name,
+      imageUrl: data.image_url?.substring(0, 50) + '...',
+      allData: data
     });
     
     updateIngredient({
@@ -88,6 +91,9 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
       onSuccess: () => {
         console.log('✅ Ingredient updated successfully');
         onClose();
+      },
+      onError: (error) => {
+        console.error('❌ Update failed:', error);
       },
     });
   };
@@ -111,25 +117,28 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
           trigger={form.trigger}
         />
 
-        <IngredientEditForm
-          ingredient={ingredient}
-          categories={categories}
-          onSubmit={onSubmit}
-          form={form}
-        />
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <IngredientEditForm
+              ingredient={ingredient}
+              categories={categories}
+              control={form.control}
+              watch={form.watch}
+            />
 
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose}>
-            Cancelar
-          </Button>
-          <Button 
-            type="submit" 
-            disabled={isPending}
-            onClick={form.handleSubmit(onSubmit)}
-          >
-            {isPending ? "Guardando..." : "Guardar Cambios"}
-          </Button>
-        </DialogFooter>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancelar
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={isPending}
+              >
+                {isPending ? "Guardando..." : "Guardar Cambios"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   );

@@ -9,34 +9,59 @@ export const useUpdateIngredient = () => {
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
-      const { error, count } = await supabase
+      console.log('🔄 Starting ingredient update mutation:', {
+        id,
+        updates: Object.keys(updates),
+        name: updates.name,
+        imageUrl: updates.image_url?.substring(0, 50) + '...'
+      });
+
+      const { data, error, count } = await supabase
         .from('ingredients')
-        .update(updates)
-        .eq('id', id);
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select();
 
       if (error) {
-        console.error('Error updating ingredient:', error);
+        console.error('❌ Error updating ingredient:', error);
         throw error;
       }
 
+      console.log('✅ Database update result:', {
+        count,
+        updatedData: data?.[0] ? {
+          id: data[0].id,
+          name: data[0].name,
+          imageUrl: data[0].image_url?.substring(0, 50) + '...'
+        } : null
+      });
+
       if (count === 0) {
-        console.error('No records were updated');
+        console.error('❌ No records were updated');
         throw new Error('No se pudo actualizar el ingrediente - no se encontró el registro');
       }
 
-      return { id, updates, count };
+      return { id, updates, count, data };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      console.log('🎉 Update mutation success:', {
+        id: result.id,
+        count: result.count
+      });
+      
       queryClient.invalidateQueries({ queryKey: ['ingredients'] });
       toast({
-        title: "Ingrediente actualizado",
+        title: "✅ Ingrediente actualizado",
         description: "Los cambios se han guardado correctamente",
       });
     },
     onError: (error) => {
-      console.error('Update error:', error);
+      console.error('❌ Update mutation error:', error);
       toast({
-        title: "Error al actualizar",
+        title: "❌ Error al actualizar",
         description: error.message,
         variant: "destructive",
       });
@@ -60,16 +85,13 @@ export const useDeleteIngredient = () => {
         supabase.from('ingredient_real_images').delete().eq('ingredient_id', id),
       ];
 
-      // Ejecutamos todas las eliminaciones de dependencias
       for (const deletion of deletions) {
         const { error } = await deletion;
         if (error) {
           console.error('Error deleting related data:', error);
-          // Continuamos aunque falle alguna dependencia
         }
       }
 
-      // Finalmente eliminamos el ingrediente
       const { error } = await supabase
         .from('ingredients')
         .delete()

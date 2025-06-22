@@ -10,7 +10,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Ingredient } from "@/hooks/useIngredients";
-import { useDeleteIngredient } from "@/hooks/useIngredientMutations";
+import { useDeleteIngredient } from "@/hooks/mutations";
 
 interface IngredientDeleteDialogProps {
   ingredient: Ingredient | null;

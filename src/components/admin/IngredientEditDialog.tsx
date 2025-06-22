@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { Ingredient } from "@/hooks/useIngredients";
-import { useUpdateIngredient } from "@/hooks/useIngredientMutations";
+import { useUpdateIngredient } from "@/hooks/mutations";
 import { useCategories } from "@/hooks/useCategories";
 import IngredientQualityBadge from "./ingredient-edit/IngredientQualityBadge";
 import IngredientActionButtons from "./ingredient-edit/IngredientActionButtons";

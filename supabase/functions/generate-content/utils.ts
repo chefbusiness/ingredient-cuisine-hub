@@ -53,3 +53,38 @@ export const parseAndValidateJson = (content: string): any[] => {
 
   return parsedContent;
 };
+
+// Función faltante que estaba siendo importada
+export const generateIngredientData = async (count: number, category?: string, additionalPrompt?: string): Promise<any[]> => {
+  console.log('🔄 Iniciando generación de ingredientes:', { count, category, additionalPrompt });
+  
+  try {
+    // Importar las dependencias necesarias
+    const { DeepSeekClient } = await import('./deepseek-client.ts');
+    const { generatePrompt } = await import('./prompts.ts');
+    
+    // Crear cliente DeepSeek
+    const deepSeekClient = new DeepSeekClient();
+    
+    // Generar prompt para ingredientes
+    const prompt = generatePrompt({
+      type: 'ingredient',
+      count,
+      category,
+      region: 'España'
+    });
+    
+    console.log('📝 Prompt generado para DeepSeek');
+    
+    // Generar contenido con DeepSeek
+    const generatedData = await deepSeekClient.generateContent(prompt);
+    
+    console.log('✅ Datos generados exitosamente:', generatedData.length, 'ingredientes');
+    
+    return generatedData;
+    
+  } catch (error) {
+    console.error('❌ Error en generateIngredientData:', error);
+    throw new Error(`Error generando ingredientes: ${error.message}`);
+  }
+};

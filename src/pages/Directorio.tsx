@@ -1,4 +1,3 @@
-
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import UnifiedHeader from "@/components/UnifiedHeader";
@@ -6,6 +5,7 @@ import DirectorioStats from "@/components/DirectorioStats";
 import AdvancedSearchFilters from "@/components/AdvancedSearchFilters";
 import DirectorioResults from "@/components/DirectorioResults";
 import DirectorioGrid from "@/components/DirectorioGrid";
+import DirectorioList from "@/components/DirectorioList";
 import DirectorioEmpty from "@/components/DirectorioEmpty";
 import { useAdvancedIngredients } from "@/hooks/useAdvancedIngredients";
 import { useIngredientAnalytics } from "@/hooks/useIngredientAnalytics";
@@ -26,6 +26,7 @@ interface SearchFilters {
 
 const Directorio = () => {
   const [searchParams] = useSearchParams();
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [filters, setFilters] = useState<SearchFilters>({
     searchQuery: "",
     category: "todos",
@@ -113,6 +114,10 @@ const Directorio = () => {
     }
   };
 
+  const handleViewModeChange = (mode: "grid" | "list") => {
+    setViewMode(mode);
+  };
+
   if (isLoadingIngredients || isLoadingCategories || isLoadingAnalytics) {
     return (
       <div className="min-h-screen bg-background">
@@ -184,12 +189,20 @@ const Directorio = () => {
           categories={categories}
         />
 
-        <DirectorioResults resultsCount={formattedIngredients.length} />
+        <DirectorioResults 
+          resultsCount={formattedIngredients.length} 
+          viewMode={viewMode}
+          onViewModeChange={handleViewModeChange}
+        />
 
         {formattedIngredients.length === 0 ? (
           <DirectorioEmpty onClearFilters={handleClearFilters} />
         ) : (
-          <DirectorioGrid ingredients={formattedIngredients} />
+          viewMode === "grid" ? (
+            <DirectorioGrid ingredients={formattedIngredients} />
+          ) : (
+            <DirectorioList ingredients={formattedIngredients} />
+          )
         )}
       </div>
     </div>

@@ -5,6 +5,8 @@ import { Link, useLocation } from "react-router-dom";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { SuperAdminBadge } from "@/components/auth/SuperAdminBadge";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 
 interface UnifiedHeaderProps {
   variant?: 'default' | 'ingredient-detail';
@@ -13,6 +15,8 @@ interface UnifiedHeaderProps {
 const UnifiedHeader = ({ variant = 'default' }: UnifiedHeaderProps) => {
   const location = useLocation();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const { user } = useAuth();
+  const { isSuperAdmin } = useSuperAdmin();
   
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';
@@ -59,16 +63,18 @@ const UnifiedHeader = ({ variant = 'default' }: UnifiedHeaderProps) => {
                 >
                   Directorio
                 </Link>
-                <Link 
-                  to="/admin" 
-                  className={`text-sm transition-colors ${
-                    isActive('/admin') 
-                      ? 'text-primary font-medium' 
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  Admin
-                </Link>
+                {user && isSuperAdmin && (
+                  <Link 
+                    to="/admin" 
+                    className={`text-sm transition-colors ${
+                      isActive('/admin') 
+                        ? 'text-primary font-medium' 
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Dashboard
+                  </Link>
+                )}
               </nav>
               
               <SuperAdminBadge />

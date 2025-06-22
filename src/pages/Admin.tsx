@@ -101,7 +101,10 @@ const Admin = () => {
           {/* Tab Contents */}
           <div className="mt-6">
             <TabsContent value="overview">
-              <AdminStatsOverview />
+              <AdminStatsOverview 
+                ingredientsCount={ingredients.length}
+                categoriesCount={categories.length}
+              />
             </TabsContent>
 
             <TabsContent value="content">

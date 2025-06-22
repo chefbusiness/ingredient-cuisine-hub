@@ -42,6 +42,15 @@ const FeaturedIngredientsSection = () => {
     return null;
   };
 
+  const getIngredientPrice = (ingredient: any) => {
+    if (ingredient.ingredient_prices && ingredient.ingredient_prices.length > 0) {
+      const price = ingredient.ingredient_prices[0];
+      const symbol = price.countries?.currency_symbol || "€";
+      return `${symbol}${price.price}/${price.unit}`;
+    }
+    return "Precio no disponible";
+  };
+
   if (!featuredIngredients.length) {
     return null; // Don't render if no ingredients are available
   }
@@ -88,7 +97,7 @@ const FeaturedIngredientsSection = () => {
                   </p>
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-primary">
-                      {ingredient.price}
+                      {getIngredientPrice(ingredient)}
                     </span>
                     <Badge variant="outline" className="text-xs">
                       {ingredient.popularity}% popular

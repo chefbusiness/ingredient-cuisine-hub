@@ -187,6 +187,7 @@ const Directorio = () => {
         <AdvancedSearchFilters
           onFiltersChange={handleFiltersChange}
           categories={categories}
+          isLoading={isLoadingIngredients}
         />
 
         <DirectorioResults 

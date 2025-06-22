@@ -1,16 +1,18 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
-import { X, SlidersHorizontal } from "lucide-react";
+import { X, SlidersHorizontal, Loader2 } from "lucide-react";
+import { useDebounce } from "@/hooks/useDebounce";
 
 interface AdvancedSearchFiltersProps {
   onFiltersChange: (filters: SearchFilters) => void;
   categories: Array<{ value: string; label: string }>;
+  isLoading?: boolean;
 }
 
 interface SearchFilters {
@@ -23,9 +25,11 @@ interface SearchFilters {
   origin?: string;
 }
 
-const AdvancedSearchFilters = ({ onFiltersChange, categories }: AdvancedSearchFiltersProps) => {
+const AdvancedSearchFilters = ({ onFiltersChange, categories, isLoading = false }: AdvancedSearchFiltersProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [filters, setFilters] = useState<SearchFilters>({
+  
+  // Local state for immediate UI updates
+  const [localFilters, setLocalFilters] = useState<SearchFilters>({
     searchQuery: "",
     category: "todos",
     sortBy: "popularidad",
@@ -35,10 +39,31 @@ const AdvancedSearchFilters = ({ onFiltersChange, categories }: AdvancedSearchFi
     origin: ""
   });
 
-  const handleFilterChange = (key: keyof SearchFilters, value: any) => {
-    const newFilters = { ...filters, [key]: value };
-    setFilters(newFilters);
-    onFiltersChange(newFilters);
+  // Debounced values for text inputs
+  const debouncedSearchQuery = useDebounce(localFilters.searchQuery, 500);
+  const debouncedOrigin = useDebounce(localFilters.origin || "", 500);
+
+  // Apply filters when debounced values change or immediate filters change
+  useEffect(() => {
+    const filtersToApply = {
+      ...localFilters,
+      searchQuery: debouncedSearchQuery,
+      origin: debouncedOrigin
+    };
+    onFiltersChange(filtersToApply);
+  }, [
+    debouncedSearchQuery,
+    debouncedOrigin,
+    localFilters.category,
+    localFilters.sortBy,
+    localFilters.priceRange,
+    localFilters.popularityRange,
+    localFilters.season,
+    onFiltersChange
+  ]);
+
+  const handleLocalFilterChange = (key: keyof SearchFilters, value: any) => {
+    setLocalFilters(prev => ({ ...prev, [key]: value }));
   };
 
   const clearFilters = () => {
@@ -51,11 +76,10 @@ const AdvancedSearchFilters = ({ onFiltersChange, categories }: AdvancedSearchFi
       season: "",
       origin: ""
     };
-    setFilters(defaultFilters);
-    onFiltersChange(defaultFilters);
+    setLocalFilters(defaultFilters);
   };
 
-  const activeFiltersCount = Object.entries(filters).filter(([key, value]) => {
+  const activeFiltersCount = Object.entries(localFilters).filter(([key, value]) => {
     if (key === 'searchQuery') return value !== "";
     if (key === 'category') return value !== "todos";
     if (key === 'sortBy') return value !== "popularidad";
@@ -73,6 +97,9 @@ const AdvancedSearchFilters = ({ onFiltersChange, categories }: AdvancedSearchFi
             {activeFiltersCount > 0 && (
               <Badge variant="secondary">{activeFiltersCount} activos</Badge>
             )}
+            {isLoading && (
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            )}
           </div>
           <Button
             variant="ghost"
@@ -89,11 +116,11 @@ const AdvancedSearchFilters = ({ onFiltersChange, categories }: AdvancedSearchFi
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Input
             placeholder="Buscar ingredientes..."
-            value={filters.searchQuery}
-            onChange={(e) => handleFilterChange('searchQuery', e.target.value)}
+            value={localFilters.searchQuery}
+            onChange={(e) => handleLocalFilterChange('searchQuery', e.target.value)}
           />
           
-          <Select value={filters.category} onValueChange={(value) => handleFilterChange('category', value)}>
+          <Select value={localFilters.category} onValueChange={(value) => handleLocalFilterChange('category', value)}>
             <SelectTrigger>
               <SelectValue placeholder="Categoría" />
             </SelectTrigger>
@@ -106,7 +133,7 @@ const AdvancedSearchFilters = ({ onFiltersChange, categories }: AdvancedSearchFi
             </SelectContent>
           </Select>
 
-          <Select value={filters.sortBy} onValueChange={(value) => handleFilterChange('sortBy', value)}>
+          <Select value={localFilters.sortBy} onValueChange={(value) => handleLocalFilterChange('sortBy', value)}>
             <SelectTrigger>
               <SelectValue placeholder="Ordenar por" />
             </SelectTrigger>
@@ -125,11 +152,12 @@ const AdvancedSearchFilters = ({ onFiltersChange, categories }: AdvancedSearchFi
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="text-sm font-medium mb-2 block">
-                  Popularidad: {filters.popularityRange[0]}% - {filters.popularityRange[1]}%
+                  Popularidad: {localFilters.popularityRange[0]}% - {localFilters.popularityRange[1]}%
                 </label>
                 <Slider
-                  value={filters.popularityRange}
-                  onValueChange={(value) => handleFilterChange('popularityRange', value)}
+                  value={localFilters.popularityRange}
+                  onValueChange={(value) => handleLocalFilterChange('popularityRange', value)}
+                  onValueCommit={(value) => handleLocalFilterChange('popularityRange', value)}
                   max={100}
                   min={0}
                   step={5}
@@ -138,7 +166,7 @@ const AdvancedSearchFilters = ({ onFiltersChange, categories }: AdvancedSearchFi
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <Select value={filters.season || "todas"} onValueChange={(value) => handleFilterChange('season', value === "todas" ? "" : value)}>
+                <Select value={localFilters.season || "todas"} onValueChange={(value) => handleLocalFilterChange('season', value === "todas" ? "" : value)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Temporada" />
                   </SelectTrigger>
@@ -153,9 +181,9 @@ const AdvancedSearchFilters = ({ onFiltersChange, categories }: AdvancedSearchFi
                 </Select>
 
                 <Input
-                  placeholder="Origen..."
-                  value={filters.origin || ""}
-                  onChange={(e) => handleFilterChange('origin', e.target.value)}
+                  placeholder="Origen (ej: España)..."
+                  value={localFilters.origin || ""}
+                  onChange={(e) => handleLocalFilterChange('origin', e.target.value)}
                 />
               </div>
             </div>

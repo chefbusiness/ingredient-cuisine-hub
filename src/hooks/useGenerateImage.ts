@@ -13,7 +13,7 @@ export const useGenerateImage = () => {
       description?: string;
       ingredientId?: string;
     }) => {
-      console.log('🖼️ === STARTING IMAGE GENERATION AND AUTO-SAVE ===');
+      console.log('🖼️ === STARTING SINGLE IMAGE GENERATION AND AUTO-SAVE ===');
       console.log('📋 Parameters:', { ingredientName, ingredientId });
       
       if (!ingredientId) {
@@ -73,8 +73,9 @@ export const useGenerateImage = () => {
       }
       
       console.log('✅ Image URL received, now saving to database...');
+      console.log('🔗 Image URL:', data.imageUrl.substring(0, 50) + '...');
       
-      // GUARDAR AUTOMÁTICAMENTE EN LA BASE DE DATOS - SIN .single()
+      // GUARDAR AUTOMÁTICAMENTE EN LA BASE DE DATOS con verificación explícita
       const { data: updateResult, error: updateError } = await supabase
         .from('ingredients')
         .update({ 
@@ -82,7 +83,7 @@ export const useGenerateImage = () => {
           updated_at: new Date().toISOString()
         })
         .eq('id', ingredientId)
-        .select('*');
+        .select('id, name, image_url');
 
       if (updateError) {
         console.error('❌ Error saving image URL to database:', updateError);
@@ -95,7 +96,14 @@ export const useGenerateImage = () => {
       }
 
       const updatedIngredient = updateResult[0];
+      
+      if (!updatedIngredient.image_url) {
+        console.error('❌ Image URL not saved correctly');
+        throw new Error('La URL de imagen no se guardó correctamente');
+      }
+
       console.log('✅ Image URL saved to database successfully');
+      console.log('🔗 Saved URL:', updatedIngredient.image_url.substring(0, 50) + '...');
       
       return {
         success: true,

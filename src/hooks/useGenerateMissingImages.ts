@@ -28,7 +28,7 @@ export const useGenerateMissingImages = (
 
       if (fetchError) {
         console.error('❌ Error fetching ingredients:', fetchError);
-        throw fetchError;
+        throw new Error(`Error obteniendo ingredientes: ${fetchError.message}`);
       }
 
       if (!ingredients || ingredients.length === 0) {
@@ -58,6 +58,7 @@ export const useGenerateMissingImages = (
           // Actualizar progreso
           onProgressUpdate?.({ current: i, total, isGenerating: true });
           
+          // Llamar a la función de generación de imagen
           const { data: imageResult, error: imageError } = await supabase.functions.invoke('generate-image', {
             body: { 
               ingredientName: ingredient.name,
@@ -66,33 +67,67 @@ export const useGenerateMissingImages = (
             }
           });
 
-          if (imageError || !imageResult?.success) {
-            console.error(`❌ Error generating image for ${ingredient.name}:`, imageError);
+          console.log(`📤 Image generation response for ${ingredient.name}:`, {
+            hasData: !!imageResult,
+            success: imageResult?.success,
+            hasImageUrl: !!imageResult?.imageUrl,
+            error: imageError
+          });
+
+          if (imageError) {
+            console.error(`❌ Supabase function error for ${ingredient.name}:`, imageError);
             errorCount++;
             continue;
           }
 
-          if (imageResult.imageUrl) {
-            // Actualizar ingrediente con la nueva imagen
-            const { error: updateError } = await supabase
-              .from('ingredients')
-              .update({ 
-                image_url: imageResult.imageUrl,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', ingredient.id);
+          if (!imageResult || !imageResult.success) {
+            console.error(`❌ Function returned error for ${ingredient.name}:`, imageResult?.error);
+            errorCount++;
+            continue;
+          }
 
-            if (updateError) {
-              console.error(`❌ Error updating ${ingredient.name}:`, updateError);
-              errorCount++;
-            } else {
-              console.log(`✅ [${i + 1}/${total}] Successfully generated image for: ${ingredient.name}`);
-              successCount++;
-            }
-          } else {
+          if (!imageResult.imageUrl) {
             console.error(`❌ No image URL returned for ${ingredient.name}`);
             errorCount++;
+            continue;
           }
+
+          console.log(`📥 Got image URL for ${ingredient.name}: ${imageResult.imageUrl.substring(0, 50)}...`);
+
+          // GUARDAR EN LA BASE DE DATOS con verificación explícita
+          console.log(`💾 Saving image URL to database for ${ingredient.name}...`);
+          
+          const { data: updateResult, error: updateError } = await supabase
+            .from('ingredients')
+            .update({ 
+              image_url: imageResult.imageUrl,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', ingredient.id)
+            .select('id, name, image_url');
+
+          if (updateError) {
+            console.error(`❌ Database update error for ${ingredient.name}:`, updateError);
+            errorCount++;
+            continue;
+          }
+
+          if (!updateResult || updateResult.length === 0) {
+            console.error(`❌ No rows updated for ${ingredient.name} (ingredient ID: ${ingredient.id})`);
+            errorCount++;
+            continue;
+          }
+
+          const updatedIngredient = updateResult[0];
+          if (!updatedIngredient.image_url) {
+            console.error(`❌ Image URL not saved correctly for ${ingredient.name}`);
+            errorCount++;
+            continue;
+          }
+
+          console.log(`✅ [${i + 1}/${total}] Successfully saved image for: ${ingredient.name}`);
+          console.log(`🔗 Saved URL: ${updatedIngredient.image_url.substring(0, 50)}...`);
+          successCount++;
           
           // Pequeña pausa entre generaciones para evitar límites de rate
           if (i < ingredients.length - 1) {
@@ -118,7 +153,7 @@ export const useGenerateMissingImages = (
       if (result.processed > 0) {
         toast({
           title: "🎉 Regeneración masiva completada",
-          description: `Se generaron ${result.processed} imágenes de ${result.total} ingredientes`,
+          description: `Se generaron y guardaron ${result.processed} imágenes de ${result.total} ingredientes`,
         });
       } else {
         toast({

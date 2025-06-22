@@ -53,36 +53,51 @@ export const useGenerateImage = () => {
 
   return useMutation({
     mutationFn: async ({ ingredientName, description }: { ingredientName: string; description?: string }) => {
-      console.log('Generating image for:', ingredientName);
+      console.log('🖼️ Iniciando generación de imagen para:', ingredientName);
+      
+      const requestBody = { 
+        ingredientName: ingredientName,
+        name: ingredientName, // Enviamos ambos para compatibilidad
+        description: description 
+      };
+      
+      console.log('📤 Enviando request body:', requestBody);
       
       const { data, error } = await supabase.functions.invoke('generate-image', {
-        body: { 
-          ingredientName: ingredientName,
-          description: description 
-        }
+        body: requestBody
       });
 
+      console.log('📥 Respuesta de Supabase function:', { data, error });
+
       if (error) {
-        console.error('Error generating image:', error);
-        throw error;
+        console.error('❌ Error de Supabase functions:', error);
+        throw new Error(`Error de función: ${error.message}`);
+      }
+
+      if (!data) {
+        console.error('❌ No se recibió data de la función');
+        throw new Error('No se recibió respuesta de la función');
       }
 
       if (!data.success) {
+        console.error('❌ Función reportó error:', data.error);
         throw new Error(data.error || 'Error generating image');
       }
 
+      console.log('✅ Imagen generada exitosamente');
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
-        title: "Imagen generada exitosamente",
+        title: "✅ Imagen generada exitosamente",
         description: "La imagen se ha generado correctamente",
       });
+      console.log('🎉 Toast de éxito mostrado');
     },
     onError: (error) => {
-      console.error('Image generation error:', error);
+      console.error('❌ Error completo en generación de imagen:', error);
       toast({
-        title: "Error al generar imagen",
+        title: "❌ Error al generar imagen",
         description: error.message,
         variant: "destructive",
       });

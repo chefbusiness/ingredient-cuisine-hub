@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Loader, Wand2, Zap, Globe, Search, List, Brain } from "lucide-react";
-import { useGenerateContent } from "@/hooks/useGenerateContent";
+import { Loader, Wand2, Zap, Globe, Search, List, Brain, AlertTriangle } from "lucide-react";
+import { useGenerateContentWithProgress } from "@/hooks/useGenerateContentWithProgress";
 import { useCategories } from "@/hooks/useCategories";
+import ContentGenerationProgress from "./ContentGenerationProgress";
 
 interface AdminContentGeneratorFormProps {
   onContentGenerated: (content: any[]) => void;
@@ -25,7 +26,7 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
   const [ingredientsList, setIngredientsList] = useState('');
 
   const { data: categories = [] } = useCategories();
-  const generateContent = useGenerateContent();
+  const { generateContent, isLoading, progress } = useGenerateContentWithProgress();
 
   // Parse and validate ingredient list
   const parseIngredientsList = (text: string): string[] => {
@@ -44,6 +45,7 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
       
       if (isManualMode && validIngredientCount > 0) {
         // Manual mode: use specific ingredient list
+        console.log('🎯 MODO MANUAL - Lista de ingredientes:', parsedIngredients);
         requestData = {
           type: contentType,
           category: selectedCategory === 'all' ? undefined : selectedCategory,
@@ -53,6 +55,7 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
         };
       } else {
         // Automatic mode: let Perplexity decide
+        console.log('🤖 MODO AUTOMÁTICO - Cantidad:', count);
         requestData = {
           type: contentType,
           category: selectedCategory === 'all' ? undefined : selectedCategory,
@@ -61,7 +64,8 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
         };
       }
 
-      const result = await generateContent.mutateAsync(requestData);
+      console.log('📡 Enviando solicitud:', requestData);
+      const result = await generateContent(requestData);
 
       let processedData = result;
       if (contentType === 'ingredient' && selectedCategory !== 'all') {
@@ -101,6 +105,12 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Progress Display */}
+        <ContentGenerationProgress 
+          progress={progress} 
+          isVisible={isLoading}
+        />
+
         {/* Mode Toggle */}
         <div className="flex items-center space-x-3 p-4 bg-blue-50 rounded-lg border">
           <div className="flex items-center space-x-2">
@@ -121,6 +131,22 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
             </Label>
           </div>
         </div>
+
+        {/* Debugging Info */}
+        {isManualMode && (
+          <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+            <div className="flex items-center gap-2 text-yellow-800 text-sm mb-2">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="font-medium">Modo de Depuración Activado</span>
+            </div>
+            <div className="text-xs text-yellow-700 space-y-1">
+              <div>• Modo Manual detectado: {isManualMode ? 'SÍ' : 'NO'}</div>
+              <div>• Ingredientes válidos: {validIngredientCount}</div>
+              <div>• Lista parseada: {JSON.stringify(parsedIngredients.slice(0, 3))}...</div>
+              <div>• Formulario válido: {isFormValid() ? 'SÍ' : 'NO'}</div>
+            </div>
+          </div>
+        )}
 
         {/* Manual Mode: Ingredient List */}
         {isManualMode && contentType === 'ingredient' && (
@@ -261,10 +287,10 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
 
         <Button 
           onClick={handleGenerateContent}
-          disabled={generateContent.isPending || !isFormValid()}
+          disabled={isLoading || !isFormValid()}
           className="w-full"
         >
-          {generateContent.isPending ? (
+          {isLoading ? (
             <Loader className="h-4 w-4 animate-spin mr-2" />
           ) : (
             <Wand2 className="h-4 w-4 mr-2" />

@@ -10,7 +10,12 @@ export async function generateIngredientData(
   ingredientsList?: string[]
 ): Promise<any[]> {
   console.log('🔄 === STARTING INGREDIENT DATA GENERATION ===');
-  console.log('📋 Input parameters:', { count, category, ingredientsList: ingredientsList?.length || 0 });
+  console.log('📋 Input parameters:', { 
+    count, 
+    category, 
+    ingredientsList: ingredientsList?.length || 0,
+    hasIngredientsList: !!ingredientsList && ingredientsList.length > 0
+  });
   
   const perplexity = new PerplexityClient();
   
@@ -43,16 +48,23 @@ export async function generateIngredientData(
       // MANUAL MODE: Generate specific ingredients from the list
       console.log('🎯 === MANUAL MODE: PROCESSING SPECIFIC INGREDIENTS ===');
       console.log('📝 Ingredients to process:', ingredientsList);
+      console.log('📊 Total ingredients to process:', ingredientsList.length);
       
-      for (let i = 0; i < ingredientsList.length; i++) {
-        const specificIngredient = ingredientsList[i].trim();
+      // Validate ingredients list
+      const validIngredients = ingredientsList.filter(ing => ing && ing.trim().length > 0);
+      console.log('✅ Valid ingredients after filtering:', validIngredients.length);
+      
+      if (validIngredients.length === 0) {
+        console.log('❌ No valid ingredients found in the list');
+        throw new Error('No se encontraron ingredientes válidos en la lista proporcionada');
+      }
+      
+      for (let i = 0; i < validIngredients.length; i++) {
+        const specificIngredient = validIngredients[i].trim();
         
-        if (!specificIngredient) {
-          console.log(`⚠️ Skipping empty ingredient at index ${i}`);
-          continue;
-        }
-        
-        console.log(`🔍 Processing ingredient ${i + 1}/${ingredientsList.length}: "${specificIngredient}"`);
+        console.log(`\n🔍 === PROCESSING INGREDIENT ${i + 1}/${validIngredients.length} ===`);
+        console.log(`📝 Current ingredient: "${specificIngredient}"`);
+        console.log(`📊 Progress: ${Math.round((i / validIngredients.length) * 100)}%`);
         
         try {
           const params: GenerateContentParams = {
@@ -86,10 +98,18 @@ export async function generateIngredientData(
           } else {
             console.log(`⚠️ No data generated for: ${specificIngredient}`);
             console.log(`📊 Empty response or invalid format from Perplexity`);
+            
+            // Add a placeholder for failed ingredients so we can track them
+            generatedIngredients.push({
+              name: specificIngredient,
+              error: 'No se pudo generar información para este ingrediente',
+              requested_ingredient: specificIngredient,
+              generated: false
+            });
           }
           
           // Small delay to respect API limits and avoid overwhelming Perplexity
-          if (i < ingredientsList.length - 1) {
+          if (i < validIngredients.length - 1) {
             console.log(`⏸️ Waiting 2 seconds before next ingredient...`);
             await new Promise(resolve => setTimeout(resolve, 2000));
           }
@@ -101,11 +121,31 @@ export async function generateIngredientData(
             message: error.message,
             stack: error.stack?.substring(0, 200)
           });
-          // Continue with next ingredient instead of failing completely
+          
+          // Add error ingredient to track failures
+          generatedIngredients.push({
+            name: specificIngredient,
+            error: `Error: ${error.message}`,
+            requested_ingredient: specificIngredient,
+            generated: false
+          });
         }
       }
       
-      console.log(`🎯 Manual mode completed: ${generatedIngredients.length}/${ingredientsList.length} ingredients processed successfully`);
+      // Filter out failed generations for the final result
+      const successfulIngredients = generatedIngredients.filter(ing => ing.generated !== false);
+      const failedIngredients = generatedIngredients.filter(ing => ing.generated === false);
+      
+      console.log(`🎯 Manual mode completed:`);
+      console.log(`  ✅ Successful: ${successfulIngredients.length}/${validIngredients.length}`);
+      console.log(`  ❌ Failed: ${failedIngredients.length}/${validIngredients.length}`);
+      
+      if (failedIngredients.length > 0) {
+        console.log(`⚠️ Failed ingredients:`, failedIngredients.map(ing => ing.name));
+      }
+      
+      // Return only successful ingredients
+      generatedIngredients = successfulIngredients;
       
     } else {
       // AUTOMATIC MODE: Let Perplexity decide ingredients

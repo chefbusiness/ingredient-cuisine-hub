@@ -10,6 +10,7 @@ interface SearchFilters {
   popularityRange: [number, number];
   season?: string;
   origin?: string;
+  country?: string;
 }
 
 export const useDirectorioFilters = () => {
@@ -22,7 +23,8 @@ export const useDirectorioFilters = () => {
     priceRange: [0, 100],
     popularityRange: [0, 100],
     season: "",
-    origin: ""
+    origin: "",
+    country: "España" // Por defecto España
   });
 
   // Inicializar búsqueda y filtros desde URL
@@ -55,7 +57,8 @@ export const useDirectorioFilters = () => {
       priceRange: [0, 100],
       popularityRange: [0, 100],
       season: "",
-      origin: ""
+      origin: "",
+      country: "España"
     });
   };
 

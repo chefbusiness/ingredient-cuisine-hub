@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { X, SlidersHorizontal, Loader2 } from "lucide-react";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useCountries } from "@/hooks/useCountries";
 
 interface AdvancedSearchFiltersProps {
   onFiltersChange: (filters: SearchFilters) => void;
@@ -24,6 +25,7 @@ interface SearchFilters {
   popularityRange: [number, number];
   season?: string;
   origin?: string;
+  country?: string;
 }
 
 const AdvancedSearchFilters = ({ 
@@ -33,6 +35,7 @@ const AdvancedSearchFilters = ({
   currentFilters 
 }: AdvancedSearchFiltersProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { data: countries = [], isLoading: isLoadingCountries } = useCountries();
   
   // Local state for immediate UI updates - inicializar SOLO una vez con currentFilters
   const [localFilters, setLocalFilters] = useState<SearchFilters>(() => 
@@ -43,12 +46,10 @@ const AdvancedSearchFilters = ({
       priceRange: [0, 100],
       popularityRange: [0, 100],
       season: "",
-      origin: ""
+      origin: "",
+      country: "España"
     }
   );
-
-  // NO sincronizar con currentFilters para evitar ciclos de re-renderizado
-  // El input debe mantener su estado local independiente
 
   // Debounced values for text inputs
   const debouncedSearchQuery = useDebounce(localFilters.searchQuery, 500);
@@ -70,6 +71,7 @@ const AdvancedSearchFilters = ({
     localFilters.priceRange,
     localFilters.popularityRange,
     localFilters.season,
+    localFilters.country,
     onFiltersChange
   ]);
 
@@ -85,7 +87,8 @@ const AdvancedSearchFilters = ({
       priceRange: [0, 100],
       popularityRange: [0, 100],
       season: "",
-      origin: ""
+      origin: "",
+      country: "España"
     };
     setLocalFilters(defaultFilters);
   };
@@ -96,6 +99,7 @@ const AdvancedSearchFilters = ({
     if (key === 'sortBy') return value !== "popularidad";
     if (key === 'priceRange') return value[0] !== 0 || value[1] !== 100;
     if (key === 'popularityRange') return value[0] !== 0 || value[1] !== 100;
+    if (key === 'country') return value !== "España";
     return value !== "";
   }).length;
 
@@ -133,7 +137,7 @@ const AdvancedSearchFilters = ({
       
       <CardContent className="space-y-4">
         {/* Búsqueda principal */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Input
             placeholder="Buscar ingredientes..."
             value={localFilters.searchQuery}
@@ -150,6 +154,23 @@ const AdvancedSearchFilters = ({
                   {category.label}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={localFilters.country || "España"} onValueChange={(value) => handleLocalFilterChange('country', value)}>
+            <SelectTrigger>
+              <SelectValue placeholder="País" />
+            </SelectTrigger>
+            <SelectContent>
+              {isLoadingCountries ? (
+                <SelectItem value="España">Cargando países...</SelectItem>
+              ) : (
+                countries.map((country) => (
+                  <SelectItem key={country.id} value={country.name}>
+                    {country.name}
+                  </SelectItem>
+                ))
+              )}
             </SelectContent>
           </Select>
 

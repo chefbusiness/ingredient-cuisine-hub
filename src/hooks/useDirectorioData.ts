@@ -12,6 +12,7 @@ interface SearchFilters {
   popularityRange: [number, number];
   season?: string;
   origin?: string;
+  country?: string;
 }
 
 export const useDirectorioData = (filters: SearchFilters) => {
@@ -32,6 +33,8 @@ export const useDirectorioData = (filters: SearchFilters) => {
 
   // Convertir ingredientes al formato esperado por DirectorioGrid
   const formattedIngredients = useMemo(() => {
+    const selectedCountry = filters.country || 'España';
+    
     return ingredients.map(ingredient => ({
       id: ingredient.id,
       name: ingredient.name,
@@ -49,9 +52,11 @@ export const useDirectorioData = (filters: SearchFilters) => {
       rendimiento: Number(ingredient.rendimiento),
       temporada: ingredient.temporada || "Todo el año",
       hasAIImage: !!ingredient.image_url,
-      hasRealImage: !!ingredient.real_image_url
+      hasRealImage: !!ingredient.real_image_url,
+      // Agregar información del país seleccionado
+      selectedCountry: selectedCountry
     }));
-  }, [ingredients]);
+  }, [ingredients, filters.country]);
 
   return {
     formattedIngredients,

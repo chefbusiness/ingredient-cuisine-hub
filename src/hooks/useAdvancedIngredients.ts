@@ -12,13 +12,14 @@ interface AdvancedFilters {
   popularityRange: [number, number];
   season?: string;
   origin?: string;
+  country?: string;
 }
 
 export const useAdvancedIngredients = (filters: AdvancedFilters) => {
   return useQuery({
     queryKey: ['advanced-ingredients', filters],
     queryFn: async () => {
-      console.log('=== BÚSQUEDA REPARADA Y SIMPLIFICADA ===');
+      console.log('=== BÚSQUEDA CON FILTRO DE PAÍS ===');
       console.log('Filtros:', filters);
 
       let query = supabase
@@ -38,7 +39,7 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
 
       // PASO 1: APLICAR BÚSQUEDA DE TEXTO (PRIORIDAD MÁXIMA)
       if (hasSearchQuery) {
-        console.log('🔍 APLICANDO BÚSQUEDA REPARADA:', filters.searchQuery);
+        console.log('🔍 APLICANDO BÚSQUEDA:', filters.searchQuery);
         
         try {
           query = applyAccentInsensitiveSearch(query, filters.searchQuery);
@@ -80,7 +81,7 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
         query = query.order('categories.name', { ascending: true });
       }
 
-      console.log('🚀 Ejecutando query reparada...');
+      console.log('🚀 Ejecutando query con filtro de país...');
       const { data, error } = await query;
 
       if (error) {
@@ -90,38 +91,36 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
 
       console.log(`✅ ÉXITO: ${data?.length || 0} ingredientes encontrados`);
       
-      // LOGGING ESPECÍFICO para verificar azafrán
-      if (hasSearchQuery) {
-        console.log('🔍 VERIFICACIÓN DE BÚSQUEDA:');
-        console.log('- Término:', filters.searchQuery);
-        console.log('- Resultados:', data?.length);
-        
-        // Buscar específicamente azafrán para verificar
-        const azafranTest = data?.filter(i => 
-          i.name.toLowerCase().includes('azafr') || 
-          i.name_en?.toLowerCase().includes('saffr')
-        );
-        console.log('🌸 ¿Azafrán encontrado?', azafranTest?.length > 0 ? 'SÍ ✅' : 'NO ❌');
-        if (azafranTest && azafranTest.length > 0) {
-          console.log('🌸 Detalles azafrán:', azafranTest.map(i => ({
-            nombre: i.name,
-            categoria: i.categories?.name
-          })));
-        }
-      }
+      // NUEVO: Procesar precios según el país seleccionado
+      const selectedCountry = filters.country || 'España';
+      console.log('🌍 País seleccionado para precios:', selectedCountry);
       
-      // Procesar precios (mantener lógica existente)
       const processedData = data?.map(ingredient => {
         if (ingredient.ingredient_prices && ingredient.ingredient_prices.length > 0) {
-          const spanishPrices = ingredient.ingredient_prices.filter(
-            price => price.countries?.code === 'ES'
+          // Buscar precios del país seleccionado primero
+          const countryPrices = ingredient.ingredient_prices.filter(
+            price => price.countries?.name === selectedCountry
           );
           
-          if (spanishPrices.length > 0) {
+          if (countryPrices.length > 0) {
+            console.log(`💰 Precios encontrados para ${ingredient.name} en ${selectedCountry}`);
             return {
               ...ingredient,
-              ingredient_prices: spanishPrices
+              ingredient_prices: countryPrices
             };
+          } else {
+            // Fallback a España si no hay precios del país seleccionado
+            const spanishPrices = ingredient.ingredient_prices.filter(
+              price => price.countries?.name === 'España'
+            );
+            
+            if (spanishPrices.length > 0) {
+              console.log(`💰 Fallback a precios de España para ${ingredient.name}`);
+              return {
+                ...ingredient,
+                ingredient_prices: spanishPrices
+              };
+            }
           }
         }
         

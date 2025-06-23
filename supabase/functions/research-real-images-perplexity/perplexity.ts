@@ -18,20 +18,25 @@ export async function searchImagesWithPerplexity(
   ingredient: { name: string; name_en: string; description: string },
   apiKey: string
 ): Promise<ImageResult[]> {
+  // FASE 2: Improved Perplexity prompt for better URLs
   const enhancedPrompt = `
-  Busca imágenes DIRECTAS y ACCESIBLES para: ${ingredient.name} (${ingredient.name_en})
+  Busca imágenes DIRECTAS y FUNCIONALES para: ${ingredient.name} (${ingredient.name_en})
   
-  INSTRUCCIONES CRÍTICAS:
-  1. SOLO URLs directas que funcionen sin redirecciones
-  2. Prefiere sitios confiables: Wikipedia Commons, Unsplash, servicios CDN
-  3. Evita URLs con parámetros complejos que puedan fallar
-  4. Máximo 4 imágenes de alta calidad
+  INSTRUCCIONES CRÍTICAS PARA URLs:
+  1. SOLO URLs que terminen en .jpg, .jpeg, .png, .webp, .gif
+  2. PRIORIZA estos sitios 100% confiables:
+     - images.unsplash.com (URLs directos sin parámetros complejos)
+     - images.pexels.com (URLs directos)
+     - cdn.pixabay.com (URLs directos)
+  3. Para Wikipedia: usar URLs directos sin "thumb/" en la ruta
+  4. EVITA URLs con "/thumb/" o parámetros complejos que fallan
+  5. Máximo 6 imágenes de alta calidad
   
   RESPONDE SOLO CON JSON VÁLIDO:
-  {"images": [{"url": "https://ejemplo.com/imagen.jpg", "description": "descripción clara", "category": "raw", "source": "wikipedia"}]}
+  {"images": [{"url": "https://images.unsplash.com/photo-123456789.jpg", "description": "descripción clara", "category": "raw", "source": "unsplash"}]}
   
   Categorías: raw, cooked, cut, whole, variety
-  Fuentes preferidas: wikipedia, unsplash, wikimedia
+  Fuentes preferidas: unsplash, pexels, pixabay, wikimedia
   
   NO uses markdown, NO uses bloques de código, SOLO el JSON.
   `;
@@ -47,7 +52,7 @@ export async function searchImagesWithPerplexity(
       messages: [
         {
           role: 'system',
-          content: 'Eres un especialista en encontrar imágenes culinarias. SIEMPRE responde SOLO con JSON válido sin texto adicional. Encuentra URLs directas que funcionen sin redirecciones.'
+          content: 'Eres un especialista en encontrar imágenes culinarias FUNCIONALES. SIEMPRE responde SOLO con JSON válido sin texto adicional. Encuentra URLs DIRECTOS que terminen en .jpg/.png/.webp y que funcionen sin redirecciones. PRIORIZA Unsplash, Pexels y Pixabay.'
         },
         {
           role: 'user',
@@ -56,16 +61,18 @@ export async function searchImagesWithPerplexity(
       ],
       temperature: 0.1,
       top_p: 0.9,
-      max_tokens: 1000,
+      max_tokens: 1200,
       return_images: false,
       return_related_questions: false,
       search_domain_filter: [
-        'upload.wikimedia.org',
-        'commons.wikimedia.org',
         'images.unsplash.com',
         'unsplash.com',
+        'images.pexels.com',
+        'pexels.com',
         'cdn.pixabay.com',
-        'images.pexels.com'
+        'pixabay.com',
+        'upload.wikimedia.org',
+        'commons.wikimedia.org'
       ],
       search_recency_filter: 'year',
       frequency_penalty: 1,
@@ -127,7 +134,7 @@ export async function searchImagesWithPerplexity(
   const images = imagesData.images || [];
   console.log(`🔍 Extracted ${images.length} images from response`);
   
-  // Enhanced validation and filtering
+  // Enhanced validation and filtering with priority sorting
   const validImages = images.filter(img => {
     if (!img.url || typeof img.url !== 'string') {
       console.log('❌ Invalid URL structure:', img);
@@ -147,7 +154,7 @@ export async function searchImagesWithPerplexity(
     }
     
     // Check for reasonable URL length
-    if (img.url.length < 20 || img.url.length > 500) {
+    if (img.url.length < 20 || img.url.length > 800) {
       console.log('❌ URL length suspicious:', img.url.length, img.url.substring(0, 50));
       return false;
     }
@@ -155,7 +162,18 @@ export async function searchImagesWithPerplexity(
     return true;
   });
 
-  console.log(`✅ Format validation: ${validImages.length}/${images.length} valid images`);
+  // Sort by reliability - trusted services first
+  const sortedImages = validImages.sort((a, b) => {
+    const trustedServices = ['images.unsplash.com', 'unsplash.com', 'images.pexels.com', 'pexels.com'];
+    const aIsTrusted = trustedServices.some(service => a.url.includes(service));
+    const bIsTrusted = trustedServices.some(service => b.url.includes(service));
+    
+    if (aIsTrusted && !bIsTrusted) return -1;
+    if (!aIsTrusted && bIsTrusted) return 1;
+    return 0;
+  });
+
+  console.log(`✅ Format validation: ${sortedImages.length}/${images.length} valid images (sorted by reliability)`);
   
-  return validImages;
+  return sortedImages;
 }

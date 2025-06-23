@@ -16,7 +16,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔍 === PERPLEXITY SONAR RESEARCH START ===');
+    console.log('🔍 === PERPLEXITY SONAR RESEARCH START (FIXED VERSION) ===');
     
     // Security check
     const authHeader = req.headers.get('authorization');
@@ -72,74 +72,87 @@ serve(async (req) => {
 
         const validImages = [];
         const validationResults = [];
+        let successfulSaves = 0;
         
-        // Process each image with detailed logging
-        for (let i = 0; i < Math.min(foundImages.length, 8); i++) {
+        // FASE 4: Robust fallback processing - process ALL images and save valid ones
+        for (let i = 0; i < foundImages.length; i++) {
           const imageInfo = foundImages[i];
           
           console.log(`🔍 [${i + 1}/${foundImages.length}] Processing: ${imageInfo.url}`);
           
-          // Quick format validation
-          if (!isLikelyImageUrl(imageInfo.url)) {
-            console.log(`❌ Failed format validation: ${imageInfo.url}`);
-            validationResults.push({ index: i, status: 'format_invalid', url: imageInfo.url });
-            continue;
-          }
-          
-          // HTTP validation
-          const isValid = await validateImageUrl(imageInfo.url);
-          if (isValid) {
-            validImages.push({
-              url: imageInfo.url,
-              caption: imageInfo.description || `${ingredient.name} - ${imageInfo.category || 'general'}`,
-              category: imageInfo.category || 'general',
-              source: imageInfo.source || 'perplexity_search'
-            });
-            validationResults.push({ index: i, status: 'success', url: imageInfo.url });
-            console.log(`✅ [${i + 1}] Valid image confirmed`);
-          } else {
-            validationResults.push({ index: i, status: 'http_validation_failed', url: imageInfo.url });
-            console.log(`❌ [${i + 1}] HTTP validation failed`);
+          try {
+            // Quick format validation
+            if (!isLikelyImageUrl(imageInfo.url)) {
+              console.log(`❌ Failed format validation: ${imageInfo.url}`);
+              validationResults.push({ index: i, status: 'format_invalid', url: imageInfo.url });
+              continue;
+            }
+            
+            // HTTP validation (smart validation by service)
+            const isValid = await validateImageUrl(imageInfo.url);
+            if (isValid) {
+              const imageData = {
+                url: imageInfo.url,
+                caption: imageInfo.description || `${ingredient.name} - ${imageInfo.category || 'general'}`,
+                category: imageInfo.category || 'general',
+                source: imageInfo.source || 'perplexity_search'
+              };
+              
+              validImages.push(imageData);
+              validationResults.push({ index: i, status: 'success', url: imageInfo.url });
+              console.log(`✅ [${i + 1}] Valid image confirmed, attempting save...`);
+              
+              // Try to save immediately
+              try {
+                const saved = await saveImageToDatabase(ingredientId, imageData.url, imageData.caption);
+                if (saved) {
+                  successfulSaves++;
+                  console.log(`💾 [${i + 1}] SAVED: ${imageData.url.substring(0, 50)}...`);
+                } else {
+                  console.log(`⚠️ [${i + 1}] Save failed (probably duplicate): ${imageData.url.substring(0, 50)}...`);
+                }
+              } catch (saveError) {
+                console.log(`❌ [${i + 1}] Save error: ${saveError.message}`);
+              }
+              
+            } else {
+              validationResults.push({ index: i, status: 'http_validation_failed', url: imageInfo.url });
+              console.log(`❌ [${i + 1}] HTTP validation failed`);
+            }
+          } catch (processingError) {
+            console.log(`❌ [${i + 1}] Processing error: ${processingError.message}`);
+            validationResults.push({ index: i, status: 'processing_error', url: imageInfo.url, error: processingError.message });
           }
           
           // Respectful delay between validations
           if (i < foundImages.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 800));
+            await new Promise(resolve => setTimeout(resolve, 600));
           }
         }
 
-        console.log(`📊 Validation Summary for ${ingredient.name}:`);
+        console.log(`📊 FINAL VALIDATION Summary for ${ingredient.name}:`);
         console.log(`   - Total found: ${foundImages.length}`);
-        console.log(`   - Valid format: ${validationResults.filter(r => r.status !== 'format_invalid').length}`);
+        console.log(`   - Format valid: ${validationResults.filter(r => r.status !== 'format_invalid').length}`);
         console.log(`   - HTTP valid: ${validImages.length}`);
-
-        // Save validated images to database
-        let savedCount = 0;
-        for (const imageInfo of validImages) {
-          try {
-            const saved = await saveImageToDatabase(ingredientId, imageInfo.url, imageInfo.caption);
-            if (saved) {
-              savedCount++;
-              console.log(`💾 Saved: ${imageInfo.url.substring(0, 50)}...`);
-            }
-          } catch (error) {
-            console.log(`❌ Save error: ${error.message}`);
-          }
-        }
+        console.log(`   - Successfully saved: ${successfulSaves}`);
 
         results.push({
           ingredientId,
           ingredientName: ingredient.name,
-          success: true,
+          success: successfulSaves > 0, // Success if we saved at least one image
           imagesFound: validImages.length,
-          imagesSaved: savedCount,
+          imagesSaved: successfulSaves,
           images: validImages,
           totalAttempted: foundImages.length,
           validationDetails: validationResults,
-          searchEngine: 'perplexity_sonar'
+          searchEngine: 'perplexity_sonar_fixed'
         });
 
-        console.log(`✅ Completed ${ingredient.name}: ${savedCount}/${validImages.length} saved (${foundImages.length} total found)`);
+        if (successfulSaves > 0) {
+          console.log(`✅ SUCCESS for ${ingredient.name}: ${successfulSaves} images saved!`);
+        } else {
+          console.log(`❌ NO IMAGES SAVED for ${ingredient.name} despite ${validImages.length} valid ones found`);
+        }
 
       } catch (error) {
         console.error(`❌ Error processing ingredient ${ingredientId}:`, error);
@@ -149,7 +162,7 @@ serve(async (req) => {
           ingredientName: ingredient.name,
           success: false,
           error: error.message,
-          searchEngine: 'perplexity_sonar'
+          searchEngine: 'perplexity_sonar_fixed'
         });
       }
     }
@@ -157,7 +170,7 @@ serve(async (req) => {
     // Log admin action
     await logAdminAction({
       mode,
-      search_engine: 'perplexity_sonar',
+      search_engine: 'perplexity_sonar_fixed',
       processed_ingredients: idsToProcess.length,
       successful_ingredients: results.filter(r => r.success).length,
       total_images_found: results.reduce((sum, r) => sum + (r.imagesFound || 0), 0),
@@ -170,11 +183,11 @@ serve(async (req) => {
       successful: results.filter(r => r.success).length,
       total_images_found: results.reduce((sum, r) => sum + (r.imagesFound || 0), 0),
       total_images_saved: results.reduce((sum, r) => sum + (r.imagesSaved || 0), 0),
-      search_engine: 'perplexity_sonar'
+      search_engine: 'perplexity_sonar_fixed'
     };
 
-    console.log('🎉 === PERPLEXITY SONAR RESEARCH COMPLETED ===');
-    console.log(`📊 Final Summary: ${summary.total_images_saved} saved / ${summary.total_images_found} found`);
+    console.log('🎉 === PERPLEXITY SONAR RESEARCH COMPLETED (FIXED) ===');
+    console.log(`📊 Final Summary: ${summary.total_images_saved} saved / ${summary.total_images_found} found from ${summary.total_processed} ingredients`);
 
     return new Response(JSON.stringify({ 
       success: true,

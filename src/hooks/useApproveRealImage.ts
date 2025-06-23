@@ -35,7 +35,7 @@ export const useApproveRealImage = () => {
       }
 
       console.log('✅ Image approval updated:', data);
-      return data as ApproveImageResponse;
+      return data as unknown as ApproveImageResponse;
     },
     onSuccess: (data, variables) => {
       toast({

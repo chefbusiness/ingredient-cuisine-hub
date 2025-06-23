@@ -34,7 +34,7 @@ export const useDeleteRealImage = () => {
       }
 
       console.log('✅ Image deleted successfully:', data);
-      return data as DeleteImageResponse;
+      return data as unknown as DeleteImageResponse;
     },
     onSuccess: (data) => {
       toast({

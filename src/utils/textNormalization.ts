@@ -17,11 +17,7 @@ export const normalizeText = (text: string): string => {
 export const createAccentInsensitiveSearchQuery = (searchTerm: string) => {
   const normalizedSearch = normalizeText(searchTerm);
   
-  // Si el término ya está normalizado (sin acentos), solo usar esa búsqueda
-  if (normalizedSearch === searchTerm.toLowerCase()) {
-    return `name.ilike.%${searchTerm}%,name_en.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`;
-  }
-  
-  // Si tiene acentos, buscar tanto la versión original como la normalizada
+  // SIEMPRE buscar tanto la versión original como la normalizada
+  // Esto asegura que "azafran" encuentre "azafrán" y viceversa
   return `name.ilike.%${searchTerm}%,name_en.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,name.ilike.%${normalizedSearch}%,name_en.ilike.%${normalizedSearch}%,description.ilike.%${normalizedSearch}%`;
 };

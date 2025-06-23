@@ -18,44 +18,20 @@ export async function searchImagesWithPerplexity(
   ingredient: { name: string; name_en: string; description: string },
   apiKey: string
 ): Promise<ImageResult[]> {
-  const culinaryPrompt = `
-  Find high-quality culinary images for the ingredient: ${ingredient.name} (${ingredient.name_en})
+  const simplifiedPrompt = `
+  Busca imágenes culinarias DIRECTAS para: ${ingredient.name} (${ingredient.name_en})
   
-  SEARCH REQUIREMENTS:
-  - Find 6-8 DIRECT IMAGE URLs from reliable culinary sources
-  - Focus on food photography, cooking websites, and culinary databases
-  - Look for images showing: raw ingredient, cooked preparations, cut/sliced forms, whole forms
-  - Prioritize sources like: Wikipedia, food blogs, cooking websites, culinary databases
-  - URLs MUST be direct links ending in: .jpg, .jpeg, .png, .webp, .gif
-  - NO base64 strings, NO placeholder URLs, NO corrupted strings
+  RESPONDE SOLO CON JSON VÁLIDO EN ESTE FORMATO EXACTO:
+  {"images": [{"url": "https://ejemplo.com/imagen.jpg", "description": "descripción", "category": "raw", "source": "dominio"}]}
   
-  TRUSTED CULINARY DOMAINS TO SEARCH:
-  - upload.wikimedia.org (Wikipedia food images)
-  - commons.wikimedia.org 
-  - images.unsplash.com (food photography)
-  - www.seriouseats.com
-  - www.foodnetwork.com
-  - www.allrecipes.com
-  - www.bonappetit.com
-  - www.epicurious.com
-  - cooking websites and food blogs
+  REQUISITOS CRÍTICOS:
+  - URLs DIRECTAS que terminen en .jpg, .jpeg, .png, .webp
+  - Máximo 6 imágenes
+  - Solo de sitios confiables: Wikipedia, Unsplash, sitios culinarios
+  - NO uses markdown, NO uses bloques de código
+  - SOLO devuelve el JSON sin texto adicional
   
-  INGREDIENT CONTEXT:
-  ${ingredient.description}
-  
-  Please search the internet and provide a JSON response with this exact format:
-  {
-    "images": [
-      {
-        "url": "https://direct-image-url.jpg",
-        "description": "Brief description of what's shown in the image",
-        "category": "raw|cooked|cut|whole|variety",
-        "source": "domain or source name"
-      }
-    ]
-  }
-  
-  CRITICAL: Only return valid, working image URLs that you find through your internet search.
+  Categorías: raw, cooked, cut, whole, variety
   `;
 
   const response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -69,16 +45,16 @@ export async function searchImagesWithPerplexity(
       messages: [
         {
           role: 'system',
-          content: 'You are a specialized culinary image researcher with internet access. You search for and find real, working image URLs from reliable culinary sources. You ONLY provide direct image URLs that actually exist and work. Always respond with valid JSON format.'
+          content: 'Eres un investigador de imágenes culinarias. SIEMPRE responde con JSON válido sin markdown ni texto adicional. Encuentra URLs directas de imágenes que funcionen.'
         },
         {
           role: 'user',
-          content: culinaryPrompt
+          content: simplifiedPrompt
         }
       ],
       temperature: 0.1,
       top_p: 0.9,
-      max_tokens: 2000,
+      max_tokens: 1500,
       return_images: false,
       return_related_questions: false,
       search_domain_filter: [
@@ -86,10 +62,7 @@ export async function searchImagesWithPerplexity(
         'commons.wikimedia.org',
         'images.unsplash.com',
         'seriouseats.com',
-        'foodnetwork.com',
-        'allrecipes.com',
-        'bonappetit.com',
-        'epicurious.com'
+        'foodnetwork.com'
       ],
       search_recency_filter: 'year',
       frequency_penalty: 1,
@@ -98,6 +71,7 @@ export async function searchImagesWithPerplexity(
   });
 
   if (!response.ok) {
+    console.error(`❌ Perplexity API error: ${response.status}`);
     throw new Error(`Perplexity API error: ${response.status} - ${await response.text()}`);
   }
 
@@ -105,59 +79,89 @@ export async function searchImagesWithPerplexity(
   const content = data.choices[0]?.message?.content;
 
   if (!content) {
+    console.error('❌ No content received from Perplexity');
     throw new Error('No content received from Perplexity');
   }
 
-  console.log('🔍 Perplexity Sonar raw response:', content.substring(0, 500));
+  console.log('🔍 Perplexity raw response:', content.substring(0, 300));
 
-  // Parse JSON response with enhanced error handling
+  // Improved JSON parsing with multiple fallback strategies
   let imagesData: { images: ImageResult[] };
+  
   try {
-    // Clean the response to ensure it's valid JSON
-    const cleanedContent = content.trim();
+    // Strategy 1: Try direct JSON parse
+    imagesData = JSON.parse(content.trim());
+    console.log('✅ Direct JSON parse successful');
+  } catch (firstError) {
+    console.log('❌ Direct parse failed, trying markdown extraction...');
     
-    // Try to parse directly first
-    imagesData = JSON.parse(cleanedContent);
-  } catch {
-    // Try to extract JSON from response if it has extra text
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (jsonMatch) {
-      try {
-        imagesData = JSON.parse(jsonMatch[0]);
-      } catch {
-        console.error('❌ Failed to parse extracted JSON from Perplexity response');
-        throw new Error('Invalid JSON response from Perplexity');
+    try {
+      // Strategy 2: Extract from markdown code blocks
+      const jsonBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (jsonBlockMatch) {
+        const cleanJson = jsonBlockMatch[1].trim();
+        imagesData = JSON.parse(cleanJson);
+        console.log('✅ Markdown extraction successful');
+      } else {
+        throw new Error('No JSON block found');
       }
-    } else {
-      console.error('❌ No JSON found in Perplexity response');
-      throw new Error('No valid JSON found in Perplexity response');
+    } catch (secondError) {
+      console.log('❌ Markdown extraction failed, trying object extraction...');
+      
+      try {
+        // Strategy 3: Extract JSON object from anywhere in the text
+        const objectMatch = content.match(/\{[\s\S]*\}/);
+        if (objectMatch) {
+          const cleanJson = objectMatch[0];
+          imagesData = JSON.parse(cleanJson);
+          console.log('✅ Object extraction successful');
+        } else {
+          throw new Error('No JSON object found');
+        }
+      } catch (thirdError) {
+        console.error('❌ All parsing strategies failed');
+        console.error('Response content:', content);
+        throw new Error('Unable to parse JSON from Perplexity response after trying multiple strategies');
+      }
     }
   }
 
   const images = imagesData.images || [];
+  console.log(`🔍 Extracted ${images.length} images from response`);
   
-  // Enhanced pre-filtering for Perplexity results
-  const validFormatImages = images.filter(img => {
-    if (!img.url || typeof img.url !== 'string') return false;
+  // Enhanced validation
+  const validImages = images.filter(img => {
+    if (!img.url || typeof img.url !== 'string') {
+      console.log('❌ Invalid URL:', img);
+      return false;
+    }
     
-    // Check if it's a proper URL format
-    if (!img.url.startsWith('http://') && !img.url.startsWith('https://')) return false;
+    // Check URL format
+    if (!img.url.startsWith('http://') && !img.url.startsWith('https://')) {
+      console.log('❌ Invalid protocol:', img.url);
+      return false;
+    }
     
-    // Check if it has a valid image extension
-    const hasImageExtension = ['.jpg', '.jpeg', '.png', '.webp', '.gif'].some(ext => 
+    // Check image extension
+    const hasImageExt = ['.jpg', '.jpeg', '.png', '.webp', '.gif'].some(ext => 
       img.url.toLowerCase().includes(ext)
     );
     
-    // Reject obviously corrupted strings
-    const isCorrupted = /^[A-Za-z0-9+/=]{20,}$/.test(img.url) || img.url.length < 15;
+    if (!hasImageExt) {
+      console.log('❌ No image extension:', img.url);
+      return false;
+    }
     
-    // Additional validation for Perplexity sources
-    const hasValidDomain = img.url.includes('.') && !img.url.includes(' ');
+    // Check for valid domain
+    if (!img.url.includes('.') || img.url.includes(' ')) {
+      console.log('❌ Invalid domain format:', img.url);
+      return false;
+    }
     
-    return hasImageExtension && !isCorrupted && hasValidDomain;
+    return true;
   });
 
-  console.log(`🔍 Perplexity filtered ${validFormatImages.length}/${images.length} images with valid URL format`);
+  console.log(`✅ Final validation: ${validImages.length}/${images.length} valid images`);
   
-  return validFormatImages;
+  return validImages;
 }

@@ -18,6 +18,7 @@ interface DirectorioContentProps {
   onFiltersChange: (filters: any) => void;
   onClearFilters: () => void;
   onViewModeChange: (mode: "grid" | "list") => void;
+  currentFilters?: any;
 }
 
 const DirectorioContent = ({
@@ -28,7 +29,8 @@ const DirectorioContent = ({
   isLoading,
   onFiltersChange,
   onClearFilters,
-  onViewModeChange
+  onViewModeChange,
+  currentFilters
 }: DirectorioContentProps) => {
   const handleSeedData = async () => {
     try {
@@ -38,6 +40,9 @@ const DirectorioContent = ({
       console.error('Error seeding data:', error);
     }
   };
+
+  // Detectar si se está buscando (hay debounce activo)
+  const isSearching = isLoading;
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -50,7 +55,7 @@ const DirectorioContent = ({
           mermas, rendimientos y usos profesionales.
         </p>
         
-        {formattedIngredients.length === 0 && (
+        {formattedIngredients.length === 0 && !isLoading && (
           <div className="mt-6">
             <Button onClick={handleSeedData} className="btn-clean">
               <Database className="mr-2 h-4 w-4" />
@@ -75,15 +80,17 @@ const DirectorioContent = ({
         onFiltersChange={onFiltersChange}
         categories={categories}
         isLoading={isLoading}
+        currentFilters={currentFilters}
       />
 
       <DirectorioResults 
         resultsCount={formattedIngredients.length} 
         viewMode={viewMode}
         onViewModeChange={onViewModeChange}
+        isSearching={isSearching}
       />
 
-      {formattedIngredients.length === 0 ? (
+      {formattedIngredients.length === 0 && !isLoading ? (
         <DirectorioEmpty onClearFilters={onClearFilters} />
       ) : (
         viewMode === "grid" ? (

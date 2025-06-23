@@ -13,6 +13,7 @@ interface AdvancedSearchFiltersProps {
   onFiltersChange: (filters: SearchFilters) => void;
   categories: Array<{ value: string; label: string }>;
   isLoading?: boolean;
+  currentFilters?: SearchFilters;
 }
 
 interface SearchFilters {
@@ -25,19 +26,33 @@ interface SearchFilters {
   origin?: string;
 }
 
-const AdvancedSearchFilters = ({ onFiltersChange, categories, isLoading = false }: AdvancedSearchFiltersProps) => {
+const AdvancedSearchFilters = ({ 
+  onFiltersChange, 
+  categories, 
+  isLoading = false,
+  currentFilters 
+}: AdvancedSearchFiltersProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
-  // Local state for immediate UI updates
-  const [localFilters, setLocalFilters] = useState<SearchFilters>({
-    searchQuery: "",
-    category: "todos",
-    sortBy: "popularidad",
-    priceRange: [0, 100],
-    popularityRange: [0, 100],
-    season: "",
-    origin: ""
-  });
+  // Local state for immediate UI updates - inicializar con currentFilters si existen
+  const [localFilters, setLocalFilters] = useState<SearchFilters>(
+    currentFilters || {
+      searchQuery: "",
+      category: "todos",
+      sortBy: "popularidad",
+      priceRange: [0, 100],
+      popularityRange: [0, 100],
+      season: "",
+      origin: ""
+    }
+  );
+
+  // Sincronizar con currentFilters cuando cambien desde el padre
+  useEffect(() => {
+    if (currentFilters) {
+      setLocalFilters(currentFilters);
+    }
+  }, [currentFilters]);
 
   // Debounced values for text inputs
   const debouncedSearchQuery = useDebounce(localFilters.searchQuery, 500);
@@ -88,6 +103,10 @@ const AdvancedSearchFilters = ({ onFiltersChange, categories, isLoading = false 
     return value !== "";
   }).length;
 
+  // Indicar si se está aplicando debounce en búsqueda
+  const isSearching = localFilters.searchQuery !== debouncedSearchQuery || 
+                     (localFilters.origin || "") !== debouncedOrigin;
+
   return (
     <Card className="clean-card mb-6">
       <CardHeader>
@@ -97,8 +116,13 @@ const AdvancedSearchFilters = ({ onFiltersChange, categories, isLoading = false 
             {activeFiltersCount > 0 && (
               <Badge variant="secondary">{activeFiltersCount} activos</Badge>
             )}
-            {isLoading && (
+            {(isLoading || isSearching) && (
               <Loader2 className="h-4 w-4 animate-spin text-primary" />
+            )}
+            {isSearching && (
+              <Badge variant="outline" className="text-xs">
+                Buscando...
+              </Badge>
             )}
           </div>
           <Button

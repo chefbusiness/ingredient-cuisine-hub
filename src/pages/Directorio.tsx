@@ -52,7 +52,7 @@ const Directorio = () => {
   
   const breadcrumbSchema = generateBreadcrumbSchema(breadcrumbItems);
 
-  if (isLoading) {
+  if (isLoading && formattedIngredients.length === 0) {
     return <DirectorioLoadingState />;
   }
 
@@ -75,6 +75,7 @@ const Directorio = () => {
         onFiltersChange={handleFiltersChange}
         onClearFilters={handleClearFilters}
         onViewModeChange={handleViewModeChange}
+        currentFilters={filters}
       />
     </div>
   );

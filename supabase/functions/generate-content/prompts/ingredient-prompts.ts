@@ -1,4 +1,3 @@
-
 import { GenerateContentParams } from '../types.ts';
 import { getMermaInstructionsByCategory, getGeneralMermaInstructions } from './merma-instructions.ts';
 
@@ -106,7 +105,7 @@ ${isSpecificIngredient ?
     "name_zh": "nombre en chino (caracteres chinos)",
     "name_la": "sinónimos en español de Latinoamérica (ej: papa en lugar de patata, tomate en lugar de jitomate, etc.)",
     ${categoryResponse}
-    "description": "descripción detallada y completa basada en fuentes consultadas (300-400 palabras) - VER INSTRUCCIONES ESPECÍFICAS ABAJO",
+    "description": "descripción detallada y completa basada en fuentes consultadas (300-400 palabras) - DEBE SER UNA CADENA CONTINUA SIN SALTOS DE LÍNEA - VER INSTRUCCIONES ESPECÍFICAS ABAJO",
     "temporada": "temporada principal basada en calendarios agrícolas reales",
     "origen": "región de origen verificada en fuentes históricas/geográficas",
     "merma": ${mermaInstructions},
@@ -235,29 +234,36 @@ ${isSpecificIngredient ?
   
   📝 INSTRUCCIONES ESPECÍFICAS PARA DESCRIPCIÓN EXTENDIDA (300-400 PALABRAS):
   
-  La descripción debe tener exactamente 4 párrafos bien estructurados y ricos en contenido SEO:
+  ⚠️ FORMATO JSON CRÍTICO PARA LA DESCRIPCIÓN:
+  - La descripción DEBE ser una cadena continua sin saltos de línea \\n
+  - NO uses caracteres de control (\\r, \\n, \\t) dentro de la descripción
+  - Separa los párrafos conceptualmente pero escribe todo en una línea continua
+  - Usa espacios normales para separar conceptos, no saltos de línea
+  - Escapa todas las comillas dobles internas como \\"
   
-  PÁRRAFO 1 (75-100 palabras) - DESCRIPCIÓN FÍSICA Y CARACTERÍSTICAS:
+  La descripción debe tener exactamente 4 conceptos bien estructurados y ricos en contenido SEO:
+  
+  CONCEPTO 1 (75-100 palabras) - DESCRIPCIÓN FÍSICA Y CARACTERÍSTICAS:
   - Apariencia, color, textura, forma, tamaño típico
   - Características organolépticas (sabor, aroma, consistencia)
   - Propiedades físicas distintivas
   - Mencionar variedades principales si las hay
   
-  PÁRRAFO 2 (75-100 palabras) - ORIGEN, HISTORIA Y TRADICIÓN:
+  CONCEPTO 2 (75-100 palabras) - ORIGEN, HISTORIA Y TRADICIÓN:
   - Origen geográfico e histórico del ingrediente
   - Tradiciones culinarias asociadas
   - Importancia cultural en diferentes regiones
   - Evolución del uso gastronómico a través del tiempo
   - Presencia en cocinas regionales específicas
   
-  PÁRRAFO 3 (75-100 palabras) - APLICACIONES PROFESIONALES Y TÉCNICAS:
+  CONCEPTO 3 (75-100 palabras) - APLICACIONES PROFESIONALES Y TÉCNICAS:
   - Usos específicos en cocina profesional
   - Técnicas de preparación y cocción más comunes
   - Combinaciones clásicas con otros ingredientes
   - Aplicaciones en diferentes tipos de platos
   - Consejos de manipulación para chefs
   
-  PÁRRAFO 4 (75-100 palabras) - VARIEDADES, CONSERVACIÓN Y ASPECTOS PRÁCTICOS:
+  CONCEPTO 4 (75-100 palabras) - VARIEDADES, CONSERVACIÓN Y ASPECTOS PRÁCTICOS:
   - Criterios de selección y calidad
   - Métodos de conservación y almacenamiento
   - Información sobre temporada óptima
@@ -271,9 +277,10 @@ ${isSpecificIngredient ?
   - Menciona nombres alternativos y sinónimos naturalmente
   - Integra información nutricional de forma fluida
   - Incluye keywords relevantes para SEO de forma natural
-  - Asegúrate de que cada párrafo añada valor real
+  - Asegúrate de que cada concepto añada valor real
   - NO uses relleno o información repetitiva
   - Mantén el enfoque profesional para hostelería
+  - ESCRIBE TODO EN UNA SOLA LÍNEA CONTINUA SIN SALTOS DE LÍNEA
   
   🎯 CRITERIOS DE CALIDAD PARA DATOS INVESTIGADOS:
   
@@ -333,7 +340,7 @@ ${isSpecificIngredient ?
   - TODAS las unidades deben ser apropiadas (líquidos=litros, sólidos=kg)
   - TODA la información nutricional debe ser de fuentes oficiales
   - TODAS las recetas deben ser auténticas y tener fuente
-  - LA DESCRIPCIÓN debe tener EXACTAMENTE 300-400 palabras en 4 párrafos
+  - LA DESCRIPCIÓN debe tener EXACTAMENTE 300-400 palabras en 4 conceptos
   ${isSpecificIngredient ? 
     `- El ingrediente DEBE ser exactamente "${ingredient}", no un sustituto o variante` :
     '- ASEGÚRATE de que NINGÚN ingrediente sea duplicado de los existentes'

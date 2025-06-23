@@ -33,46 +33,58 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
           )
         `);
 
-      // NUEVA IMPLEMENTACIÓN: Aplicar filtro de búsqueda PRIMERO y con logging detallado
-      if (filters.searchQuery) {
+      // PASO 1: Aplicar filtro de búsqueda PRIMERO (esto es lo más importante)
+      if (filters.searchQuery && filters.searchQuery.trim()) {
         console.log('🔍 APLICANDO BÚSQUEDA PARA:', filters.searchQuery);
-        console.log('🔍 Término de búsqueda sin procesar:', JSON.stringify(filters.searchQuery));
         
-        // Aplicar la búsqueda con la función mejorada
-        query = applyAccentInsensitiveSearch(query, filters.searchQuery);
-        
-        console.log('🔍 Búsqueda aplicada correctamente');
+        try {
+          query = applyAccentInsensitiveSearch(query, filters.searchQuery);
+          console.log('🔍 Búsqueda aplicada exitosamente');
+        } catch (error) {
+          console.error('❌ Error en búsqueda:', error);
+          // En caso de error, aplicar búsqueda simple
+          query = query.ilike('name', `%${filters.searchQuery}%`);
+        }
       }
 
-      // Aplicar filtro de categoría SOLO si se especifica una categoría específica
+      // PASO 2: Aplicar filtro de categoría
       if (filters.category && filters.category !== 'todos') {
         console.log('📂 Aplicando filtro de categoría:', filters.category);
         query = query.eq('categories.name', filters.category);
       }
 
-      // Aplicar filtro de popularidad
-      query = query.gte('popularity', filters.popularityRange[0])
-                   .lte('popularity', filters.popularityRange[1]);
+      // PASO 3: Aplicar filtros de rango (popularidad)
+      if (filters.popularityRange) {
+        query = query.gte('popularity', filters.popularityRange[0])
+                     .lte('popularity', filters.popularityRange[1]);
+      }
 
-      // Aplicar filtro de temporada - solo si no es "todas" y no está vacío
-      if (filters.season && filters.season !== "todas") {
+      // PASO 4: Aplicar filtro de temporada
+      if (filters.season && filters.season !== "todas" && filters.season !== "") {
         query = query.eq('temporada', filters.season);
       }
 
-      // Aplicar filtro de origen
-      if (filters.origin) {
+      // PASO 5: Aplicar filtro de origen
+      if (filters.origin && filters.origin.trim()) {
         query = query.ilike('origen', `%${filters.origin}%`);
       }
 
-      // Aplicar ordenamiento
-      if (filters.sortBy === 'popularidad') {
-        query = query.order('popularity', { ascending: false });
-      } else if (filters.sortBy === 'nombre') {
+      // PASO 6: Aplicar ordenamiento (SIN filtros de precio para evitar errores SQL)
+      try {
+        if (filters.sortBy === 'popularidad') {
+          query = query.order('popularity', { ascending: false });
+        } else if (filters.sortBy === 'nombre') {
+          query = query.order('name', { ascending: true });
+        } else if (filters.sortBy === 'categoria') {
+          query = query.order('categories.name', { ascending: true });
+        }
+        // REMOVER ordenamiento por precio para evitar errores SQL
+        // else if (filters.sortBy === 'precio') {
+        //   query = query.order('ingredient_prices.price', { ascending: true });
+        // }
+      } catch (error) {
+        console.warn('⚠️ Error en ordenamiento, usando orden por defecto:', error);
         query = query.order('name', { ascending: true });
-      } else if (filters.sortBy === 'categoria') {
-        query = query.order('categories.name', { ascending: true });
-      } else if (filters.sortBy === 'precio') {
-        query = query.order('ingredient_prices.price', { ascending: true });
       }
 
       console.log('🚀 Ejecutando query en Supabase...');
@@ -85,8 +97,8 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
 
       console.log(`✅ Encontrados ${data?.length || 0} ingredientes con filtros avanzados`);
       
-      // LOGGING DETALLADO para debugging
-      if (filters.searchQuery) {
+      // LOGGING ESPECÍFICO para búsquedas
+      if (filters.searchQuery && filters.searchQuery.trim()) {
         console.log('🔍 RESULTADOS DE BÚSQUEDA DETALLADOS:');
         console.log('Total de ingredientes encontrados:', data?.length);
         console.log('Nombres de ingredientes encontrados:', data?.map(i => i.name));

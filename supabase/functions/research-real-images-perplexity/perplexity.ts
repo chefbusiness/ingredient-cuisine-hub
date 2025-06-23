@@ -18,27 +18,28 @@ export async function searchImagesWithPerplexity(
   ingredient: { name: string; name_en: string; description: string },
   apiKey: string
 ): Promise<ImageResult[]> {
-  // FASE 2: Improved Perplexity prompt for better URLs
+  // ENHANCED: Much more specific and relevant prompt
   const enhancedPrompt = `
-  Busca imágenes DIRECTAS y FUNCIONALES para: ${ingredient.name} (${ingredient.name_en})
+  Busca imágenes DIRECTAS del PRODUCTO PURO para: ${ingredient.name} (${ingredient.name_en})
   
-  INSTRUCCIONES CRÍTICAS PARA URLs:
+  INSTRUCCIONES CRÍTICAS:
   1. SOLO URLs que terminen en .jpg, .jpeg, .png, .webp, .gif
-  2. PRIORIZA estos sitios 100% confiables:
-     - images.unsplash.com (URLs directos sin parámetros complejos)
-     - images.pexels.com (URLs directos)
+  2. PRODUCTO AISLADO: Sin personas, sin platos cocinados, sin contexto de cocina
+  3. PRIORIZA ESTOS SITIOS 100% CONFIABLES:
+     - images.unsplash.com (URLs directos)
+     - images.pexels.com (URLs directos) 
      - cdn.pixabay.com (URLs directos)
-  3. Para Wikipedia: usar URLs directos sin "thumb/" en la ruta
-  4. EVITA URLs con "/thumb/" o parámetros complejos que fallan
-  5. Máximo 6 imágenes de alta calidad
+  4. EVITA URLs con "/thumb/" que suelen fallar
+  5. BUSCA: producto puro, packaging original, vista clara del ingrediente
+  6. EVITA: personas usando el producto, platos terminados, recetas
   
   RESPONDE SOLO CON JSON VÁLIDO:
-  {"images": [{"url": "https://images.unsplash.com/photo-123456789.jpg", "description": "descripción clara", "category": "raw", "source": "unsplash"}]}
+  {"images": [{"url": "https://images.unsplash.com/photo-123456789.jpg", "description": "aceite de oliva virgen extra en botella", "category": "raw", "source": "unsplash"}]}
   
-  Categorías: raw, cooked, cut, whole, variety
-  Fuentes preferidas: unsplash, pexels, pixabay, wikimedia
+  Categorías: raw (crudo/natural), whole (entero), cut (cortado), variety (variedades)
+  Fuentes: unsplash, pexels, pixabay, wikimedia
   
-  NO uses markdown, NO uses bloques de código, SOLO el JSON.
+  NO uses markdown, NO agregues texto extra, SOLO el JSON.
   `;
 
   const response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -52,16 +53,16 @@ export async function searchImagesWithPerplexity(
       messages: [
         {
           role: 'system',
-          content: 'Eres un especialista en encontrar imágenes culinarias FUNCIONALES. SIEMPRE responde SOLO con JSON válido sin texto adicional. Encuentra URLs DIRECTOS que terminen en .jpg/.png/.webp y que funcionen sin redirecciones. PRIORIZA Unsplash, Pexels y Pixabay.'
+          content: 'Eres un especialista en encontrar imágenes culinarias ESPECÍFICAS del PRODUCTO PURO. SIEMPRE responde SOLO con JSON válido sin texto adicional. Encuentra URLs DIRECTOS que terminen en .jpg/.png/.webp del INGREDIENTE AISLADO, no en contextos de cocina o uso. PRIORIZA Unsplash, Pexels y Pixabay.'
         },
         {
           role: 'user',
           content: enhancedPrompt
         }
       ],
-      temperature: 0.1,
+      temperature: 0.1, // More deterministic
       top_p: 0.9,
-      max_tokens: 1200,
+      max_tokens: 1500,
       return_images: false,
       return_related_questions: false,
       search_domain_filter: [
@@ -75,8 +76,8 @@ export async function searchImagesWithPerplexity(
         'commons.wikimedia.org'
       ],
       search_recency_filter: 'year',
-      frequency_penalty: 1,
-      presence_penalty: 0
+      frequency_penalty: 1.2, // Avoid repetition
+      presence_penalty: 0.1
     }),
   });
 
@@ -93,7 +94,7 @@ export async function searchImagesWithPerplexity(
     throw new Error('No content received from Perplexity');
   }
 
-  console.log('🔍 Perplexity raw response:', content.substring(0, 400));
+  console.log('🔍 Perplexity raw response:', content.substring(0, 500));
 
   // Enhanced JSON parsing with multiple strategies
   let imagesData: { images: ImageResult[] };
@@ -134,7 +135,7 @@ export async function searchImagesWithPerplexity(
   const images = imagesData.images || [];
   console.log(`🔍 Extracted ${images.length} images from response`);
   
-  // Enhanced validation and filtering with priority sorting
+  // ENHANCED: More strict validation for relevance and quality
   const validImages = images.filter(img => {
     if (!img.url || typeof img.url !== 'string') {
       console.log('❌ Invalid URL structure:', img);
@@ -153,6 +154,24 @@ export async function searchImagesWithPerplexity(
       return false;
     }
     
+    // ENHANCED: Reject URLs that are likely to be irrelevant
+    const irrelevantKeywords = [
+      '/thumb/', // Wikipedia thumbnails often broken
+      'profile', 'avatar', 'person', 'people',
+      'recipe', 'cooking', 'kitchen', 'chef',
+      'restaurant', 'meal', 'plate', 'dish'
+    ];
+    
+    const hasIrrelevantKeywords = irrelevantKeywords.some(keyword => 
+      img.url.toLowerCase().includes(keyword) || 
+      (img.description && img.description.toLowerCase().includes(keyword))
+    );
+    
+    if (hasIrrelevantKeywords) {
+      console.log('❌ URL contains irrelevant keywords:', img.url);
+      return false;
+    }
+    
     // Check for reasonable URL length
     if (img.url.length < 20 || img.url.length > 800) {
       console.log('❌ URL length suspicious:', img.url.length, img.url.substring(0, 50));
@@ -162,18 +181,28 @@ export async function searchImagesWithPerplexity(
     return true;
   });
 
-  // Sort by reliability - trusted services first
+  // Sort by reliability - trusted services first, then by relevance
   const sortedImages = validImages.sort((a, b) => {
-    const trustedServices = ['images.unsplash.com', 'unsplash.com', 'images.pexels.com', 'pexels.com'];
+    const trustedServices = ['images.unsplash.com', 'unsplash.com', 'images.pexels.com', 'pexels.com', 'cdn.pixabay.com'];
     const aIsTrusted = trustedServices.some(service => a.url.includes(service));
     const bIsTrusted = trustedServices.some(service => b.url.includes(service));
     
     if (aIsTrusted && !bIsTrusted) return -1;
     if (!aIsTrusted && bIsTrusted) return 1;
+    
+    // Secondary sort by category relevance
+    const categoryOrder = ['raw', 'whole', 'cut', 'variety'];
+    const aIndex = categoryOrder.indexOf(a.category || '');
+    const bIndex = categoryOrder.indexOf(b.category || '');
+    
+    if (aIndex !== -1 && bIndex !== -1) {
+      return aIndex - bIndex;
+    }
+    
     return 0;
   });
 
-  console.log(`✅ Format validation: ${sortedImages.length}/${images.length} valid images (sorted by reliability)`);
+  console.log(`✅ Enhanced validation: ${sortedImages.length}/${images.length} relevant images (sorted by reliability and relevance)`);
   
-  return sortedImages;
+  return sortedImages.slice(0, 8); // Limit to top 8 most relevant
 }

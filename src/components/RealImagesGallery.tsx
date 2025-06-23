@@ -56,6 +56,18 @@ const RealImagesGallery = ({
     return colors[category as keyof typeof colors] || colors.general;
   };
 
+  // FIXED: Correct source detection for AI vs Manual uploads
+  const getSourceInfo = (uploadedBy: string = '') => {
+    const aiSources = ['ai_research', 'perplexity_research', 'ai_generated', 'perplexity_sonar'];
+    const isAI = aiSources.some(source => uploadedBy.toLowerCase().includes(source));
+    
+    return {
+      isAI,
+      label: isAI ? 'AI' : 'Manual',
+      color: isAI ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+    };
+  };
+
   const handleSetAsMain = async (imageUrl: string) => {
     if (!onSetAsMain) return;
     
@@ -116,6 +128,7 @@ const RealImagesGallery = ({
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {filteredImages.map((image) => {
           const category = getCategoryFromCaption(image.caption);
+          const sourceInfo = getSourceInfo(image.uploaded_by);
           
           return (
             <Card 
@@ -129,6 +142,11 @@ const RealImagesGallery = ({
                     src={image.image_url}
                     alt={image.caption || "Imagen real del ingrediente"}
                     className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.warn('❌ Image failed to load:', image.image_url);
+                      e.currentTarget.style.opacity = '0.5';
+                      e.currentTarget.style.filter = 'grayscale(100%)';
+                    }}
                   />
                   
                   {/* Overlay con información */}
@@ -163,21 +181,15 @@ const RealImagesGallery = ({
                     </div>
                   </div>
                   
-                  {/* Source badge */}
-                  {image.uploaded_by && (
-                    <div className="absolute top-2 right-2">
-                      <Badge 
-                        variant="secondary" 
-                        className={`text-xs ${
-                          image.uploaded_by === 'ai_research' 
-                            ? 'bg-blue-100 text-blue-800' 
-                            : 'bg-green-100 text-green-800'
-                        }`}
-                      >
-                        {image.uploaded_by === 'ai_research' ? 'AI' : 'Manual'}
-                      </Badge>
-                    </div>
-                  )}
+                  {/* FIXED: Correct source badge with proper detection */}
+                  <div className="absolute top-2 right-2">
+                    <Badge 
+                      variant="secondary" 
+                      className={`text-xs ${sourceInfo.color}`}
+                    >
+                      {sourceInfo.label}
+                    </Badge>
+                  </div>
                 </div>
                 
                 {image.caption && (
@@ -213,6 +225,10 @@ const RealImagesGallery = ({
               src={selectedImage}
               alt="Imagen ampliada"
               className="max-w-full max-h-full object-contain rounded-lg"
+              onError={(e) => {
+                console.warn('❌ Modal image failed to load:', selectedImage);
+                e.currentTarget.style.opacity = '0.5';
+              }}
             />
             <Button
               variant="secondary"

@@ -16,12 +16,17 @@ const FeaturedIngredientsSection = () => {
     const recentlyViewed = [...anonymousViews, ...registeredViews];
     const viewedIds = new Set(recentlyViewed.map(ing => ing.id));
     
+    // Get full ingredient data for recently viewed items
+    const recentlyViewedWithData = recentlyViewed
+      .map(viewedItem => allIngredients.find(ing => ing.id === viewedItem.id))
+      .filter(Boolean);
+    
     // Add popular ingredients that haven't been recently viewed
     const additionalIngredients = allIngredients
       .filter(ing => !viewedIds.has(ing.id))
-      .slice(0, 8 - recentlyViewed.length);
+      .slice(0, 8 - recentlyViewedWithData.length);
 
-    return [...recentlyViewed, ...additionalIngredients].slice(0, 8);
+    return [...recentlyViewedWithData, ...additionalIngredients].slice(0, 8);
   };
 
   const featuredIngredients = getFeaturedIngredients();
@@ -111,7 +116,7 @@ const FeaturedIngredientsSection = () => {
                     {ingredient.name}
                   </h4>
                   <p className="text-xs text-muted-foreground mb-2">
-                    {ingredient.categories?.name}
+                    {ingredient.categories?.name || 'Sin categoría'}
                   </p>
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-primary">

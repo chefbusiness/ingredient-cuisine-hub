@@ -1,4 +1,3 @@
-
 import { useParams, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
@@ -15,6 +14,9 @@ import { AuthModal } from "@/components/auth/AuthModal";
 import IngredientMainCard from "@/components/ingredient-detail/IngredientMainCard";
 import IngredientTabs from "@/components/ingredient-detail/IngredientTabs";
 import IngredientSidebar from "@/components/ingredient-detail/IngredientSidebar";
+import SEOHead from "@/components/SEOHead";
+import StructuredData from "@/components/StructuredData";
+import { generateIngredientSchema, generateBreadcrumbSchema } from "@/utils/seoSchemas";
 
 const IngredienteDetalle = () => {
   const { id } = useParams();
@@ -48,6 +50,37 @@ const IngredienteDetalle = () => {
   };
 
   const remainingViews = getRemainingViews();
+
+  // Generate SEO data for ingredient
+  const generateIngredientSEOData = () => {
+    if (!ingredient) return null;
+    
+    const title = `${ingredient.name} | Ingrediente Profesional - Precios y Características`;
+    const description = `${ingredient.description} Información completa sobre ${ingredient.name}: precios, merma (${ingredient.merma}%), rendimiento (${ingredient.rendimiento}%), usos culinarios y más.`;
+    const keywords = `${ingredient.name}, ${ingredient.name_en}, ${ingredient.categories?.name}, precios ${ingredient.name}, merma ${ingredient.name}, rendimiento ${ingredient.name}`;
+    
+    return {
+      title,
+      description,
+      keywords,
+      ogTitle: `${ingredient.name} - Ingrediente Profesional`,
+      ogDescription: description,
+      ogType: "article",
+      ogImage: ingredient.real_image_url || ingredient.image_url,
+      canonical: `${window.location.origin}/ingrediente/${ingredient.id}`
+    };
+  };
+
+  const seoData = generateIngredientSEOData();
+  
+  const breadcrumbItems = ingredient ? [
+    { name: "Inicio", url: window.location.origin },
+    { name: "Directorio", url: `${window.location.origin}/directorio` },
+    { name: ingredient.name, url: `${window.location.origin}/ingrediente/${ingredient.id}` }
+  ] : [];
+
+  const breadcrumbSchema = ingredient ? generateBreadcrumbSchema(breadcrumbItems) : null;
+  const ingredientSchema = ingredient ? generateIngredientSchema(ingredient) : null;
 
   if (isLoading) {
     return (
@@ -121,11 +154,15 @@ const IngredienteDetalle = () => {
     );
   }
 
-  // Usar imagen real si existe, sino la imagen AI generada
-  const primaryImage = ingredient.real_image_url || ingredient.image_url;
+  // Use imagen real si existe, sino la imagen AI generada
+  const primaryImage = ingredient?.real_image_url || ingredient?.image_url;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50">
+      {seoData && <SEOHead seoData={seoData} />}
+      {breadcrumbSchema && <StructuredData data={breadcrumbSchema} id="breadcrumb-schema" />}
+      {ingredientSchema && <StructuredData data={ingredientSchema} id="ingredient-schema" />}
+      
       <UnifiedHeader variant="ingredient-detail" />
 
       <div className="container mx-auto px-4 py-8">
@@ -153,7 +190,7 @@ const IngredienteDetalle = () => {
             Directorio
           </Link>
           <span className="text-gray-400">/</span>
-          <span className="text-gray-600 font-medium">{ingredient.name}</span>
+          <span className="text-gray-600 font-medium">{ingredient?.name}</span>
         </nav>
 
         {/* Botón volver */}

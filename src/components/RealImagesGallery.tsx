@@ -98,7 +98,10 @@ const RealImagesGallery = ({
     };
   };
 
-  const handleSetAsMain = async (imageUrl: string) => {
+  const handleSetAsMain = async (e: React.MouseEvent, imageUrl: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     if (!onSetAsMain) return;
     
     try {
@@ -123,12 +126,21 @@ const RealImagesGallery = ({
     }
   };
 
-  const handleApproveImage = async (imageId: string, approved: boolean) => {
+  const handleApproveImage = async (e: React.MouseEvent, imageId: string, approved: boolean) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
     try {
       await approveImage.mutateAsync({ imageId, approved });
     } catch (error) {
       console.error('Error updating approval:', error);
     }
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, imageId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setImageToDelete(imageId);
   };
 
   if (isLoading) {
@@ -236,10 +248,7 @@ const RealImagesGallery = ({
                               size="sm"
                               variant="secondary"
                               className="text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleSetAsMain(image.image_url);
-                              }}
+                              onClick={(e) => handleSetAsMain(e, image.image_url)}
                               disabled={updateMainImage.isPending}
                             >
                               <Star className="h-3 w-3 mr-1" />
@@ -251,10 +260,7 @@ const RealImagesGallery = ({
                             size="sm"
                             variant="destructive"
                             className="text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setImageToDelete(image.id);
-                            }}
+                            onClick={(e) => handleDeleteClick(e, image.id)}
                             disabled={deleteImage.isPending}
                           >
                             <Trash2 className="h-3 w-3 mr-1" />
@@ -268,10 +274,7 @@ const RealImagesGallery = ({
                             size="sm"
                             variant={image.is_approved ? "default" : "outline"}
                             className="text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleApproveImage(image.id, true);
-                            }}
+                            onClick={(e) => handleApproveImage(e, image.id, true)}
                             disabled={approveImage.isPending}
                           >
                             <CheckCircle className="h-3 w-3 mr-1" />
@@ -282,10 +285,7 @@ const RealImagesGallery = ({
                             size="sm"
                             variant={!image.is_approved ? "default" : "outline"}
                             className="text-xs"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleApproveImage(image.id, false);
-                            }}
+                            onClick={(e) => handleApproveImage(e, image.id, false)}
                             disabled={approveImage.isPending}
                           >
                             <XCircle className="h-3 w-3 mr-1" />

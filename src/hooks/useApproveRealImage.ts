@@ -3,6 +3,19 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+interface UpdatedImageInfo {
+  id: string;
+  ingredient_id: string;
+  image_url: string;
+  caption: string;
+  is_approved: boolean;
+}
+
+interface ApproveImageResponse {
+  success: boolean;
+  updated_image: UpdatedImageInfo;
+}
+
 export const useApproveRealImage = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -22,7 +35,7 @@ export const useApproveRealImage = () => {
       }
 
       console.log('✅ Image approval updated:', data);
-      return data;
+      return data as ApproveImageResponse;
     },
     onSuccess: (data, variables) => {
       toast({

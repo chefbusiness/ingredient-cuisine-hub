@@ -3,6 +3,19 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
+interface DeletedImageInfo {
+  id: string;
+  ingredient_id: string;
+  image_url: string;
+  caption: string;
+  uploaded_by: string;
+}
+
+interface DeleteImageResponse {
+  success: boolean;
+  deleted_image: DeletedImageInfo;
+}
+
 export const useDeleteRealImage = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -21,7 +34,7 @@ export const useDeleteRealImage = () => {
       }
 
       console.log('✅ Image deleted successfully:', data);
-      return data;
+      return data as DeleteImageResponse;
     },
     onSuccess: (data) => {
       toast({

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Ingredient } from "@/hooks/useIngredients";
+import AdBanner from "@/components/AdBanner";
 
 interface IngredientSidebarProps {
   ingredient: Ingredient;
@@ -84,6 +85,16 @@ const IngredientSidebar = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* AI Chef Pro Suite Banner */}
+      <AdBanner
+        title="AI Chef Pro Suite"
+        description="Suite de Herramientas y Aplicaciones de IA para Chefs y profesionales de la hostelería."
+        url="https://aichef.pro/"
+        ctaText="Descubrir Herramientas"
+        variant="secondary"
+        size="compact"
+      />
     </div>
   );
 };

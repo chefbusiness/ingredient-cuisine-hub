@@ -17,6 +17,7 @@ import IngredientTabs from "@/components/ingredient-detail/IngredientTabs";
 import IngredientSidebar from "@/components/ingredient-detail/IngredientSidebar";
 import SEOHead from "@/components/SEOHead";
 import StructuredData from "@/components/StructuredData";
+import AdBanner from "@/components/AdBanner";
 import { generateIngredientSchema, generateBreadcrumbSchema } from "@/utils/seoSchemas";
 
 const IngredienteDetalle = () => {
@@ -238,6 +239,18 @@ const IngredienteDetalle = () => {
               primaryImage={primaryImage}
               onGenerateImage={handleGenerateImage}
               isGeneratingImage={generateImage.isPending}
+            />
+          </div>
+
+          {/* Consultoría Online Banner */}
+          <div className="mt-12 mb-8">
+            <AdBanner
+              title="Consultoría Online para Restaurantes"
+              description="Servicio especializado de consultoría para restaurantes y negocios de hostelería. Optimiza tu operación y aumenta tu rentabilidad."
+              url="https://chefbusiness.co/consultoria-online-para-restaurantes/"
+              ctaText="Saber Más"
+              variant="primary"
+              size="default"
             />
           </div>
         </div>

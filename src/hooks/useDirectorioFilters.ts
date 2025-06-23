@@ -40,7 +40,11 @@ export const useDirectorioFilters = () => {
   }, [searchParams]);
 
   const handleFiltersChange = (newFilters: SearchFilters) => {
-    setFilters(newFilters);
+    // Evitar actualizaciones innecesarias comparando el contenido
+    const hasChanged = JSON.stringify(filters) !== JSON.stringify(newFilters);
+    if (hasChanged) {
+      setFilters(newFilters);
+    }
   };
 
   const handleClearFilters = () => {

@@ -34,8 +34,8 @@ const AdvancedSearchFilters = ({
 }: AdvancedSearchFiltersProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   
-  // Local state for immediate UI updates - inicializar con currentFilters si existen
-  const [localFilters, setLocalFilters] = useState<SearchFilters>(
+  // Local state for immediate UI updates - inicializar SOLO una vez con currentFilters
+  const [localFilters, setLocalFilters] = useState<SearchFilters>(() => 
     currentFilters || {
       searchQuery: "",
       category: "todos",
@@ -47,12 +47,8 @@ const AdvancedSearchFilters = ({
     }
   );
 
-  // Sincronizar con currentFilters cuando cambien desde el padre
-  useEffect(() => {
-    if (currentFilters) {
-      setLocalFilters(currentFilters);
-    }
-  }, [currentFilters]);
+  // NO sincronizar con currentFilters para evitar ciclos de re-renderizado
+  // El input debe mantener su estado local independiente
 
   // Debounced values for text inputs
   const debouncedSearchQuery = useDebounce(localFilters.searchQuery, 500);

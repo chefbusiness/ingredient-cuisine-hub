@@ -25,7 +25,7 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
         .from('ingredients')
         .select(`
           *,
-          categories!inner(name, name_en),
+          categories!left(name, name_en),
           ingredient_prices!left(
             price,
             unit,
@@ -39,7 +39,7 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
         query = applyAccentInsensitiveSearch(query, filters.searchQuery);
       }
 
-      // Aplicar filtro de categoría
+      // Aplicar filtro de categoría SOLO si se especifica una categoría específica
       if (filters.category && filters.category !== 'todos') {
         query = query.eq('categories.name', filters.category);
       }
@@ -77,6 +77,7 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
       }
 
       console.log(`✅ Encontrados ${data?.length || 0} ingredientes con filtros avanzados`);
+      console.log('Datos de ingredientes encontrados:', data?.map(i => ({ name: i.name, category: i.categories?.name })));
       
       // Procesar precios como antes
       const processedData = data?.map(ingredient => {

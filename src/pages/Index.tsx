@@ -1,7 +1,11 @@
+
 import UnifiedHeader from "@/components/UnifiedHeader";
 import HeroSection from "@/components/HeroSection";
 import CategoriesSection from "@/components/CategoriesSection";
+import CountriesSection from "@/components/CountriesSection";
 import FeaturedIngredientsSection from "@/components/FeaturedIngredientsSection";
+import StatsSection from "@/components/StatsSection";
+import FAQSection from "@/components/FAQSection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
@@ -35,7 +39,10 @@ const Index = () => {
       <UnifiedHeader />
       <HeroSection />
       <CategoriesSection />
+      <CountriesSection />
       <FeaturedIngredientsSection />
+      <StatsSection />
+      <FAQSection />
       <CTASection />
       <Footer />
     </div>

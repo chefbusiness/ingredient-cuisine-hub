@@ -1,5 +1,5 @@
 
-import { Leaf, Beef, Wheat, Utensils } from "lucide-react";
+import { Leaf, Beef, Wheat, Utensils, Fish, Apple, Milk, Soup } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +43,10 @@ const CategoriesSection = () => {
     if (name.includes('verdura') || name.includes('vegetal')) return Leaf;
     if (name.includes('carne') || name.includes('meat')) return Beef;
     if (name.includes('hierba') || name.includes('especia') || name.includes('herb')) return Wheat;
+    if (name.includes('pescado') || name.includes('marisco') || name.includes('fish')) return Fish;
+    if (name.includes('fruta') || name.includes('fruit')) return Apple;
+    if (name.includes('lácteo') || name.includes('dairy')) return Milk;
+    if (name.includes('condimento') || name.includes('salsa')) return Soup;
     return Utensils; // Default icon
   };
 
@@ -59,7 +63,7 @@ const CategoriesSection = () => {
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {categories.slice(0, 4).map((category) => {
+          {categories.slice(0, 8).map((category) => {
             const IconComponent = getIconForCategory(category.name);
             const count = categoryCounts[category.name] || 0;
             

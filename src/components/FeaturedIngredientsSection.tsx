@@ -3,14 +3,28 @@ import { TrendingUp, Camera, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { usePopularIngredients } from "@/hooks/usePopularIngredients";
 import { useIngredients } from "@/hooks/useIngredients";
 
 const FeaturedIngredientsSection = () => {
-  // Get the most popular ingredients (sorted by popularity, limited to 4)
-  const { data: ingredients = [] } = useIngredients(undefined, undefined, 'popularidad');
+  // Get both popular ingredients from views and general ingredients sorted by popularity
+  const { anonymousViews, registeredViews, loading: popularLoading } = usePopularIngredients();
+  const { data: allIngredients = [], isLoading: ingredientsLoading } = useIngredients(undefined, undefined, 'popularidad');
 
-  // Take the top 4 most popular ingredients
-  const featuredIngredients = ingredients.slice(0, 4);
+  // Combine and deduplicate ingredients, prioritizing those with recent views
+  const getFeaturedIngredients = () => {
+    const recentlyViewed = [...anonymousViews, ...registeredViews];
+    const viewedIds = new Set(recentlyViewed.map(ing => ing.id));
+    
+    // Add popular ingredients that haven't been recently viewed
+    const additionalIngredients = allIngredients
+      .filter(ing => !viewedIds.has(ing.id))
+      .slice(0, 8 - recentlyViewed.length);
+
+    return [...recentlyViewed, ...additionalIngredients].slice(0, 8);
+  };
+
+  const featuredIngredients = getFeaturedIngredients();
 
   const getIngredientImage = (ingredient: any) => {
     // Use real image if available, then AI image, then fallback
@@ -51,8 +65,12 @@ const FeaturedIngredientsSection = () => {
     return "Precio no disponible";
   };
 
-  if (!featuredIngredients.length) {
-    return null; // Don't render if no ingredients are available
+  const isRecentlyViewed = (ingredientId: string) => {
+    return [...anonymousViews, ...registeredViews].some(ing => ing.id === ingredientId);
+  };
+
+  if (popularLoading || ingredientsLoading || !featuredIngredients.length) {
+    return null;
   }
 
   return (
@@ -60,10 +78,10 @@ const FeaturedIngredientsSection = () => {
       <div className="container mx-auto px-4">
         <div className="text-center mb-8">
           <h3 className="text-xl font-medium text-foreground mb-2">
-            Ingredientes Destacados
+            Ingredientes Más Populares
           </h3>
           <p className="text-sm text-muted-foreground">
-            Los ingredientes más populares en cocina profesional
+            Los ingredientes más consultados por profesionales
           </p>
         </div>
         
@@ -81,7 +99,7 @@ const FeaturedIngredientsSection = () => {
                     }}
                   />
                   {getImageBadge(ingredient)}
-                  {ingredient.popularity > 90 && (
+                  {isRecentlyViewed(ingredient.id) && (
                     <Badge className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs">
                       <TrendingUp className="w-3 h-3 mr-1" />
                       Trending
@@ -100,7 +118,7 @@ const FeaturedIngredientsSection = () => {
                       {getIngredientPrice(ingredient)}
                     </span>
                     <Badge variant="outline" className="text-xs">
-                      {ingredient.popularity}% popular
+                      {ingredient.popularity || 0}% popular
                     </Badge>
                   </div>
                 </CardContent>

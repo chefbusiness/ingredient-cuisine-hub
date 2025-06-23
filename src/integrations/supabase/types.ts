@@ -551,6 +551,10 @@ export type Database = {
         Args: { ingredient_id: string }
         Returns: Json
       }
+      delete_real_image_safe: {
+        Args: { image_id: string }
+        Returns: Json
+      }
       is_super_admin: {
         Args: { user_id: string }
         Returns: boolean
@@ -567,6 +571,10 @@ export type Database = {
       promote_to_super_admin: {
         Args: { target_email: string }
         Returns: boolean
+      }
+      update_image_approval: {
+        Args: { image_id: string; approved: boolean }
+        Returns: Json
       }
       verify_super_admin_access: {
         Args: Record<PropertyKey, never>

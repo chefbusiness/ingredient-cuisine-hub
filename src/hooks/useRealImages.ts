@@ -1,7 +1,7 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 
 export interface RealImage {
   id: string;
@@ -15,21 +15,31 @@ export interface RealImage {
 }
 
 export const useRealImages = (ingredientId: string) => {
+  const { isSuperAdmin } = useSuperAdmin();
+
   return useQuery({
-    queryKey: ['real-images', ingredientId],
+    queryKey: ['real-images', ingredientId, isSuperAdmin],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // For super admins, show all images. For regular users, only approved ones
+      const query = supabase
         .from('ingredient_real_images')
         .select('*')
         .eq('ingredient_id', ingredientId)
-        .eq('is_approved', true)
         .order('votes_count', { ascending: false });
+
+      // Only filter by approval for non-admin users
+      if (!isSuperAdmin) {
+        query.eq('is_approved', true);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching real images:', error);
         throw error;
       }
 
+      console.log(`📸 Loaded ${data?.length || 0} real images for ingredient ${ingredientId} (admin: ${isSuperAdmin})`);
       return data || [];
     },
     enabled: !!ingredientId,

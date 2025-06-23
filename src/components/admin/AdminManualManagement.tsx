@@ -10,9 +10,10 @@ import IngredientDeleteDialog from "./IngredientDeleteDialog";
 import DataRecoveryPanel from "./DataRecoveryPanel";
 import BatchOperations from "./BatchOperations";
 import BatchImageResearch from "./BatchImageResearch";
+import ImageCleanupTools from "./ImageCleanupTools";
 import { Ingredient } from "@/hooks/useIngredients";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Database, Edit, RefreshCw, Image } from "lucide-react";
+import { Database, Edit, RefreshCw, Image, Trash2 } from "lucide-react";
 
 const AdminManualManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -40,7 +41,7 @@ const AdminManualManagement = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="management" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="management" className="flex items-center gap-2">
             <Edit className="h-4 w-4" />
             Gestión de Ingredientes
@@ -48,6 +49,10 @@ const AdminManualManagement = () => {
           <TabsTrigger value="images" className="flex items-center gap-2">
             <Image className="h-4 w-4" />
             Imágenes Reales
+          </TabsTrigger>
+          <TabsTrigger value="cleanup" className="flex items-center gap-2">
+            <Trash2 className="h-4 w-4" />
+            Limpieza de Imágenes
           </TabsTrigger>
           <TabsTrigger value="batch" className="flex items-center gap-2">
             <RefreshCw className="h-4 w-4" />
@@ -100,6 +105,10 @@ const AdminManualManagement = () => {
             </CardHeader>
           </Card>
           <BatchImageResearch />
+        </TabsContent>
+
+        <TabsContent value="cleanup" className="space-y-6">
+          <ImageCleanupTools />
         </TabsContent>
 
         <TabsContent value="batch" className="space-y-6">

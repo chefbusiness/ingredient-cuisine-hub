@@ -33,14 +33,20 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
           )
         `);
 
-      // Aplicar filtro de búsqueda con soporte para acentos usando la nueva función
+      // NUEVA IMPLEMENTACIÓN: Aplicar filtro de búsqueda PRIMERO y con logging detallado
       if (filters.searchQuery) {
-        console.log('Aplicando búsqueda para:', filters.searchQuery);
+        console.log('🔍 APLICANDO BÚSQUEDA PARA:', filters.searchQuery);
+        console.log('🔍 Término de búsqueda sin procesar:', JSON.stringify(filters.searchQuery));
+        
+        // Aplicar la búsqueda con la función mejorada
         query = applyAccentInsensitiveSearch(query, filters.searchQuery);
+        
+        console.log('🔍 Búsqueda aplicada correctamente');
       }
 
       // Aplicar filtro de categoría SOLO si se especifica una categoría específica
       if (filters.category && filters.category !== 'todos') {
+        console.log('📂 Aplicando filtro de categoría:', filters.category);
         query = query.eq('categories.name', filters.category);
       }
 
@@ -69,15 +75,32 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
         query = query.order('ingredient_prices.price', { ascending: true });
       }
 
+      console.log('🚀 Ejecutando query en Supabase...');
       const { data, error } = await query;
 
       if (error) {
-        console.error('Error fetching advanced ingredients:', error);
+        console.error('❌ Error fetching advanced ingredients:', error);
         throw error;
       }
 
       console.log(`✅ Encontrados ${data?.length || 0} ingredientes con filtros avanzados`);
-      console.log('Datos de ingredientes encontrados:', data?.map(i => ({ name: i.name, category: i.categories?.name })));
+      
+      // LOGGING DETALLADO para debugging
+      if (filters.searchQuery) {
+        console.log('🔍 RESULTADOS DE BÚSQUEDA DETALLADOS:');
+        console.log('Total de ingredientes encontrados:', data?.length);
+        console.log('Nombres de ingredientes encontrados:', data?.map(i => i.name));
+        
+        // Verificar específicamente si "Azafrán" está en los resultados
+        const azafranFound = data?.find(i => 
+          i.name.toLowerCase().includes('azafr') || 
+          i.name_en?.toLowerCase().includes('saffr')
+        );
+        console.log('¿Se encontró Azafrán?:', azafranFound ? 'SÍ' : 'NO');
+        if (azafranFound) {
+          console.log('Datos de Azafrán encontrado:', azafranFound);
+        }
+      }
       
       // Procesar precios como antes
       const processedData = data?.map(ingredient => {

@@ -11,18 +11,38 @@ export const normalizeText = (text: string): string => {
 };
 
 /**
- * Aplica búsqueda insensible a acentos directamente a la query de Supabase
+ * Aplica búsqueda insensible a acentos creando múltiples condiciones OR
+ * Esta versión es más robusta y garantiza que encuentre coincidencias
  */
 export const applyAccentInsensitiveSearch = (query: any, searchTerm: string) => {
   const normalizedSearch = normalizeText(searchTerm);
   
-  // Si los términos son iguales, solo buscar una vez
-  if (searchTerm.toLowerCase() === normalizedSearch) {
-    return query.or(`name.ilike.%${searchTerm}%,name_en.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+  console.log('🔍 Búsqueda aplicada:', {
+    termino_original: searchTerm,
+    termino_normalizado: normalizedSearch
+  });
+  
+  // Crear múltiples condiciones de búsqueda para máxima compatibilidad
+  const searchConditions = [
+    `name.ilike.%${searchTerm}%`,
+    `name_en.ilike.%${searchTerm}%`,
+    `description.ilike.%${searchTerm}%`
+  ];
+  
+  // Si el término normalizado es diferente, agregar también esas búsquedas
+  if (normalizedSearch !== searchTerm.toLowerCase()) {
+    searchConditions.push(
+      `name.ilike.%${normalizedSearch}%`,
+      `name_en.ilike.%${normalizedSearch}%`,
+      `description.ilike.%${normalizedSearch}%`
+    );
   }
   
-  // Buscar tanto el término original como el normalizado
-  return query.or(`name.ilike.%${searchTerm}%,name_en.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,name.ilike.%${normalizedSearch}%,name_en.ilike.%${normalizedSearch}%,description.ilike.%${normalizedSearch}%`);
+  // Aplicar todas las condiciones con OR
+  const fullSearchQuery = searchConditions.join(',');
+  console.log('🔍 Query final de búsqueda:', fullSearchQuery);
+  
+  return query.or(fullSearchQuery);
 };
 
 /**

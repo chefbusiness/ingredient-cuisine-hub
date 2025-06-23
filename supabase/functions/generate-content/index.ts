@@ -64,7 +64,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔄 Processing generate-content request...');
+    console.log('🔄 === GENERACIÓN DE CONTENIDO CON PERPLEXITY ===');
     
     // Security check: Verify super admin access
     const authHeader = req.headers.get('authorization');
@@ -110,7 +110,7 @@ serve(async (req) => {
     // Sanitize additional prompt
     const sanitizedPrompt = additionalPrompt ? additionalPrompt.toString().trim().slice(0, 500) : '';
 
-    console.log(`🔄 Generating ${validatedCount} ${type}(s) for category: ${sanitizedCategory}`);
+    console.log(`🔄 Generando ${validatedCount} ${type}(s) para categoría: ${sanitizedCategory} usando PERPLEXITY SONAR`);
 
     let generatedData;
     if (type === 'ingredient') {
@@ -120,17 +120,18 @@ serve(async (req) => {
       generatedData = [];
     }
 
-    console.log(`✅ Successfully generated ${generatedData.length} items`);
+    console.log(`✅ Successfully generated ${generatedData.length} items with Perplexity research`);
 
     // Log the admin action
     try {
       await supabase.rpc('log_admin_action', {
-        action_type: 'generate_content',
+        action_type: 'generate_content_perplexity',
         resource_type: type,
         action_details: {
           count: validatedCount,
           category: sanitizedCategory,
-          generated_count: generatedData.length
+          generated_count: generatedData.length,
+          ai_provider: 'perplexity_sonar'
         }
       });
     } catch (logError) {
@@ -141,16 +142,19 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       success: true,
       data: generatedData,
-      generated_count: generatedData.length
+      generated_count: generatedData.length,
+      ai_provider: 'perplexity_sonar',
+      research_quality: 'high'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
-    console.error('❌ Error in generate-content:', error);
+    console.error('❌ Error in generate-content with Perplexity:', error);
     return new Response(JSON.stringify({ 
       error: error.message || 'Internal server error',
-      code: 'INTERNAL_ERROR'
+      code: 'INTERNAL_ERROR',
+      ai_provider: 'perplexity_sonar'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

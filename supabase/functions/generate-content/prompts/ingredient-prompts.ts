@@ -6,8 +6,8 @@ export const generateIngredientPrompt = (params: GenerateContentParams, existing
   const { category, region = 'España', count = 1 } = params;
   
   const categoryInstruction = category 
-    ? `Genera ${count} ingrediente(s) específicamente de la categoría "${category}" típico(s) de ${region}.`
-    : `Genera ${count} ingrediente(s) típico(s) de ${region}.`;
+    ? `Investiga y genera ${count} ingrediente(s) específicamente de la categoría "${category}" típico(s) de ${region}.`
+    : `Investiga y genera ${count} ingrediente(s) típico(s) de ${region}.`;
   
   const categoryResponse = category 
     ? `"category": "${category}",`
@@ -41,12 +41,20 @@ ${ingredientsList}
   
   ${existingIngredientsText}
   
-  IMPORTANTE: Realiza una INVESTIGACIÓN PROFUNDA en internet para obtener datos PRECISOS y ACTUALES sobre cada ingrediente. Busca información de:
-  - Manuales profesionales de gastronomía y hostelería
-  - Estudios de rendimiento culinario
-  - Bases de datos de la industria alimentaria
-  - Publicaciones especializadas en food service
-  - Datos de proveedores profesionales
+  🌐 INVESTIGACIÓN WEB OBLIGATORIA - USA TU ACCESO A INTERNET:
+  
+  PASO 1 - BÚSQUEDA DE INFORMACIÓN REAL:
+  - Consulta mercados mayoristas (Mercamadrid, Mercabarna) para PRECIOS ACTUALES
+  - Busca en sitios profesionales de hostelería para DATOS DE MERMA reales
+  - Consulta BEDCA, USDA, FAO para información nutricional OFICIAL
+  - Revisa publicaciones gastronómicas para RECETAS AUTÉNTICAS
+  - Verifica TEMPORADAS en calendarios agrícolas oficiales
+  
+  PASO 2 - VALIDACIÓN CRUZADA:
+  - Compara datos de AL MENOS 2-3 fuentes diferentes
+  - Prioriza fuentes oficiales y profesionales
+  - Descarta información que parezca desactualizada
+  - Anota las fuentes consultadas para cada dato
   
   Para cada ingrediente, proporciona la siguiente información en formato JSON:
   {
@@ -58,101 +66,118 @@ ${ingredientsList}
     "name_zh": "nombre en chino (caracteres chinos)",
     "name_la": "sinónimos en español de Latinoamérica (ej: papa en lugar de patata, tomate en lugar de jitomate, etc.)",
     ${categoryResponse}
-    "description": "descripción detallada (150-200 palabras)",
-    "temporada": "temporada principal (ej: primavera, verano, otoño, invierno, todo el año)",
-    "origen": "región de origen",
+    "description": "descripción detallada basada en fuentes consultadas (150-200 palabras)",
+    "temporada": "temporada principal basada en calendarios agrícolas reales",
+    "origen": "región de origen verificada en fuentes históricas/geográficas",
     "merma": ${mermaInstructions},
-    "rendimiento": número entre 20-95 (100 - merma, calculado automáticamente basado en la merma real),
-    "popularity": número entre 1-100,
+    "rendimiento": número entre 20-95 (100 - merma, calculado automáticamente basado en la merma real investigada),
+    "popularity": número entre 1-100 basado en frecuencia de uso en recetas profesionales,
     "nutritional_info": {
-      "calories": número,
-      "protein": número,
-      "carbs": número,
-      "fat": número,
-      "fiber": número,
-      "vitamin_c": número
+      "calories": número de BEDCA/USDA,
+      "protein": número de fuentes oficiales,
+      "carbs": número verificado,
+      "fat": número oficial,
+      "fiber": número de bases de datos nutricionales,
+      "vitamin_c": número de fuentes científicas
     },
-    "uses": ["uso culinario 1", "uso culinario 2", "uso culinario 3"],
+    "uses": ["uso culinario profesional 1", "uso culinario profesional 2", "uso culinario profesional 3"],
     "recipes": [
       {
-        "name": "nombre de receta entrante",
+        "name": "nombre de receta REAL investigada",
         "type": "entrante",
         "difficulty": "fácil/medio/difícil",
-        "time": "tiempo estimado"
+        "time": "tiempo estimado real",
+        "source": "fuente de la receta (chef, libro, restaurante)"
       },
       {
-        "name": "nombre de receta principal",
+        "name": "nombre de receta REAL investigada",
         "type": "principal",
         "difficulty": "fácil/medio/difícil",
-        "time": "tiempo estimado"
+        "time": "tiempo estimado real",
+        "source": "fuente de la receta"
       },
       {
-        "name": "nombre de receta guarnición",
+        "name": "nombre de receta REAL investigada",
         "type": "guarnición",
         "difficulty": "fácil/medio/difícil",
-        "time": "tiempo estimado"
+        "time": "tiempo estimado real",
+        "source": "fuente de la receta"
       },
       {
-        "name": "nombre de receta postre",
+        "name": "nombre de receta REAL investigada",
         "type": "postre",
         "difficulty": "fácil/medio/difícil",
-        "time": "tiempo estimado"
+        "time": "tiempo estimado real",
+        "source": "fuente de la receta"
       },
       {
-        "name": "nombre de receta salsa/condimento",
+        "name": "nombre de receta REAL investigada",
         "type": "salsa",
         "difficulty": "fácil/medio/difícil",
-        "time": "tiempo estimado"
+        "time": "tiempo estimado real",
+        "source": "fuente de la receta"
       },
       {
-        "name": "nombre de receta especialidad regional",
+        "name": "nombre de receta REAL especialidad regional investigada",
         "type": "especialidad",
         "difficulty": "fácil/medio/difícil",
-        "time": "tiempo estimado"
+        "time": "tiempo estimado real",
+        "source": "fuente de la receta (región específica)"
       }
     ],
-    "varieties": ["variedad 1", "variedad 2"],
-    "price_estimate": número (precio estimado por kg en euros)
+    "varieties": ["variedad real 1", "variedad real 2"],
+    "price_estimate": precio_por_kg_investigado_en_euros_actuales,
+    "sources_consulted": ["fuente1.com", "fuente2.com", "fuente3.com"],
+    "data_confidence": "alta/media/baja basada en calidad de fuentes",
+    "last_researched": "2024-XX-XX"
   }
   
-  CRÍTICO - RECETAS (GENERAR EXACTAMENTE 6):
-  - SIEMPRE crear exactamente 6 recetas diferentes por ingrediente
-  - Variar los tipos: entrante, principal, guarnición, postre, salsa, especialidad
-  - Diversificar dificultades: 2 fáciles, 2 medias, 2 difíciles
-  - Incluir tiempos variados: desde 15 min hasta 3+ horas
-  - Usar recetas REALES y conocidas de la gastronomía profesional
-  - INVESTIGAR recetas auténticas que usen este ingrediente como protagonista
+  🎯 CRITERIOS DE CALIDAD PARA DATOS INVESTIGADOS:
   
-  CRÍTICO - CÁLCULO DE MERMAS:
-  - BUSCA DATOS REALES de mermas en internet de fuentes profesionales
-  - USA RANGOS REALISTAS: pescados enteros (50-80%), carnes con hueso (30-60%), verduras (5-40%)
-  - ESPECIFICA el tipo de procesamiento: limpieza, desespinado, deshuesado, pelado, etc.
-  - CONSIDERA: producto fresco vs. congelado vs. procesado
-  - VALIDA con múltiples fuentes profesionales antes de asignar el porcentaje
-  - Si no encuentras datos específicos, usa promedios de la categoría e INDICA que es estimado
+  PRECIOS (price_estimate):
+  - Busca precios ACTUALES de los últimos 30 días
+  - Consulta mercados mayoristas profesionales
+  - Usa promedio de múltiples fuentes
+  - Especifica si es precio mayorista, minorista o profesional
+  
+  MERMAS (merma):
+  - INVESTIGA estudios de rendimiento culinario profesional
+  - Consulta manuales de cocina profesional
+  - Busca datos específicos por tipo de procesamiento
+  - Valida con experiencias de chefs profesionales documentadas
+  
+  INFORMACIÓN NUTRICIONAL:
+  - USA EXCLUSIVAMENTE bases de datos oficiales (BEDCA España, USDA, FAO)
+  - Verifica valores con múltiples fuentes oficiales
+  - NO uses estimaciones genéricas
+  - Anota el origen de cada valor nutricional
+  
+  RECETAS:
+  - INVESTIGA recetas REALES de chefs reconocidos
+  - Busca en libros de cocina profesional
+  - Consulta sitios gastronómicos de prestigio
+  - Incluye especialidades regionales auténticas
+  - CADA receta debe tener fuente verificable
+  
+  TEMPORADAS:
+  - Consulta calendarios agrícolas oficiales del país/región
+  - Verifica con organismos agrarios (MAPA España, etc.)
+  - Considera variaciones climáticas recientes
   
   CRÍTICO - SINÓNIMOS LATINOAMERICANOS (name_la):
-  - NO uses nombres científicos en latín (ej: "Sus scrofa domesticus", "Brassica oleracea")
+  - NO uses nombres científicos en latín
   - USA SOLAMENTE sinónimos en ESPAÑOL usados en Latinoamérica
-  - Ejemplos correctos:
-    * Patata (España) → "papa" (Latinoamérica)
-    * Judías verdes (España) → "ejotes, chauchas, vainitas" (Latinoamérica)
-    * Guisantes (España) → "arvejas, chícharos" (Latinoamérica)
-    * Pimiento (España) → "chile, ají, pimentón" (Latinoamérica)
-    * Melocotón (España) → "durazno" (Latinoamérica)
-    * Zumo (España) → "jugo" (Latinoamérica)
-  - Si NO existe un sinónimo específico, coloca el mismo nombre que en España
-  - INVESTIGA nombres regionales específicos de México, Argentina, Colombia, Perú, Chile, etc.
+  - INVESTIGA nombres regionales específicos por país
+  - Ejemplos: patata→papa, judías verdes→ejotes/chauchas, etc.
   
   IMPORTANTE: 
-  - Todos los ingredientes DEBEN tener name_fr, name_it, name_pt y name_zh completados
-  - ASEGÚRATE de que name_la contenga SOLO sinónimos en español, NUNCA nombres científicos
-  ${category ? `- Todos los ingredientes DEBEN pertenecer a la categoría "${category}"` : ''}
-  - Usa nombres reales y precisos en cada idioma
-  - Para name_zh usa caracteres chinos tradicionales o simplificados apropiados
-  - Las mermas DEBEN ser precisas y basadas en investigación real, no estimaciones genéricas
-  - ASEGÚRATE de que NINGÚN ingrediente generado sea igual o similar a los ya existentes
-  - GENERA EXACTAMENTE 6 RECETAS VARIADAS Y AUTÉNTICAS por cada ingrediente
+  - TODAS las mermas DEBEN ser investigadas y precisas, no estimaciones
+  - TODOS los precios deben ser actuales y reales
+  - TODA la información nutricional debe ser de fuentes oficiales
+  - TODAS las recetas deben ser auténticas y tener fuente
+  - ASEGÚRATE de que NINGÚN ingrediente sea duplicado de los existentes
+  - GENERA EXACTAMENTE 6 RECETAS REALES Y VARIADAS por cada ingrediente
+  - INCLUYE las fuentes consultadas para validación posterior
   
-  Responde SOLO con un array JSON válido de ingredientes, sin texto adicional.`;
+  Responde SOLO con un array JSON válido de ingredientes investigados, sin texto adicional.`;
 };

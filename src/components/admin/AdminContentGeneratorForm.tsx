@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Loader, Wand2, Zap } from "lucide-react";
+import { Loader, Wand2, Zap, Globe, Search } from "lucide-react";
 import { useGenerateContent } from "@/hooks/useGenerateContent";
 import { useCategories } from "@/hooks/useCategories";
 
@@ -51,10 +51,14 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Wand2 className="h-5 w-5" />
-          Generador de Contenido AI
-          <Badge className="bg-green-100 text-green-800 ml-2">
-            <Zap className="h-3 w-3 mr-1" />
-            Flux 1.1 Pro + DeepSeek
+          Generador de Contenido con IA
+          <Badge className="bg-blue-100 text-blue-800 ml-2">
+            <Globe className="h-3 w-3 mr-1" />
+            Perplexity Sonar
+          </Badge>
+          <Badge className="bg-green-100 text-green-800">
+            <Search className="h-3 w-3 mr-1" />
+            Datos Reales Web
           </Badge>
         </CardTitle>
       </CardHeader>
@@ -133,14 +137,24 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
           ) : (
             <Wand2 className="h-4 w-4 mr-2" />
           )}
-          Generar Contenido con DeepSeek AI
+          Generar Contenido con Perplexity AI
         </Button>
 
         {contentType === 'ingredient' && (
           <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-            <div className="flex items-center gap-2 text-sm text-blue-800">
-              <Zap className="h-4 w-4" />
-              <span><strong>FLUJO OPTIMIZADO:</strong> Genera contenido → Guarda en DB → Genera imágenes automáticamente con Flux 1.1 Pro</span>
+            <div className="flex items-center gap-2 text-sm text-blue-800 mb-2">
+              <Globe className="h-4 w-4" />
+              <span><strong>INVESTIGACIÓN WEB REAL:</strong> Perplexity consulta internet para obtener datos actuales</span>
+            </div>
+            <div className="text-xs text-blue-600 space-y-1">
+              <div>• Precios actuales de mercados mayoristas (Mercamadrid, Mercabarna)</div>
+              <div>• Datos de merma de fuentes profesionales de hostelería</div>
+              <div>• Información nutricional oficial (BEDCA, USDA, FAO)</div>
+              <div>• Recetas auténticas de chefs y libros especializados</div>
+              <div>• Temporadas verificadas en calendarios agrícolas oficiales</div>
+            </div>
+            <div className="mt-2 p-2 bg-green-50 rounded text-xs text-green-700">
+              <strong>FLUJO:</strong> Investiga datos reales → Guarda en DB → Genera imágenes con Flux 1.1 Pro
             </div>
           </div>
         )}

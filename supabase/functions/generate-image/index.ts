@@ -1,13 +1,71 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+);
+
+const generateSEOFileName = (ingredientName: string) => {
+  const cleanName = ingredientName
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove accents
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special chars
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Remove multiple hyphens
+    .trim();
+  
+  const timestamp = Date.now();
+  return `${cleanName}-${timestamp}.webp`;
+};
+
+const downloadAndUploadImage = async (imageUrl: string, fileName: string) => {
+  console.log('📥 Downloading image from Replicate:', imageUrl.substring(0, 50) + '...');
+  
+  // Download image from Replicate
+  const response = await fetch(imageUrl);
+  if (!response.ok) {
+    throw new Error(`Failed to download image: ${response.statusText}`);
+  }
+  
+  const imageBlob = await response.blob();
+  const imageBuffer = await imageBlob.arrayBuffer();
+  
+  console.log('📤 Uploading image to Supabase Storage:', fileName);
+  
+  // Upload to Supabase Storage
+  const { data, error } = await supabase.storage
+    .from('ingredient-images')
+    .upload(fileName, imageBuffer, {
+      contentType: 'image/webp',
+      cacheControl: '31536000', // 1 year cache
+      upsert: true
+    });
+
+  if (error) {
+    console.error('❌ Storage upload error:', error);
+    throw new Error(`Storage upload failed: ${error.message}`);
+  }
+
+  console.log('✅ Image uploaded successfully to storage:', data?.path);
+
+  // Get public URL
+  const { data: publicUrlData } = supabase.storage
+    .from('ingredient-images')
+    .getPublicUrl(fileName);
+
+  return publicUrlData.publicUrl;
+};
+
 serve(async (req) => {
-  console.log('🖼️ === GENERATE-IMAGE FUNCTION START ===');
+  console.log('🖼️ === ENHANCED GENERATE-IMAGE WITH STORAGE ===');
   
   if (req.method === 'OPTIONS') {
     console.log('⚡ Handling CORS preflight');
@@ -106,18 +164,46 @@ serve(async (req) => {
     console.log('🏁 Final result:', { status: result.status, hasOutput: !!result.output });
 
     if (result.status === 'succeeded' && result.output) {
-      const imageUrl = Array.isArray(result.output) ? result.output[0] : result.output;
+      const replicateImageUrl = Array.isArray(result.output) ? result.output[0] : result.output;
       
-      console.log('✅ Image generated successfully:', imageUrl.substring(0, 50) + '...');
+      console.log('✅ Image generated successfully from Replicate:', replicateImageUrl.substring(0, 50) + '...');
       
-      return new Response(JSON.stringify({ 
-        success: true,
-        imageUrl: imageUrl,
-        prompt: prompt,
-        model: "flux-1.1-pro"
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      // Generate SEO-friendly filename
+      const seoFileName = generateSEOFileName(finalIngredientName);
+      console.log('📝 Generated SEO filename:', seoFileName);
+      
+      try {
+        // Download from Replicate and upload to Supabase Storage
+        const supabaseImageUrl = await downloadAndUploadImage(replicateImageUrl, seoFileName);
+        
+        console.log('🎉 Image successfully migrated to Supabase Storage');
+        
+        return new Response(JSON.stringify({ 
+          success: true,
+          imageUrl: supabaseImageUrl, // Return Supabase URL instead of Replicate URL
+          originalUrl: replicateImageUrl, // Keep original for backup
+          storagePath: seoFileName,
+          prompt: prompt,
+          model: "flux-1.1-pro"
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+        
+      } catch (storageError) {
+        console.error('❌ Storage migration failed, falling back to Replicate URL:', storageError);
+        
+        // Fallback: return original Replicate URL if storage fails
+        return new Response(JSON.stringify({ 
+          success: true,
+          imageUrl: replicateImageUrl, // Fallback to Replicate URL
+          storageError: storageError.message,
+          prompt: prompt,
+          model: "flux-1.1-pro"
+        }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      
     } else if (attempts >= maxAttempts) {
       console.error('❌ Timeout: Generation took too long');
       throw new Error('Timeout: Image generation took too long');

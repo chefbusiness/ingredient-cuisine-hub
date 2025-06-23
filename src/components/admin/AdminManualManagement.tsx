@@ -11,9 +11,10 @@ import DataRecoveryPanel from "./DataRecoveryPanel";
 import BatchOperations from "./BatchOperations";
 import BatchImageResearch from "./BatchImageResearch";
 import ImageCleanupTools from "./ImageCleanupTools";
+import ImageMigrationPanel from "./ImageMigrationPanel";
 import { Ingredient } from "@/hooks/useIngredients";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Database, Edit, RefreshCw, Image, Trash2 } from "lucide-react";
+import { Database, Edit, RefreshCw, Image, Trash2, Download } from "lucide-react";
 
 const AdminManualManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -41,10 +42,14 @@ const AdminManualManagement = () => {
   return (
     <div className="space-y-6">
       <Tabs defaultValue="management" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="management" className="flex items-center gap-2">
             <Edit className="h-4 w-4" />
             Gestión de Ingredientes
+          </TabsTrigger>
+          <TabsTrigger value="migration" className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Migración Storage
           </TabsTrigger>
           <TabsTrigger value="images" className="flex items-center gap-2">
             <Image className="h-4 w-4" />
@@ -93,6 +98,10 @@ const AdminManualManagement = () => {
               />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="migration" className="space-y-6">
+          <ImageMigrationPanel />
         </TabsContent>
 
         <TabsContent value="images" className="space-y-6">

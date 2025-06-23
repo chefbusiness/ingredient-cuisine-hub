@@ -11,6 +11,7 @@ import DataRecoveryPanel from "./DataRecoveryPanel";
 import BatchOperations from "./BatchOperations";
 import BatchImageResearch from "./BatchImageResearch";
 import ImageCleanupTools from "./ImageCleanupTools";
+import CleanupDuplicates from "./CleanupDuplicates";
 import { Ingredient } from "@/hooks/useIngredients";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Database, Edit, RefreshCw, Image, Trash2 } from "lucide-react";
@@ -65,6 +66,8 @@ const AdminManualManagement = () => {
         </TabsList>
 
         <TabsContent value="management" className="space-y-6">
+          <CleanupDuplicates />
+          
           <Card>
             <CardHeader>
               <CardTitle>Gestión Manual de Ingredientes</CardTitle>

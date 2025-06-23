@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -28,6 +29,7 @@ export interface Ingredient {
   ingredient_prices?: Array<{
     price: number;
     unit: string;
+    season_variation?: string;
     countries?: {
       name: string;
       currency_symbol: string;

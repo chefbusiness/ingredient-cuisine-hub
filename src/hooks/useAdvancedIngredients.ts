@@ -2,7 +2,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Ingredient } from "./useIngredients";
-import { createAccentInsensitiveSearchQuery } from "@/utils/textNormalization";
+import { applyAccentInsensitiveSearch } from "@/utils/textNormalization";
 
 interface AdvancedFilters {
   searchQuery: string;
@@ -33,10 +33,10 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
           )
         `);
 
-      // Aplicar filtro de búsqueda con soporte para acentos
+      // Aplicar filtro de búsqueda con soporte para acentos usando la nueva función
       if (filters.searchQuery) {
-        const searchQuery = createAccentInsensitiveSearchQuery(filters.searchQuery);
-        query = query.or(searchQuery);
+        console.log('Aplicando búsqueda para:', filters.searchQuery);
+        query = applyAccentInsensitiveSearch(query, filters.searchQuery);
       }
 
       // Aplicar filtro de categoría

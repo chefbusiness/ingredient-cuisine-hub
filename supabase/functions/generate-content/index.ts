@@ -65,6 +65,8 @@ serve(async (req) => {
 
   try {
     console.log('🔄 === GENERACIÓN DE CONTENIDO CON PERPLEXITY ===');
+    console.log('📊 Request method:', req.method);
+    console.log('📊 Request headers:', Object.fromEntries(req.headers));
     
     // Security check: Verify super admin access
     const authHeader = req.headers.get('authorization');
@@ -88,10 +90,21 @@ serve(async (req) => {
 
     console.log('✅ Authorization successful, processing request...');
 
-    const { type, count, category, additionalPrompt, ingredientsList } = await req.json();
+    // Parse request body
+    const requestBody = await req.json();
+    console.log('📥 Request body received:', {
+      type: requestBody.type,
+      count: requestBody.count,
+      category: requestBody.category,
+      hasIngredientsList: !!requestBody.ingredientsList,
+      ingredientsListLength: requestBody.ingredientsList?.length || 0
+    });
+
+    const { type, count, category, additionalPrompt, ingredientsList } = requestBody;
 
     // Input validation and sanitization
     if (!type || !['ingredient', 'category'].includes(type)) {
+      console.log('❌ Invalid type parameter:', type);
       return new Response(JSON.stringify({ 
         error: 'Invalid type parameter. Must be "ingredient" or "category"',
         code: 'INVALID_TYPE'
@@ -120,7 +133,7 @@ serve(async (req) => {
       
       console.log(`📝 Manual ingredient list provided: ${sanitizedIngredientsList.length} ingredients`);
       sanitizedIngredientsList.forEach((ingredient, idx) => {
-        console.log(`   ${idx + 1}. ${ingredient}`);
+        console.log(`   ${idx + 1}. "${ingredient}" (length: ${ingredient.length})`);
       });
     }
 
@@ -132,14 +145,17 @@ serve(async (req) => {
 
     let generatedData;
     if (type === 'ingredient') {
+      console.log('🚀 Starting ingredient data generation...');
       generatedData = await generateIngredientData(
         validatedCount, 
         sanitizedCategory, 
         sanitizedPrompt,
         sanitizedIngredientsList
       );
+      console.log('🏁 Ingredient data generation completed, results:', generatedData.length);
     } else {
       // Category generation logic would go here
+      console.log('📂 Category generation not implemented yet');
       generatedData = [];
     }
 
@@ -165,19 +181,33 @@ serve(async (req) => {
       // Don't fail the request if logging fails
     }
 
-    return new Response(JSON.stringify({ 
+    const response = { 
       success: true,
       data: generatedData,
       generated_count: generatedData.length,
       ai_provider: 'perplexity_sonar',
       research_quality: 'high',
       generation_mode: generationMode
-    }), {
+    };
+
+    console.log('📤 Sending response:', {
+      success: response.success,
+      generated_count: response.generated_count,
+      generation_mode: response.generation_mode
+    });
+
+    return new Response(JSON.stringify(response), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error) {
     console.error('❌ Error in generate-content with Perplexity:', error);
+    console.error('📊 Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack?.substring(0, 500)
+    });
+    
     return new Response(JSON.stringify({ 
       error: error.message || 'Internal server error',
       code: 'INTERNAL_ERROR',

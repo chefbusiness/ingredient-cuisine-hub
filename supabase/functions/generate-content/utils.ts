@@ -10,6 +10,7 @@ export async function generateIngredientData(
   ingredientsList?: string[]
 ): Promise<any[]> {
   console.log('🔄 === STARTING INGREDIENT DATA GENERATION ===');
+  console.log('📋 Input parameters:', { count, category, ingredientsList: ingredientsList?.length || 0 });
   
   const perplexity = new PerplexityClient();
   
@@ -41,9 +42,16 @@ export async function generateIngredientData(
     if (ingredientsList && ingredientsList.length > 0) {
       // MANUAL MODE: Generate specific ingredients from the list
       console.log('🎯 === MANUAL MODE: PROCESSING SPECIFIC INGREDIENTS ===');
+      console.log('📝 Ingredients to process:', ingredientsList);
       
       for (let i = 0; i < ingredientsList.length; i++) {
-        const specificIngredient = ingredientsList[i];
+        const specificIngredient = ingredientsList[i].trim();
+        
+        if (!specificIngredient) {
+          console.log(`⚠️ Skipping empty ingredient at index ${i}`);
+          continue;
+        }
+        
         console.log(`🔍 Processing ingredient ${i + 1}/${ingredientsList.length}: "${specificIngredient}"`);
         
         try {
@@ -55,10 +63,18 @@ export async function generateIngredientData(
             ingredient: specificIngredient
           };
 
+          console.log(`📋 Generating prompt for: ${specificIngredient}`);
           const prompt = generatePrompt(params, existingIngredientsData);
           
           console.log(`📡 Sending request to Perplexity for: ${specificIngredient}`);
+          console.log(`🎯 Prompt length: ${prompt.length} characters`);
+          
           const response = await perplexity.generateContent(prompt);
+          console.log(`📦 Perplexity response for ${specificIngredient}:`, {
+            success: !!response,
+            length: response?.length || 0,
+            hasData: response && response.length > 0
+          });
           
           if (response && response.length > 0) {
             // Ensure the generated ingredient matches the requested one
@@ -66,21 +82,30 @@ export async function generateIngredientData(
             generatedIngredient.requested_ingredient = specificIngredient;
             generatedIngredients.push(generatedIngredient);
             console.log(`✅ Successfully generated data for: ${specificIngredient}`);
+            console.log(`📊 Generated ingredient name: ${generatedIngredient.name || 'No name'}`);
           } else {
             console.log(`⚠️ No data generated for: ${specificIngredient}`);
+            console.log(`📊 Empty response or invalid format from Perplexity`);
           }
           
-          // Small delay to respect API limits
+          // Small delay to respect API limits and avoid overwhelming Perplexity
           if (i < ingredientsList.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            console.log(`⏸️ Waiting 2 seconds before next ingredient...`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
           }
+          
         } catch (error) {
           console.error(`❌ Error generating data for "${specificIngredient}":`, error);
+          console.error(`📊 Error details:`, {
+            name: error.name,
+            message: error.message,
+            stack: error.stack?.substring(0, 200)
+          });
           // Continue with next ingredient instead of failing completely
         }
       }
       
-      console.log(`🎯 Manual mode completed: ${generatedIngredients.length}/${ingredientsList.length} ingredients processed`);
+      console.log(`🎯 Manual mode completed: ${generatedIngredients.length}/${ingredientsList.length} ingredients processed successfully`);
       
     } else {
       // AUTOMATIC MODE: Let Perplexity decide ingredients
@@ -108,12 +133,25 @@ export async function generateIngredientData(
 
     console.log(`🎉 === GENERATION COMPLETED ===`);
     console.log(`📊 Total ingredients generated: ${generatedIngredients.length}`);
-    console.log(`🔧 Mode: ${ingredientsList ? 'Manual (Specific List)' : 'Automatic (Perplexity Choice)'}`);
+    console.log(`🔧 Mode: ${ingredientsList && ingredientsList.length > 0 ? 'Manual (Specific List)' : 'Automatic (Perplexity Choice)'}`);
+    
+    // Log generated ingredient names for verification
+    if (generatedIngredients.length > 0) {
+      console.log(`📝 Generated ingredient names:`);
+      generatedIngredients.forEach((ing, idx) => {
+        console.log(`  ${idx + 1}. ${ing.name || 'No name'} (requested: ${ing.requested_ingredient || 'N/A'})`);
+      });
+    }
     
     return generatedIngredients;
 
   } catch (error) {
-    console.error('❌ Error in generateIngredientData:', error);
+    console.error('❌ Critical error in generateIngredientData:', error);
+    console.error('📊 Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack?.substring(0, 500)
+    });
     throw new Error(`Error generating ingredient data: ${error.message}`);
   }
 }

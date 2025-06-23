@@ -44,6 +44,12 @@ const DirectorioContent = ({
   // Detectar si se está buscando (hay debounce activo)
   const isSearching = isLoading;
 
+  // CONDICIÓN MEJORADA: Solo mostrar el botón cuando NO hay ingredientes EN TOTAL
+  // No solo cuando los resultados filtrados están vacíos
+  const shouldShowSeedButton = !isLoading && 
+    (!analytics || analytics.totalIngredients === 0) && 
+    formattedIngredients.length === 0;
+
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="text-center mb-8">
@@ -55,7 +61,7 @@ const DirectorioContent = ({
           mermas, rendimientos y usos profesionales.
         </p>
         
-        {formattedIngredients.length === 0 && !isLoading && (
+        {shouldShowSeedButton && (
           <div className="mt-6">
             <Button onClick={handleSeedData} className="btn-clean">
               <Database className="mr-2 h-4 w-4" />

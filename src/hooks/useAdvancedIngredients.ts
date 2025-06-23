@@ -33,8 +33,11 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
           )
         `);
 
+      const hasSearchQuery = filters.searchQuery && filters.searchQuery.trim();
+      const hasSpecificCategory = filters.category && filters.category !== 'todos';
+
       // PASO 1: Aplicar filtro de búsqueda PRIMERO (esto es lo más importante)
-      if (filters.searchQuery && filters.searchQuery.trim()) {
+      if (hasSearchQuery) {
         console.log('🔍 APLICANDO BÚSQUEDA PARA:', filters.searchQuery);
         
         try {
@@ -47,10 +50,13 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
         }
       }
 
-      // PASO 2: Aplicar filtro de categoría
-      if (filters.category && filters.category !== 'todos') {
+      // PASO 2: Aplicar filtro de categoría SOLO si NO hay búsqueda de texto
+      // Esto permite que la búsqueda "azafran" encuentre resultados aunque esté en /directorio?categoria=hierbas
+      if (hasSpecificCategory && !hasSearchQuery) {
         console.log('📂 Aplicando filtro de categoría:', filters.category);
         query = query.eq('categories.name', filters.category);
+      } else if (hasSearchQuery) {
+        console.log('🔍 BÚSQUEDA ACTIVA: Ignorando filtro de categoría para permitir resultados amplios');
       }
 
       // PASO 3: Aplicar filtros de rango (popularidad)
@@ -78,10 +84,6 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
         } else if (filters.sortBy === 'categoria') {
           query = query.order('categories.name', { ascending: true });
         }
-        // REMOVER ordenamiento por precio para evitar errores SQL
-        // else if (filters.sortBy === 'precio') {
-        //   query = query.order('ingredient_prices.price', { ascending: true });
-        // }
       } catch (error) {
         console.warn('⚠️ Error en ordenamiento, usando orden por defecto:', error);
         query = query.order('name', { ascending: true });
@@ -98,7 +100,7 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
       console.log(`✅ Encontrados ${data?.length || 0} ingredientes con filtros avanzados`);
       
       // LOGGING ESPECÍFICO para búsquedas
-      if (filters.searchQuery && filters.searchQuery.trim()) {
+      if (hasSearchQuery) {
         console.log('🔍 RESULTADOS DE BÚSQUEDA DETALLADOS:');
         console.log('Total de ingredientes encontrados:', data?.length);
         console.log('Nombres de ingredientes encontrados:', data?.map(i => i.name));

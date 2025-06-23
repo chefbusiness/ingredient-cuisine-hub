@@ -9,11 +9,22 @@ import TechnicalTab from "./tabs/TechnicalTab";
 interface IngredientTabsProps {
   ingredient: Ingredient;
   realImagesCount: number;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
-const IngredientTabs = ({ ingredient, realImagesCount }: IngredientTabsProps) => {
+const IngredientTabs = ({ 
+  ingredient, 
+  realImagesCount, 
+  activeTab = "nombres",
+  onTabChange 
+}: IngredientTabsProps) => {
   return (
-    <Tabs defaultValue="nombres" className="w-full">
+    <Tabs 
+      value={activeTab} 
+      onValueChange={onTabChange}
+      className="w-full"
+    >
       <TabsList className="grid w-full grid-cols-4">
         <TabsTrigger value="nombres">Nombres</TabsTrigger>
         <TabsTrigger value="usos">Usos</TabsTrigger>

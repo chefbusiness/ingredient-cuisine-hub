@@ -1,5 +1,5 @@
 
-import { Heart, Upload } from "lucide-react";
+import { Heart, Upload, DollarSign, ChefHat } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -11,13 +11,21 @@ interface IngredientSidebarProps {
   primaryImage?: string;
   onGenerateImage: () => void;
   isGeneratingImage: boolean;
+  onToggleFavorite: () => void;
+  isFavorite: boolean;
+  isToggleFavoriteLoading: boolean;
+  onNavigateToTab: (tabName: string) => void;
 }
 
 const IngredientSidebar = ({ 
   ingredient, 
   primaryImage, 
   onGenerateImage, 
-  isGeneratingImage 
+  isGeneratingImage,
+  onToggleFavorite,
+  isFavorite,
+  isToggleFavoriteLoading,
+  onNavigateToTab
 }: IngredientSidebarProps) => {
   return (
     <div className="space-y-6">
@@ -27,16 +35,42 @@ const IngredientSidebar = ({
           <CardTitle className="text-lg">Acciones Rápidas</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <Button className="w-full bg-green-600 hover:bg-green-700">
-            <Heart className="h-4 w-4 mr-2" />
-            Añadir a Favoritos
+          <Button 
+            className={`w-full transition-colors ${
+              isFavorite 
+                ? 'bg-red-600 hover:bg-red-700' 
+                : 'bg-green-600 hover:bg-green-700'
+            }`}
+            onClick={onToggleFavorite}
+            disabled={isToggleFavoriteLoading}
+          >
+            <Heart className={`h-4 w-4 mr-2 ${isFavorite ? 'fill-current' : ''}`} />
+            {isToggleFavoriteLoading 
+              ? 'Actualizando...' 
+              : isFavorite 
+                ? 'Eliminar de Favoritos' 
+                : 'Añadir a Favoritos'
+            }
           </Button>
-          <Button variant="outline" className="w-full">
+          
+          <Button 
+            variant="outline" 
+            className="w-full"
+            onClick={() => onNavigateToTab('precios')}
+          >
+            <DollarSign className="h-4 w-4 mr-2" />
             Comparar Precios
           </Button>
-          <Button variant="outline" className="w-full">
+          
+          <Button 
+            variant="outline" 
+            className="w-full"
+            onClick={() => onNavigateToTab('usos')}
+          >
+            <ChefHat className="h-4 w-4 mr-2" />
             Ver Recetas
           </Button>
+          
           {!primaryImage && (
             <Button 
               variant="outline" 

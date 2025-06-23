@@ -10,6 +10,7 @@ import { useIngredientById } from "@/hooks/useIngredients";
 import { useRealImages } from "@/hooks/useRealImages";
 import { useGenerateImage } from "@/hooks/useGenerateImage";
 import { usePageViewLimit } from "@/hooks/usePageViewLimit";
+import { useFavorites } from "@/hooks/useFavorites";
 import { PageLimitBanner } from "@/components/auth/PageLimitBanner";
 import { AuthModal } from "@/components/auth/AuthModal";
 import IngredientMainCard from "@/components/ingredient-detail/IngredientMainCard";
@@ -23,10 +24,12 @@ import { generateIngredientSchema, generateBreadcrumbSchema } from "@/utils/seoS
 const IngredienteDetalle = () => {
   const { id } = useParams();
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [activeTab, setActiveTab] = useState("nombres");
   const { data: ingredient, isLoading, error } = useIngredientById(id || "");
   const { data: realImages = [] } = useRealImages(id || "");
   const generateImage = useGenerateImage();
   const { hasReachedLimit, recordPageView, getRemainingViews } = usePageViewLimit();
+  const { toggleFavorite, isFavorite, loading: favoritesLoading } = useFavorites();
 
   // Registrar vista de página cuando se carga el ingrediente
   useEffect(() => {
@@ -49,6 +52,20 @@ const IngredienteDetalle = () => {
       description: ingredient.description,
       ingredientId: ingredient.id
     });
+  };
+
+  const handleNavigateToTab = (tabName: string) => {
+    setActiveTab(tabName);
+    // Scroll suavemente a las tabs
+    const tabsElement = document.querySelector('[role="tablist"]');
+    if (tabsElement) {
+      tabsElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!ingredient) return;
+    await toggleFavorite(ingredient.id);
   };
 
   const remainingViews = getRemainingViews();
@@ -230,6 +247,8 @@ const IngredienteDetalle = () => {
               <IngredientTabs 
                 ingredient={ingredient}
                 realImagesCount={realImages.length}
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
               />
             </div>
 
@@ -239,6 +258,10 @@ const IngredienteDetalle = () => {
               primaryImage={primaryImage}
               onGenerateImage={handleGenerateImage}
               isGeneratingImage={generateImage.isPending}
+              onToggleFavorite={handleToggleFavorite}
+              isFavorite={isFavorite(ingredient?.id || "")}
+              isToggleFavoriteLoading={favoritesLoading}
+              onNavigateToTab={handleNavigateToTab}
             />
           </div>
 

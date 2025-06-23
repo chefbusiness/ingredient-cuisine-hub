@@ -1,3 +1,4 @@
+
 import UnifiedHeader from "@/components/UnifiedHeader";
 import DirectorioContent from "@/components/DirectorioContent";
 import DirectorioLoadingState from "@/components/DirectorioLoadingState";
@@ -28,8 +29,8 @@ const Directorio = () => {
   // Generate dynamic SEO data based on filters and results
   const generateSEOData = () => {
     const ingredientCount = formattedIngredients?.length || 0;
-    const categoryFilter = filters.category ? ` de ${filters.category}` : '';
-    const searchFilter = filters.search ? ` "${filters.search}"` : '';
+    const categoryFilter = filters.category !== 'todos' ? ` de ${filters.category}` : '';
+    const searchFilter = filters.searchQuery ? ` "${filters.searchQuery}"` : '';
     
     const title = `Directorio de Ingredientes${categoryFilter}${searchFilter} | ${ingredientCount} resultados`;
     const description = `Explora ${ingredientCount} ingredientes${categoryFilter} en nuestro directorio profesional. Información detallada sobre precios, mermas, rendimientos y usos culinarios.`;

@@ -3,6 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BarChart3, Cloud, Globe, TrendingUp, Truck } from "lucide-react";
+import { useCountries } from "@/hooks/useCountries";
 
 interface ResearchTypeSelectorProps {
   researchType: string;
@@ -21,6 +22,8 @@ const ResearchTypeSelector = ({
   onIngredientChange,
   onRegionChange
 }: ResearchTypeSelectorProps) => {
+  const { data: countries = [] } = useCountries();
+
   const researchOptions = [
     {
       value: 'market_research',
@@ -88,20 +91,17 @@ const ResearchTypeSelector = ({
         </div>
 
         <div>
-          <Label htmlFor="region">Región</Label>
+          <Label htmlFor="region">País</Label>
           <Select value={region} onValueChange={onRegionChange}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="España">España</SelectItem>
-              <SelectItem value="Francia">Francia</SelectItem>
-              <SelectItem value="Italia">Italia</SelectItem>
-              <SelectItem value="México">México</SelectItem>
-              <SelectItem value="Argentina">Argentina</SelectItem>
-              <SelectItem value="Colombia">Colombia</SelectItem>
-              <SelectItem value="Perú">Perú</SelectItem>
-              <SelectItem value="Chile">Chile</SelectItem>
+              {countries.map((country) => (
+                <SelectItem key={country.id} value={country.name}>
+                  {country.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>

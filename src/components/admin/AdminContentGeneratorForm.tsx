@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Loader, Wand2, Zap, Globe, Search, List, Brain, AlertTriangle } from "lucide-react";
 import { useGenerateContentWithProgress } from "@/hooks/useGenerateContentWithProgress";
 import { useCategories } from "@/hooks/useCategories";
+import { useCountries } from "@/hooks/useCountries";
 import ContentGenerationProgress from "./ContentGenerationProgress";
 
 interface AdminContentGeneratorFormProps {
@@ -26,6 +27,7 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
   const [ingredientsList, setIngredientsList] = useState('');
 
   const { data: categories = [] } = useCategories();
+  const { data: countries = [] } = useCountries();
   const { generateContent, isLoading, progress } = useGenerateContentWithProgress();
 
   // Parse and validate ingredient list
@@ -241,19 +243,17 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
           )}
 
           <div>
-            <Label htmlFor="region">Región</Label>
+            <Label htmlFor="region">País</Label>
             <Select value={region} onValueChange={setRegion}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="España">España</SelectItem>
-                <SelectItem value="Francia">Francia</SelectItem>
-                <SelectItem value="Italia">Italia</SelectItem>
-                <SelectItem value="México">México</SelectItem>
-                <SelectItem value="Argentina">Argentina</SelectItem>
-                <SelectItem value="Colombia">Colombia</SelectItem>
-                <SelectItem value="Perú">Perú</SelectItem>
+                {countries.map((country) => (
+                  <SelectItem key={country.id} value={country.name}>
+                    {country.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -316,7 +316,7 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
             {isManualMode ? (
               <>
                 <div>• Investigación individual de cada ingrediente de tu lista</div>
-                <div>• Datos específicos para cada región seleccionada</div>
+                <div>• Datos específicos para cada país seleccionado</div>
                 <div>• Misma calidad de datos que el modo automático</div>
                 <div>• Precios actuales de mercados mayoristas por ingrediente</div>
               </>

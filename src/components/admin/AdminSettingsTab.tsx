@@ -117,7 +117,7 @@ const AdminSettingsTab = () => {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium">Región principal</label>
+              <label className="text-sm font-medium">País principal</label>
               <div className="mt-1">
                 <Badge variant="outline">España</Badge>
               </div>

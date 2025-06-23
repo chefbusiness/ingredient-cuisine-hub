@@ -11,90 +11,84 @@ export const normalizeText = (text: string): string => {
 };
 
 /**
- * Crea todas las variaciones posibles de un término con y sin acentos
- * Esto asegura que "azafran" encuentre "Azafrán" y viceversa
+ * NUEVA IMPLEMENTACIÓN SIMPLIFICADA: Solo variaciones esenciales
+ * Crea máximo 4-6 variaciones por término para evitar saturar la query
  */
-const createAllAccentVariations = (term: string): string[] => {
+const createEssentialAccentVariations = (term: string): string[] => {
   const variations = new Set<string>();
+  const cleanTerm = term.trim().toLowerCase();
   
   // Agregar el término original
-  variations.add(term.toLowerCase());
+  variations.add(cleanTerm);
   
   // Agregar versión normalizada (sin acentos)
-  const normalized = normalizeText(term);
+  const normalized = normalizeText(cleanTerm);
   variations.add(normalized);
   
-  // Mapeo completo de caracteres con acentos
-  const accentMap: { [key: string]: string[] } = {
-    'a': ['a', 'á', 'à', 'ä', 'â', 'ã', 'å'],
-    'e': ['e', 'é', 'è', 'ë', 'ê'],
-    'i': ['i', 'í', 'ì', 'ï', 'î'],
-    'o': ['o', 'ó', 'ò', 'ö', 'ô', 'õ'],
-    'u': ['u', 'ú', 'ù', 'ü', 'û'],
-    'n': ['n', 'ñ'],
-    'c': ['c', 'ç']
-  };
-  
-  // Para cada carácter del término, crear variaciones con acentos
-  const createVariationsRecursive = (currentTerm: string, position: number): void => {
-    if (position >= currentTerm.length) {
-      variations.add(currentTerm);
-      return;
-    }
+  // Solo para términos cortos, crear variaciones comunes en español
+  if (cleanTerm.length <= 15) {
+    // Mapeo SIMPLIFICADO solo para acentos comunes en español
+    const simpleReplacements = [
+      { from: 'a', to: 'á' },
+      { from: 'e', to: 'é' },
+      { from: 'i', to: 'í' },
+      { from: 'o', to: 'ó' },
+      { from: 'u', to: 'ú' },
+      { from: 'n', to: 'ñ' }
+    ];
     
-    const char = currentTerm[position].toLowerCase();
-    const possibleChars = accentMap[char] || [char];
-    
-    for (const possibleChar of possibleChars) {
-      const newTerm = currentTerm.substring(0, position) + possibleChar + currentTerm.substring(position + 1);
-      createVariationsRecursive(newTerm, position + 1);
-    }
-  };
-  
-  // Solo crear variaciones para términos cortos para evitar explosión combinatoria
-  if (term.length <= 10) {
-    createVariationsRecursive(term.toLowerCase(), 0);
+    // Para cada reemplazo, crear UNA variación
+    simpleReplacements.forEach(replacement => {
+      if (cleanTerm.includes(replacement.from)) {
+        const variant = cleanTerm.replace(new RegExp(replacement.from, 'g'), replacement.to);
+        variations.add(variant);
+      }
+      if (normalized.includes(replacement.from)) {
+        const variant = normalized.replace(new RegExp(replacement.from, 'g'), replacement.to);
+        variations.add(variant);
+      }
+    });
   }
   
+  console.log(`🔤 Variaciones esenciales para "${term}":`, Array.from(variations));
   return Array.from(variations);
 };
 
 /**
- * NUEVA IMPLEMENTACIÓN: Búsqueda insensible a acentos que REALMENTE funciona
- * Aplica múltiples condiciones de búsqueda usando textSearch de Supabase
+ * BÚSQUEDA SIMPLIFICADA Y ROBUSTA - Sin textSearch que falla
+ * Usa solo ilike con OR para múltiples variaciones
  */
 export const applyAccentInsensitiveSearch = (query: any, searchTerm: string) => {
   const cleanTerm = searchTerm.trim();
   if (!cleanTerm) return query;
 
-  console.log('🔍 NUEVA BÚSQUEDA SIN ACENTOS:', {
+  console.log('🔍 BÚSQUEDA SIMPLIFICADA SIN ACENTOS:', {
     termino_original: cleanTerm
   });
   
-  // Crear todas las variaciones del término
-  const variations = createAllAccentVariations(cleanTerm);
-  console.log('🔤 Variaciones creadas:', variations);
+  // Crear solo variaciones esenciales
+  const variations = createEssentialAccentVariations(cleanTerm);
+  console.log('🔤 Total de variaciones:', variations.length);
   
-  // MÉTODO SIMPLIFICADO: usar textSearch que es más robusto
-  // En lugar de múltiples ilike, usamos una búsqueda de texto completo
+  if (variations.length === 0) {
+    console.warn('⚠️ No se pudieron crear variaciones, usando búsqueda simple');
+    return query.ilike('name', `%${cleanTerm}%`);
+  }
+  
+  // MÉTODO SIMPLE Y ROBUSTO: Usar OR con ilike para cada variación
+  // Buscar en name, name_en y description
+  const orConditions = variations.map(variation => 
+    `name.ilike.%${variation}%,name_en.ilike.%${variation}%,description.ilike.%${variation}%`
+  ).join(',');
+  
+  console.log('🔍 Condiciones OR creadas:', orConditions.length, 'caracteres');
+  
   try {
-    // Probar primero con textSearch
-    const searchQuery = variations.join(' | ');
-    console.log('🔍 Query de búsqueda de texto:', searchQuery);
-    
-    return query.textSearch('name', searchQuery, {
-      type: 'websearch',
-      config: 'spanish'
-    });
+    return query.or(orConditions);
   } catch (error) {
-    console.warn('⚠️ textSearch falló, usando método alternativo:', error);
-    
-    // FALLBACK: Usar OR con múltiples ilike de forma más simple
-    return query.or(
-      variations.map(variation => 
-        `name.ilike.%${variation}%,name_en.ilike.%${variation}%,description.ilike.%${variation}%`
-      ).join(',')
-    );
+    console.error('❌ Error en búsqueda con variaciones, usando fallback:', error);
+    // Fallback ultra-simple si todo falla
+    return query.ilike('name', `%${cleanTerm}%`);
   }
 };
 
@@ -102,7 +96,7 @@ export const applyAccentInsensitiveSearch = (query: any, searchTerm: string) => 
  * @deprecated - mantenido solo para compatibilidad
  */
 export const createAccentInsensitiveSearchQuery = (searchTerm: string) => {
-  const variations = createAllAccentVariations(searchTerm);
+  const variations = createEssentialAccentVariations(searchTerm);
   return variations.map(variation => 
     `name.ilike.%${variation}%,name_en.ilike.%${variation}%,description.ilike.%${variation}%`
   ).join(',');

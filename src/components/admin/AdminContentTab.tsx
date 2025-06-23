@@ -25,7 +25,7 @@ const AdminContentTab = ({ ingredientsCount, categoriesCount }: AdminContentTabP
             Generador de Contenido con IA
             <Badge className="bg-green-100 text-green-800 ml-2">
               <Zap className="h-3 w-3 mr-1" />
-              DeepSeek + Flux
+              Perplexity + Flux
             </Badge>
           </CardTitle>
         </CardHeader>

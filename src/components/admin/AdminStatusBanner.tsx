@@ -9,7 +9,7 @@ const AdminStatusBanner = () => {
         <div>
           <h3 className="font-semibold text-green-800">Sistema AI Activado</h3>
           <p className="text-sm text-green-700">
-            DeepSeek API y Replicate (Flux 1.1 Pro) están configurados y listos para generar contenido e imágenes de calidad profesional
+            Perplexity API y Replicate (Flux 1.1 Pro) están configurados y listos para generar contenido e imágenes de calidad profesional con datos reales de internet
           </p>
         </div>
       </div>

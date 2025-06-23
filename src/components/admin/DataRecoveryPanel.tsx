@@ -224,7 +224,7 @@ const DataRecoveryPanel = () => {
 
               <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
                 <p className="text-sm text-amber-800">
-                  <strong>Nota:</strong> La recuperación usa IA (DeepSeek) para generar datos faltantes. 
+                  <strong>Nota:</strong> La recuperación usa IA (Perplexity) para generar datos faltantes con información real de internet. 
                   El proceso puede tomar varios minutos dependiendo de la cantidad de ingredientes.
                 </p>
               </div>

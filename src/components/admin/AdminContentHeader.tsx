@@ -9,7 +9,7 @@ const AdminContentHeader = () => {
         <h2 className="text-2xl font-bold">Gestión de Contenido</h2>
         <Badge className="bg-green-100 text-green-800">
           <Zap className="h-3 w-3 mr-1" />
-          DeepSeek + Flux
+          Perplexity + Flux
         </Badge>
       </div>
       <p className="text-muted-foreground">

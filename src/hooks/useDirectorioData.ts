@@ -15,11 +15,19 @@ interface SearchFilters {
   country?: string;
 }
 
-export const useDirectorioData = (filters: SearchFilters) => {
+interface PaginationParams {
+  page: number;
+  limit: number;
+}
+
+export const useDirectorioData = (filters: SearchFilters, pagination: PaginationParams) => {
   // Usar hooks para obtener datos
-  const { data: ingredients = [], isLoading: isLoadingIngredients, error: ingredientsError } = useAdvancedIngredients(filters);
+  const { data: ingredientsResult, isLoading: isLoadingIngredients, error: ingredientsError } = useAdvancedIngredients(filters, pagination);
   const { data: categoriesData = [], isLoading: isLoadingCategories } = useCategories();
   const { data: analytics, isLoading: isLoadingAnalytics } = useIngredientAnalytics();
+
+  const ingredients = ingredientsResult?.data || [];
+  const totalCount = ingredientsResult?.count || 0;
 
   // Convertir categorías para el componente de filtros
   const categories = useMemo(() => {
@@ -62,6 +70,7 @@ export const useDirectorioData = (filters: SearchFilters) => {
     formattedIngredients,
     categories,
     analytics,
+    totalCount,
     isLoading: isLoadingIngredients || isLoadingCategories || isLoadingAnalytics,
     error: ingredientsError
   };

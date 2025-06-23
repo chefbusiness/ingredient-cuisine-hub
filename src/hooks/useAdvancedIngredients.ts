@@ -15,12 +15,18 @@ interface AdvancedFilters {
   country?: string;
 }
 
-export const useAdvancedIngredients = (filters: AdvancedFilters) => {
+interface PaginationParams {
+  page: number;
+  limit: number;
+}
+
+export const useAdvancedIngredients = (filters: AdvancedFilters, pagination: PaginationParams) => {
   return useQuery({
-    queryKey: ['advanced-ingredients', filters],
+    queryKey: ['advanced-ingredients', filters, pagination],
     queryFn: async () => {
-      console.log('=== BÚSQUEDA CON FILTRO DE PAÍS ===');
+      console.log('=== BÚSQUEDA CON FILTRO DE PAÍS Y PAGINACIÓN ===');
       console.log('Filtros:', filters);
+      console.log('Paginación:', pagination);
 
       let query = supabase
         .from('ingredients')
@@ -32,7 +38,7 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
             unit,
             countries!left(name, currency_symbol, code)
           )
-        `);
+        `, { count: 'exact' });
 
       const hasSearchQuery = filters.searchQuery && filters.searchQuery.trim();
       const hasSpecificCategory = filters.category && filters.category !== 'todos';
@@ -81,15 +87,20 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
         query = query.order('categories.name', { ascending: true });
       }
 
-      console.log('🚀 Ejecutando query con filtro de país...');
-      const { data, error } = await query;
+      // PASO 5: Aplicar paginación
+      const startIndex = (pagination.page - 1) * pagination.limit;
+      const endIndex = startIndex + pagination.limit - 1;
+      query = query.range(startIndex, endIndex);
+
+      console.log(`🚀 Ejecutando query con paginación (${startIndex}-${endIndex})...`);
+      const { data, error, count } = await query;
 
       if (error) {
         console.error('❌ Error en query final:', error);
         throw error;
       }
 
-      console.log(`✅ ÉXITO: ${data?.length || 0} ingredientes encontrados`);
+      console.log(`✅ ÉXITO: ${data?.length || 0} ingredientes encontrados de ${count || 0} total`);
       
       // NUEVO: Procesar precios según el país seleccionado
       const selectedCountry = filters.country || 'España';
@@ -127,7 +138,10 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
         return ingredient;
       }) || [];
 
-      return processedData as Ingredient[];
+      return {
+        data: processedData as Ingredient[],
+        count: count || 0
+      };
     },
   });
 };

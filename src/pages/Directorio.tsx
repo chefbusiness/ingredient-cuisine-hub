@@ -3,6 +3,7 @@ import UnifiedHeader from "@/components/UnifiedHeader";
 import DirectorioContent from "@/components/DirectorioContent";
 import DirectorioLoadingState from "@/components/DirectorioLoadingState";
 import DirectorioErrorState from "@/components/DirectorioErrorState";
+import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import StructuredData from "@/components/StructuredData";
 import { useDirectorioFilters } from "@/hooks/useDirectorioFilters";
@@ -13,18 +14,21 @@ const Directorio = () => {
   const {
     filters,
     viewMode,
+    pagination,
     handleFiltersChange,
     handleClearFilters,
-    handleViewModeChange
+    handleViewModeChange,
+    handlePageChange
   } = useDirectorioFilters();
 
   const {
     formattedIngredients,
     categories,
     analytics,
+    totalCount,
     isLoading,
     error
-  } = useDirectorioData(filters);
+  } = useDirectorioData(filters, pagination);
 
   // Generate dynamic SEO data based on filters and results
   const generateSEOData = () => {
@@ -61,22 +65,28 @@ const Directorio = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <SEOHead seoData={seoData} />
       <StructuredData data={breadcrumbSchema} id="breadcrumb-schema" />
       
       <UnifiedHeader />
-      <DirectorioContent
-        formattedIngredients={formattedIngredients}
-        categories={categories}
-        analytics={analytics}
-        viewMode={viewMode}
-        isLoading={isLoading}
-        onFiltersChange={handleFiltersChange}
-        onClearFilters={handleClearFilters}
-        onViewModeChange={handleViewModeChange}
-        currentFilters={filters}
-      />
+      <main className="flex-1">
+        <DirectorioContent
+          formattedIngredients={formattedIngredients}
+          categories={categories}
+          analytics={analytics}
+          viewMode={viewMode}
+          isLoading={isLoading}
+          onFiltersChange={handleFiltersChange}
+          onClearFilters={handleClearFilters}
+          onViewModeChange={handleViewModeChange}
+          currentFilters={filters}
+          pagination={pagination}
+          totalCount={totalCount}
+          onPageChange={handlePageChange}
+        />
+      </main>
+      <Footer />
     </div>
   );
 };

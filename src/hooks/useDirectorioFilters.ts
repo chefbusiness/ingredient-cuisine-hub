@@ -13,9 +13,18 @@ interface SearchFilters {
   country?: string;
 }
 
+interface PaginationState {
+  page: number;
+  limit: number;
+}
+
 export const useDirectorioFilters = () => {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [pagination, setPagination] = useState<PaginationState>({
+    page: 1,
+    limit: 12
+  });
   const [filters, setFilters] = useState<SearchFilters>({
     searchQuery: "",
     category: "todos",
@@ -24,13 +33,14 @@ export const useDirectorioFilters = () => {
     popularityRange: [0, 100],
     season: "",
     origin: "",
-    country: "España" // Por defecto España
+    country: "España"
   });
 
   // Inicializar búsqueda y filtros desde URL
   useEffect(() => {
     const searchFromUrl = searchParams.get('search');
     const categoryFromUrl = searchParams.get('categoria');
+    const pageFromUrl = searchParams.get('page');
     
     if (searchFromUrl || categoryFromUrl) {
       setFilters(prev => ({
@@ -39,6 +49,16 @@ export const useDirectorioFilters = () => {
         category: categoryFromUrl || "todos"
       }));
     }
+
+    if (pageFromUrl) {
+      const pageNum = parseInt(pageFromUrl, 10);
+      if (pageNum > 0) {
+        setPagination(prev => ({
+          ...prev,
+          page: pageNum
+        }));
+      }
+    }
   }, [searchParams]);
 
   const handleFiltersChange = (newFilters: SearchFilters) => {
@@ -46,6 +66,23 @@ export const useDirectorioFilters = () => {
     const hasChanged = JSON.stringify(filters) !== JSON.stringify(newFilters);
     if (hasChanged) {
       setFilters(newFilters);
+      // Reset pagination when filters change
+      setPagination(prev => ({ ...prev, page: 1 }));
+      
+      // Update URL params
+      const newSearchParams = new URLSearchParams(searchParams);
+      if (newFilters.searchQuery) {
+        newSearchParams.set('search', newFilters.searchQuery);
+      } else {
+        newSearchParams.delete('search');
+      }
+      if (newFilters.category !== 'todos') {
+        newSearchParams.set('categoria', newFilters.category);
+      } else {
+        newSearchParams.delete('categoria');
+      }
+      newSearchParams.delete('page'); // Reset page when filters change
+      setSearchParams(newSearchParams);
     }
   };
 
@@ -60,17 +97,39 @@ export const useDirectorioFilters = () => {
       origin: "",
       country: "España"
     });
+    setPagination(prev => ({ ...prev, page: 1 }));
+    
+    // Clear URL params
+    setSearchParams({});
   };
 
   const handleViewModeChange = (mode: "grid" | "list") => {
     setViewMode(mode);
   };
 
+  const handlePageChange = (newPage: number) => {
+    setPagination(prev => ({ ...prev, page: newPage }));
+    
+    // Update URL params
+    const newSearchParams = new URLSearchParams(searchParams);
+    if (newPage > 1) {
+      newSearchParams.set('page', newPage.toString());
+    } else {
+      newSearchParams.delete('page');
+    }
+    setSearchParams(newSearchParams);
+
+    // Scroll to top when changing page
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return {
     filters,
     viewMode,
+    pagination,
     handleFiltersChange,
     handleClearFilters,
-    handleViewModeChange
+    handleViewModeChange,
+    handlePageChange
   };
 };

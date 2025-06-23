@@ -5,6 +5,7 @@ import DirectorioResults from "@/components/DirectorioResults";
 import DirectorioGrid from "@/components/DirectorioGrid";
 import DirectorioList from "@/components/DirectorioList";
 import DirectorioEmpty from "@/components/DirectorioEmpty";
+import DirectorioPagination from "@/components/DirectorioPagination";
 import { Button } from "@/components/ui/button";
 import { Database } from "lucide-react";
 import { seedIngredients } from "@/utils/seedData";
@@ -19,6 +20,9 @@ interface DirectorioContentProps {
   onClearFilters: () => void;
   onViewModeChange: (mode: "grid" | "list") => void;
   currentFilters?: any;
+  pagination: { page: number; limit: number };
+  totalCount: number;
+  onPageChange: (page: number) => void;
 }
 
 const DirectorioContent = ({
@@ -30,7 +34,10 @@ const DirectorioContent = ({
   onFiltersChange,
   onClearFilters,
   onViewModeChange,
-  currentFilters
+  currentFilters,
+  pagination,
+  totalCount,
+  onPageChange
 }: DirectorioContentProps) => {
   const handleSeedData = async () => {
     try {
@@ -49,6 +56,8 @@ const DirectorioContent = ({
   const shouldShowSeedButton = !isLoading && 
     (!analytics || analytics.totalIngredients === 0) && 
     formattedIngredients.length === 0;
+
+  const totalPages = Math.ceil(totalCount / pagination.limit);
 
   return (
     <div className="container mx-auto px-6 py-8">
@@ -76,7 +85,7 @@ const DirectorioContent = ({
         <DirectorioStats
           totalIngredients={analytics.totalIngredients}
           totalCategories={analytics.categoriesCount}
-          searchResults={formattedIngredients.length}
+          searchResults={totalCount}
           popularIngredient={analytics.mostPopularIngredient}
         />
       )}
@@ -94,16 +103,32 @@ const DirectorioContent = ({
         viewMode={viewMode}
         onViewModeChange={onViewModeChange}
         isSearching={isSearching}
+        totalCount={totalCount}
+        currentPage={pagination.page}
+        totalPages={totalPages}
       />
 
       {formattedIngredients.length === 0 && !isLoading ? (
         <DirectorioEmpty onClearFilters={onClearFilters} />
       ) : (
-        viewMode === "grid" ? (
-          <DirectorioGrid ingredients={formattedIngredients} />
-        ) : (
-          <DirectorioList ingredients={formattedIngredients} />
-        )
+        <>
+          {viewMode === "grid" ? (
+            <DirectorioGrid ingredients={formattedIngredients} />
+          ) : (
+            <DirectorioList ingredients={formattedIngredients} />
+          )}
+          
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <DirectorioPagination
+              currentPage={pagination.page}
+              totalPages={totalPages}
+              totalCount={totalCount}
+              itemsPerPage={pagination.limit}
+              onPageChange={onPageChange}
+            />
+          )}
+        </>
       )}
     </div>
   );

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import UnifiedHeader from "@/components/UnifiedHeader";
+import Footer from "@/components/Footer";
 import { useIngredientById } from "@/hooks/useIngredients";
 import { useRealImages } from "@/hooks/useRealImages";
 import { useGenerateImage } from "@/hooks/useGenerateImage";
@@ -84,43 +85,49 @@ const IngredienteDetalle = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50 flex flex-col">
         <UnifiedHeader variant="ingredient-detail" />
-        <div className="container mx-auto px-4 py-8">
-          <div className="space-y-6">
-            <Skeleton className="h-8 w-64" />
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2 space-y-6">
-                <div className="aspect-square bg-gray-200 animate-pulse rounded-lg" />
-                <Skeleton className="h-48" />
-              </div>
-              <div className="space-y-6">
-                <Skeleton className="h-32" />
-                <Skeleton className="h-48" />
+        <main className="flex-1">
+          <div className="container mx-auto px-4 py-8">
+            <div className="space-y-6">
+              <Skeleton className="h-8 w-64" />
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="lg:col-span-2 space-y-6">
+                  <div className="aspect-square bg-gray-200 animate-pulse rounded-lg" />
+                  <Skeleton className="h-48" />
+                </div>
+                <div className="space-y-6">
+                  <Skeleton className="h-32" />
+                  <Skeleton className="h-48" />
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </main>
+        <Footer />
       </div>
     );
   }
 
   if (error || !ingredient) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50 flex flex-col">
         <UnifiedHeader variant="ingredient-detail" />
-        <div className="container mx-auto px-4 py-8">
-          <Alert className="max-w-md mx-auto">
-            <AlertDescription>
-              {error ? 'Error al cargar el ingrediente' : 'Ingrediente no encontrado'}
-            </AlertDescription>
-          </Alert>
-          <div className="text-center mt-4">
-            <Link to="/directorio">
-              <Button variant="outline">Volver al directorio</Button>
-            </Link>
+        <main className="flex-1">
+          <div className="container mx-auto px-4 py-8">
+            <Alert className="max-w-md mx-auto">
+              <AlertDescription>
+                {error ? 'Error al cargar el ingrediente' : 'Ingrediente no encontrado'}
+              </AlertDescription>
+            </Alert>
+            <div className="text-center mt-4">
+              <Link to="/directorio">
+                <Button variant="outline">Volver al directorio</Button>
+              </Link>
+            </div>
           </div>
-        </div>
+        </main>
+        <Footer />
       </div>
     );
   }
@@ -128,24 +135,27 @@ const IngredienteDetalle = () => {
   // Mostrar modal de límite si se ha alcanzado
   if (hasReachedLimit) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50 flex flex-col">
         <UnifiedHeader variant="ingredient-detail" />
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-2xl mx-auto text-center py-16">
-            <h2 className="text-2xl font-bold mb-4">¡Has alcanzado el límite gratuito!</h2>
-            <p className="text-muted-foreground mb-6">
-              Has visto 20 ingredientes. Regístrate gratis para acceso ilimitado a todo el directorio.
-            </p>
-            <Button onClick={() => setShowAuthModal(true)} size="lg">
-              Registro Gratuito
-            </Button>
-            <div className="mt-4">
-              <Link to="/directorio">
-                <Button variant="outline">Volver al directorio</Button>
-              </Link>
+        <main className="flex-1">
+          <div className="container mx-auto px-4 py-8">
+            <div className="max-w-2xl mx-auto text-center py-16">
+              <h2 className="text-2xl font-bold mb-4">¡Has alcanzado el límite gratuito!</h2>
+              <p className="text-muted-foreground mb-6">
+                Has visto 20 ingredientes. Regístrate gratis para acceso ilimitado a todo el directorio.
+              </p>
+              <Button onClick={() => setShowAuthModal(true)} size="lg">
+                Registro Gratuito
+              </Button>
+              <div className="mt-4">
+                <Link to="/directorio">
+                  <Button variant="outline">Volver al directorio</Button>
+                </Link>
+              </div>
             </div>
           </div>
-        </div>
+        </main>
+        <Footer />
         <AuthModal 
           isOpen={showAuthModal}
           onClose={() => setShowAuthModal(false)}
@@ -158,78 +168,82 @@ const IngredienteDetalle = () => {
   const primaryImage = ingredient?.real_image_url || ingredient?.image_url;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50 flex flex-col">
       {seoData && <SEOHead seoData={seoData} />}
       {breadcrumbSchema && <StructuredData data={breadcrumbSchema} id="breadcrumb-schema" />}
       {ingredientSchema && <StructuredData data={ingredientSchema} id="ingredient-schema" />}
       
       <UnifiedHeader variant="ingredient-detail" />
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Banner de límite de páginas */}
-        {remainingViews !== null && (
-          <PageLimitBanner 
-            remainingViews={remainingViews}
-            onShowAuthModal={() => setShowAuthModal(true)}
-          />
-        )}
+      <main className="flex-1">
+        <div className="container mx-auto px-4 py-8">
+          {/* Banner de límite de páginas */}
+          {remainingViews !== null && (
+            <PageLimitBanner 
+              remainingViews={remainingViews}
+              onShowAuthModal={() => setShowAuthModal(true)}
+            />
+          )}
 
-        {/* Breadcrumb mejorado */}
-        <nav className="flex items-center space-x-2 mb-6 text-sm">
-          <Link 
-            to="/" 
-            className="text-green-600 hover:text-green-700 transition-colors"
-          >
-            Inicio
-          </Link>
-          <span className="text-gray-400">/</span>
-          <Link 
-            to="/directorio" 
-            className="text-green-600 hover:text-green-700 transition-colors"
-          >
-            Directorio
-          </Link>
-          <span className="text-gray-400">/</span>
-          <span className="text-gray-600 font-medium">{ingredient?.name}</span>
-        </nav>
+          {/* Breadcrumb mejorado */}
+          <nav className="flex items-center space-x-2 mb-6 text-sm">
+            <Link 
+              to="/" 
+              className="text-green-600 hover:text-green-700 transition-colors"
+            >
+              Inicio
+            </Link>
+            <span className="text-gray-400">/</span>
+            <Link 
+              to="/directorio" 
+              className="text-green-600 hover:text-green-700 transition-colors"
+            >
+              Directorio
+            </Link>
+            <span className="text-gray-400">/</span>
+            <span className="text-gray-600 font-medium">{ingredient?.name}</span>
+          </nav>
 
-        {/* Botón volver */}
-        <div className="mb-6">
-          <Link 
-            to="/directorio" 
-            className="inline-flex items-center space-x-2 text-green-600 hover:text-green-700 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Volver al directorio</span>
-          </Link>
-        </div>
+          {/* Botón volver */}
+          <div className="mb-6">
+            <Link 
+              to="/directorio" 
+              className="inline-flex items-center space-x-2 text-green-600 hover:text-green-700 transition-colors"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Volver al directorio</span>
+            </Link>
+          </div>
 
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Left Column - Main Info */}
-          <div className="lg:col-span-2 space-y-6">
-            <IngredientMainCard 
+          {/* Main Content */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column - Main Info */}
+            <div className="lg:col-span-2 space-y-6">
+              <IngredientMainCard 
+                ingredient={ingredient}
+                primaryImage={primaryImage}
+                onGenerateImage={handleGenerateImage}
+                isGeneratingImage={generateImage.isPending}
+              />
+              
+              <IngredientTabs 
+                ingredient={ingredient}
+                realImagesCount={realImages.length}
+              />
+            </div>
+
+            {/* Right Column - Sidebar */}
+            <IngredientSidebar 
               ingredient={ingredient}
               primaryImage={primaryImage}
               onGenerateImage={handleGenerateImage}
               isGeneratingImage={generateImage.isPending}
             />
-            
-            <IngredientTabs 
-              ingredient={ingredient}
-              realImagesCount={realImages.length}
-            />
           </div>
-
-          {/* Right Column - Sidebar */}
-          <IngredientSidebar 
-            ingredient={ingredient}
-            primaryImage={primaryImage}
-            onGenerateImage={handleGenerateImage}
-            isGeneratingImage={generateImage.isPending}
-          />
         </div>
-      </div>
+      </main>
+
+      <Footer />
 
       <AuthModal 
         isOpen={showAuthModal}

@@ -44,7 +44,7 @@ ${ingredientsList}
   🌐 INVESTIGACIÓN WEB OBLIGATORIA - USA TU ACCESO A INTERNET:
   
   PASO 1 - BÚSQUEDA DE INFORMACIÓN REAL:
-  - Consulta mercados mayoristas (Mercamadrid, Mercabarna) para PRECIOS ACTUALES
+  - Consulta mercados mayoristas (Mercamadrid, Mercabarna, USDA, etc.) para PRECIOS ACTUALES
   - Busca en sitios profesionales de hostelería para DATOS DE MERMA reales
   - Consulta BEDCA, USDA, FAO para información nutricional OFICIAL
   - Revisa publicaciones gastronómicas para RECETAS AUTÉNTICAS
@@ -126,7 +126,68 @@ ${ingredientsList}
       }
     ],
     "varieties": ["variedad real 1", "variedad real 2"],
-    "price_estimate": precio_por_kg_investigado_en_euros_actuales,
+    "prices_by_country": [
+      {
+        "country": "España",
+        "country_code": "ES",
+        "price": precio_investigado_en_euros,
+        "unit": "determina_unidad_apropiada",
+        "currency": "EUR",
+        "market_type": "mayorista/minorista",
+        "last_updated": "2024-XX-XX",
+        "source": "fuente del precio"
+      },
+      {
+        "country": "Estados Unidos", 
+        "country_code": "US",
+        "price": precio_investigado_en_dolares,
+        "unit": "determina_unidad_apropiada",
+        "currency": "USD",
+        "market_type": "mayorista/minorista",
+        "last_updated": "2024-XX-XX",
+        "source": "fuente del precio"
+      },
+      {
+        "country": "Francia",
+        "country_code": "FR", 
+        "price": precio_investigado_en_euros,
+        "unit": "determina_unidad_apropiada",
+        "currency": "EUR",
+        "market_type": "mayorista/minorista",
+        "last_updated": "2024-XX-XX",
+        "source": "fuente del precio"
+      },
+      {
+        "country": "Italia",
+        "country_code": "IT",
+        "price": precio_investigado_en_euros,
+        "unit": "determina_unidad_apropiada", 
+        "currency": "EUR",
+        "market_type": "mayorista/minorista",
+        "last_updated": "2024-XX-XX",
+        "source": "fuente del precio"
+      },
+      {
+        "country": "México",
+        "country_code": "MX",
+        "price": precio_investigado_en_pesos,
+        "unit": "determina_unidad_apropiada",
+        "currency": "MXN", 
+        "market_type": "mayorista/minorista",
+        "last_updated": "2024-XX-XX",
+        "source": "fuente del precio"
+      },
+      {
+        "country": "Argentina", 
+        "country_code": "AR",
+        "price": precio_investigado_en_pesos_argentinos,
+        "unit": "determina_unidad_apropiada",
+        "currency": "ARS",
+        "market_type": "mayorista/minorista", 
+        "last_updated": "2024-XX-XX",
+        "source": "fuente del precio"
+      }
+    ],
     "sources_consulted": ["fuente1.com", "fuente2.com", "fuente3.com"],
     "data_confidence": "alta/media/baja basada en calidad de fuentes",
     "last_researched": "2024-XX-XX"
@@ -134,11 +195,25 @@ ${ingredientsList}
   
   🎯 CRITERIOS DE CALIDAD PARA DATOS INVESTIGADOS:
   
-  PRECIOS (price_estimate):
-  - Busca precios ACTUALES de los últimos 30 días
-  - Consulta mercados mayoristas profesionales
-  - Usa promedio de múltiples fuentes
-  - Especifica si es precio mayorista, minorista o profesional
+  PRECIOS MULTICOUNTRY (prices_by_country):
+  - INVESTIGA precios REALES y ACTUALES para cada país específicamente
+  - Usa fuentes locales de cada país (Mercamadrid para España, USDA para USA, etc.)
+  - Convierte a moneda local apropiada
+  - Especifica claramente mayorista vs minorista
+  - TODOS los precios deben ser de los últimos 30 días
+  
+  UNIDADES INTELIGENTES (unit):
+  - LÍQUIDOS (aceites, vinagres, vinos, licores): SIEMPRE usar "litro" o "l"
+  - SÓLIDOS (verduras, carnes, harinas, especias): usar "kg" (o "g" para especias en pequeñas cantidades)
+  - INVESTIGAR cuál es la unidad de venta típica en cada país
+  - Ser consistente: mismo ingrediente = misma unidad en todos los países
+  
+  EJEMPLOS DE UNIDADES:
+  - Aceite de oliva → "litro" en todos los países
+  - Vinagre balsámico → "litro" en todos los países  
+  - Tomates → "kg" en todos los países
+  - Azafrán → "g" en todos los países (por ser muy caro)
+  - Harina → "kg" en todos los países
   
   MERMAS (merma):
   - INVESTIGA estudios de rendimiento culinario profesional
@@ -172,11 +247,13 @@ ${ingredientsList}
   
   IMPORTANTE: 
   - TODAS las mermas DEBEN ser investigadas y precisas, no estimaciones
-  - TODOS los precios deben ser actuales y reales
+  - TODOS los precios deben ser actuales, reales y específicos por país
+  - TODAS las unidades deben ser apropiadas (líquidos=litros, sólidos=kg)
   - TODA la información nutricional debe ser de fuentes oficiales
   - TODAS las recetas deben ser auténticas y tener fuente
   - ASEGÚRATE de que NINGÚN ingrediente sea duplicado de los existentes
   - GENERA EXACTAMENTE 6 RECETAS REALES Y VARIADAS por cada ingrediente
+  - INVESTIGA Y PROPORCIONA 6 PRECIOS REALES (uno por cada país)
   - INCLUYE las fuentes consultadas para validación posterior
   
   Responde SOLO con un array JSON válido de ingredientes investigados, sin texto adicional.`;

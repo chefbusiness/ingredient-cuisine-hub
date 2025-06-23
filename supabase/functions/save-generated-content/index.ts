@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
@@ -100,6 +99,90 @@ const isDuplicate = (newIngredient: any, existingIngredients: any[]): boolean =>
     );
   });
 };
+
+// Función para procesar precios múltiples países
+async function processMultiCountryPrices(ingredientId: string, pricesData: any[]): Promise<void> {
+  console.log(`💰 === PROCESANDO PRECIOS MULTI-PAÍS PARA ${ingredientId} ===`);
+  
+  if (!pricesData || !Array.isArray(pricesData)) {
+    console.log('⚠️ No hay datos de precios o formato incorrecto');
+    return;
+  }
+
+  console.log(`📊 Procesando ${pricesData.length} precios de diferentes países`);
+
+  // Mapeo de códigos de país a IDs en la base de datos
+  const countryMapping: { [key: string]: string } = {
+    'ES': 'España',
+    'US': 'Estados Unidos', 
+    'FR': 'Francia',
+    'IT': 'Italia',
+    'MX': 'México',
+    'AR': 'Argentina'
+  };
+
+  let processedPrices = 0;
+  let failedPrices = 0;
+
+  for (const priceData of pricesData) {
+    try {
+      const countryCode = priceData.country_code || 'ES';
+      const countryName = countryMapping[countryCode] || priceData.country || 'España';
+      
+      console.log(`🌍 Procesando precio para ${countryName} (${countryCode}): ${priceData.price} ${priceData.currency}/${priceData.unit}`);
+
+      // Buscar el país en la base de datos
+      const { data: country, error: countryError } = await supabase
+        .from('countries')
+        .select('id')
+        .eq('name', countryName)
+        .single();
+
+      if (countryError || !country) {
+        console.log(`⚠️ País ${countryName} no encontrado en BD, saltando precio`);
+        failedPrices++;
+        continue;
+      }
+
+      // Determinar la unidad apropiada basada en el tipo de ingrediente
+      let finalUnit = priceData.unit || 'kg';
+      
+      // Normalizar unidades
+      if (finalUnit.toLowerCase().includes('litro') || finalUnit.toLowerCase() === 'l') {
+        finalUnit = 'litro';
+      } else if (finalUnit.toLowerCase() === 'g' || finalUnit.toLowerCase() === 'gramo') {
+        finalUnit = 'g';
+      } else {
+        finalUnit = 'kg'; // Por defecto
+      }
+
+      // Insertar el precio en la base de datos
+      const { error: priceError } = await supabase
+        .from('ingredient_prices')
+        .insert({
+          ingredient_id: ingredientId,
+          country_id: country.id,
+          price: Math.max(0, parseFloat(priceData.price) || 0),
+          unit: finalUnit,
+          season_variation: priceData.market_type || 'general'
+        });
+
+      if (priceError) {
+        console.error(`❌ Error insertando precio para ${countryName}:`, priceError);
+        failedPrices++;
+      } else {
+        console.log(`✅ Precio guardado para ${countryName}: ${priceData.price} ${priceData.currency}/${finalUnit}`);
+        processedPrices++;
+      }
+
+    } catch (error) {
+      console.error(`💥 Error procesando precio:`, error);
+      failedPrices++;
+    }
+  }
+
+  console.log(`🏁 Resumen precios: ${processedPrices} exitosos, ${failedPrices} fallidos`);
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -310,6 +393,30 @@ serve(async (req) => {
 
         console.log('✅ Ingrediente creado exitosamente:', newIngredient.id, '- Name:', newIngredient.name);
 
+        // NUEVO: Procesar precios de múltiples países
+        if (ingredient.prices_by_country && Array.isArray(ingredient.prices_by_country)) {
+          await processMultiCountryPrices(newIngredient.id, ingredient.prices_by_country);
+        } else if (ingredient.price_estimate && !isNaN(parseFloat(ingredient.price_estimate))) {
+          // Fallback al método anterior para compatibilidad
+          console.log('📊 Usando método de precio anterior (solo España)');
+          const { data: country } = await supabase
+            .from('countries')
+            .select('id')
+            .eq('code', 'ES')
+            .single();
+
+          if (country) {
+            await supabase
+              .from('ingredient_prices')
+              .insert({
+                ingredient_id: newIngredient.id,
+                country_id: country.id,
+                price: Math.max(0, parseFloat(ingredient.price_estimate)),
+                unit: 'kg'
+              });
+          }
+        }
+
         // Agregar información nutricional con sanitización
         if (ingredient.nutritional_info) {
           await supabase
@@ -364,26 +471,6 @@ serve(async (req) => {
           }
         }
 
-        // Agregar precio con validación
-        if (ingredient.price_estimate && !isNaN(parseFloat(ingredient.price_estimate))) {
-          const { data: country } = await supabase
-            .from('countries')
-            .select('id')
-            .eq('code', 'ES')
-            .single();
-
-          if (country) {
-            await supabase
-              .from('ingredient_prices')
-              .insert({
-                ingredient_id: newIngredient.id,
-                country_id: country.id,
-                price: Math.max(0, parseFloat(ingredient.price_estimate)),
-                unit: 'kg'
-              });
-          }
-        }
-
         successfullyCreated++;
         
         // Preparar datos para response.data (necesarios para generación de imágenes)
@@ -407,23 +494,25 @@ serve(async (req) => {
       // Log the admin action
       try {
         await supabase.rpc('log_admin_action', {
-          action_type: 'save_ingredients',
+          action_type: 'save_ingredients_multicountry',
           resource_type: 'ingredient',
           action_details: {
             total_processed: data.length,
             successfully_created: successfullyCreated,
             duplicates_skipped: duplicatesFound,
-            user_email: authResult.userEmail
+            user_email: authResult.userEmail,
+            multi_country_pricing: true
           }
         });
       } catch (logError) {
         console.log('⚠️ Failed to log admin action:', logError);
       }
 
-      console.log('🎉 === RESUMEN DE PROCESAMIENTO ===');
+      console.log('🎉 === RESUMEN DE PROCESAMIENTO MULTI-PAÍS ===');
       console.log(`✅ Ingredientes creados exitosamente: ${successfullyCreated}`);
       console.log(`⚠️ Duplicados detectados y omitidos: ${duplicatesFound}`);
       console.log(`📊 Datos preparados para generación de imágenes: ${savedIngredientsData.length}`);
+      console.log(`🌍 Precios procesados para múltiples países por ingrediente`);
 
       return new Response(JSON.stringify({ 
         success: true,
@@ -432,7 +521,8 @@ serve(async (req) => {
         summary: {
           total_processed: data.length,
           successfully_created: successfullyCreated,
-          duplicates_skipped: duplicatesFound
+          duplicates_skipped: duplicatesFound,
+          multi_country_pricing_enabled: true
         }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

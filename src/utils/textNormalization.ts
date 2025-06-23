@@ -16,24 +16,13 @@ export const normalizeText = (text: string): string => {
 export const applyAccentInsensitiveSearch = (query: any, searchTerm: string) => {
   const normalizedSearch = normalizeText(searchTerm);
   
-  // Construir condiciones de búsqueda para el término original
-  const originalConditions = [
-    `name.ilike.%${searchTerm}%`,
-    `name_en.ilike.%${searchTerm}%`,
-    `description.ilike.%${searchTerm}%`
-  ];
+  // Si los términos son iguales, solo buscar una vez
+  if (searchTerm.toLowerCase() === normalizedSearch) {
+    return query.or(`name.ilike.%${searchTerm}%,name_en.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%`);
+  }
   
-  // Construir condiciones de búsqueda para el término normalizado
-  const normalizedConditions = [
-    `name.ilike.%${normalizedSearch}%`,
-    `name_en.ilike.%${normalizedSearch}%`,
-    `description.ilike.%${normalizedSearch}%`
-  ];
-  
-  // Combinar todas las condiciones con OR
-  const allConditions = [...originalConditions, ...normalizedConditions];
-  
-  return query.or(allConditions.join(','));
+  // Buscar tanto el término original como el normalizado
+  return query.or(`name.ilike.%${searchTerm}%,name_en.ilike.%${searchTerm}%,description.ilike.%${searchTerm}%,name.ilike.%${normalizedSearch}%,name_en.ilike.%${normalizedSearch}%,description.ilike.%${normalizedSearch}%`);
 };
 
 /**

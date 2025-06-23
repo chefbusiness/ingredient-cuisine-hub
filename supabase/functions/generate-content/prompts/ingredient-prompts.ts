@@ -3,15 +3,29 @@ import { GenerateContentParams } from '../types.ts';
 import { getMermaInstructionsByCategory, getGeneralMermaInstructions } from './merma-instructions.ts';
 
 export const generateIngredientPrompt = (params: GenerateContentParams, existingIngredients: any[] = []): string => {
-  const { category, region = 'España', count = 1 } = params;
+  const { category, region = 'España', count = 1, ingredient } = params;
   
-  const categoryInstruction = category 
-    ? `Investiga y genera ${count} ingrediente(s) específicamente de la categoría "${category}" típico(s) de ${region}.`
-    : `Investiga y genera ${count} ingrediente(s) típico(s) de ${region}.`;
+  // Check if we're generating a specific ingredient (manual mode)
+  const isSpecificIngredient = ingredient && ingredient.trim().length > 0;
   
-  const categoryResponse = category 
-    ? `"category": "${category}",`
-    : `"category": "determina la categoría apropiada basada en el ingrediente",`;
+  let categoryInstruction: string;
+  let categoryResponse: string;
+  
+  if (isSpecificIngredient) {
+    // MANUAL MODE: Generate specific ingredient
+    categoryInstruction = `Investiga y genera información detallada específicamente para el ingrediente "${ingredient}" típico de ${region}.`;
+    categoryResponse = category 
+      ? `"category": "${category}",`
+      : `"category": "determina la categoría apropiada para ${ingredient}",`;
+  } else {
+    // AUTOMATIC MODE: Let Perplexity decide
+    categoryInstruction = category 
+      ? `Investiga y genera ${count} ingrediente(s) específicamente de la categoría "${category}" típico(s) de ${region}.`
+      : `Investiga y genera ${count} ingrediente(s) típico(s) de ${region}.`;
+    categoryResponse = category 
+      ? `"category": "${category}",`
+      : `"category": "determina la categoría apropiada basada en el ingrediente",`;
+  }
 
   // Instrucciones específicas de merma por categoría
   const mermaInstructions = category ? getMermaInstructionsByCategory(category) : getGeneralMermaInstructions();
@@ -32,14 +46,40 @@ ${ingredientsList}
 - NO generes ingredientes que ya existen en la lista anterior
 - Verifica nombres en TODOS los idiomas (español, inglés, francés, italiano, portugués, sinónimos latinoamericanos)
 - Si un ingrediente parece similar a uno existente, elige uno COMPLETAMENTE DIFERENTE
-- Busca ingredientes únicos y específicos que NO estén en la lista
+${isSpecificIngredient ? 
+  `- Si "${ingredient}" YA EXISTE en la lista, genera los datos del ingrediente existente pero asegúrate de que sea EXACTAMENTE el mismo`
+  : '- Busca ingredientes únicos y específicos que NO estén en la lista'
+}
 - Prioriza ingredientes menos comunes pero válidos de la región ${region}
+`;
+  }
+
+  // Instrucciones específicas para modo manual vs automático
+  let modeSpecificInstructions = '';
+  if (isSpecificIngredient) {
+    modeSpecificInstructions = `
+🎯 MODO MANUAL - INGREDIENTE ESPECÍFICO:
+- Debes investigar EXACTAMENTE el ingrediente: "${ingredient}"
+- NO cambies el nombre del ingrediente solicitado
+- Si el ingrediente tiene variantes regionales, usa la variante de ${region}
+- Investiga datos específicos para este ingrediente particular
+- Asegúrate de que toda la información corresponda exactamente a "${ingredient}"
+`;
+  } else {
+    modeSpecificInstructions = `
+🤖 MODO AUTOMÁTICO - PERPLEXITY DECIDE:
+- Selecciona ingredientes interesantes y útiles para profesionales
+- Prioriza ingredientes comunes en cocina profesional de ${region}
+- Evita ingredientes demasiado exóticos o difíciles de conseguir
+- Asegúrate de que sean ingredientes realmente utilizados en hostelería
 `;
   }
   
   return `${categoryInstruction}
   
   ${existingIngredientsText}
+  
+  ${modeSpecificInstructions}
   
   🌐 INVESTIGACIÓN WEB OBLIGATORIA - USA TU ACCESO A INTERNET:
   
@@ -56,9 +96,9 @@ ${ingredientsList}
   - Descarta información que parezca desactualizada
   - Anota las fuentes consultadas para cada dato
   
-  Para cada ingrediente, proporciona la siguiente información en formato JSON:
+  Para ${isSpecificIngredient ? `el ingrediente "${ingredient}"` : 'cada ingrediente'}, proporciona la siguiente información en formato JSON:
   {
-    "name": "nombre en español (España)",
+    "name": "${isSpecificIngredient ? `${ingredient} (nombre en español España)` : 'nombre en español (España)'}",
     "name_en": "nombre en inglés",
     "name_fr": "nombre en francés",
     "name_it": "nombre en italiano", 
@@ -251,10 +291,13 @@ ${ingredientsList}
   - TODAS las unidades deben ser apropiadas (líquidos=litros, sólidos=kg)
   - TODA la información nutricional debe ser de fuentes oficiales
   - TODAS las recetas deben ser auténticas y tener fuente
-  - ASEGÚRATE de que NINGÚN ingrediente sea duplicado de los existentes
+  ${isSpecificIngredient ? 
+    `- El ingrediente DEBE ser exactamente "${ingredient}", no un sustituto o variante` :
+    '- ASEGÚRATE de que NINGÚN ingrediente sea duplicado de los existentes'
+  }
   - GENERA EXACTAMENTE 6 RECETAS REALES Y VARIADAS por cada ingrediente
   - INVESTIGA Y PROPORCIONA 6 PRECIOS REALES (uno por cada país)
   - INCLUYE las fuentes consultadas para validación posterior
   
-  Responde SOLO con un array JSON válido de ingredientes investigados, sin texto adicional.`;
+  Responde SOLO con un array JSON válido de ${isSpecificIngredient ? '1 ingrediente' : `${count} ingredientes`} investigado(s), sin texto adicional.`;
 };

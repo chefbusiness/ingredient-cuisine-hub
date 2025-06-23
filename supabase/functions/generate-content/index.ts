@@ -88,7 +88,7 @@ serve(async (req) => {
 
     console.log('✅ Authorization successful, processing request...');
 
-    const { type, count, category, additionalPrompt } = await req.json();
+    const { type, count, category, additionalPrompt, ingredientsList } = await req.json();
 
     // Input validation and sanitization
     if (!type || !['ingredient', 'category'].includes(type)) {
@@ -110,17 +110,41 @@ serve(async (req) => {
     // Sanitize additional prompt
     const sanitizedPrompt = additionalPrompt ? additionalPrompt.toString().trim().slice(0, 500) : '';
 
-    console.log(`🔄 Generando ${validatedCount} ${type}(s) para categoría: ${sanitizedCategory} usando PERPLEXITY SONAR`);
+    // Validate and sanitize ingredients list if provided
+    let sanitizedIngredientsList: string[] | undefined;
+    if (ingredientsList && Array.isArray(ingredientsList)) {
+      sanitizedIngredientsList = ingredientsList
+        .map(ingredient => ingredient.toString().trim())
+        .filter(ingredient => ingredient.length > 0 && ingredient.length <= 100)
+        .slice(0, 20); // Limit to 20 ingredients maximum
+      
+      console.log(`📝 Manual ingredient list provided: ${sanitizedIngredientsList.length} ingredients`);
+      sanitizedIngredientsList.forEach((ingredient, idx) => {
+        console.log(`   ${idx + 1}. ${ingredient}`);
+      });
+    }
+
+    if (sanitizedIngredientsList && sanitizedIngredientsList.length > 0) {
+      console.log(`🎯 MODO MANUAL: Generando datos específicos para ${sanitizedIngredientsList.length} ingredientes`);
+    } else {
+      console.log(`🔄 MODO AUTOMÁTICO: Generando ${validatedCount} ${type}(s) para categoría: ${sanitizedCategory} usando PERPLEXITY SONAR`);
+    }
 
     let generatedData;
     if (type === 'ingredient') {
-      generatedData = await generateIngredientData(validatedCount, sanitizedCategory, sanitizedPrompt);
+      generatedData = await generateIngredientData(
+        validatedCount, 
+        sanitizedCategory, 
+        sanitizedPrompt,
+        sanitizedIngredientsList
+      );
     } else {
       // Category generation logic would go here
       generatedData = [];
     }
 
-    console.log(`✅ Successfully generated ${generatedData.length} items with Perplexity research`);
+    const generationMode = sanitizedIngredientsList && sanitizedIngredientsList.length > 0 ? 'manual' : 'automatic';
+    console.log(`✅ Successfully generated ${generatedData.length} items with Perplexity research (${generationMode} mode)`);
 
     // Log the admin action
     try {
@@ -131,7 +155,9 @@ serve(async (req) => {
           count: validatedCount,
           category: sanitizedCategory,
           generated_count: generatedData.length,
-          ai_provider: 'perplexity_sonar'
+          ai_provider: 'perplexity_sonar',
+          generation_mode: generationMode,
+          manual_ingredients: sanitizedIngredientsList || []
         }
       });
     } catch (logError) {
@@ -144,7 +170,8 @@ serve(async (req) => {
       data: generatedData,
       generated_count: generatedData.length,
       ai_provider: 'perplexity_sonar',
-      research_quality: 'high'
+      research_quality: 'high',
+      generation_mode: generationMode
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

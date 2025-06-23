@@ -1,115 +1,119 @@
 
-import { PerplexityClient } from './perplexity-client.ts';
 import { generatePrompt } from './prompts.ts';
-
-export function validateApiKey(apiKey: string | undefined): void {
-  if (!apiKey) {
-    throw new Error('API key is required but not provided in environment variables');
-  }
-  
-  if (apiKey.length < 10) {
-    throw new Error('API key appears to be invalid (too short)');
-  }
-}
-
-export async function fetchWithTimeout(
-  url: string, 
-  options: RequestInit, 
-  timeoutMs: number = 30000
-): Promise<Response> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-  
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutId);
-    return response;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    if (error.name === 'AbortError') {
-      throw new Error(`Request timed out after ${timeoutMs}ms`);
-    }
-    throw error;
-  }
-}
+import { PerplexityClient } from './perplexity-client.ts';
+import { GenerateContentParams } from './types.ts';
 
 export async function generateIngredientData(
   count: number, 
   category?: string, 
-  additionalPrompt?: string
+  additionalPrompt?: string,
+  ingredientsList?: string[]
 ): Promise<any[]> {
-  console.log('🌐 === GENERACIÓN DE INGREDIENTES CON PERPLEXITY ===');
-  console.log('📊 Parámetros:', { count, category, additionalPrompt });
+  console.log('🔄 === STARTING INGREDIENT DATA GENERATION ===');
   
-  const perplexityClient = new PerplexityClient();
-  
-  // Get existing ingredients to avoid duplicates
-  console.log('🔍 Obteniendo ingredientes existentes para evitar duplicados...');
-  
-  // Since we can't import supabase client here, we'll fetch it differently
-  const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  
-  let existingIngredients = [];
-  try {
-    const response = await fetch(`${supabaseUrl}/rest/v1/ingredients?select=name,name_en,categories(name)`, {
-      headers: {
-        'apikey': supabaseKey!,
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    if (response.ok) {
-      existingIngredients = await response.json();
-      console.log('📋 Ingredientes existentes obtenidos:', existingIngredients.length);
-    }
-  } catch (error) {
-    console.log('⚠️ No se pudieron obtener ingredientes existentes:', error);
-  }
-  
-  const params = {
-    type: 'ingredient' as const,
-    count,
-    category,
-    region: 'España'
-  };
-  
-  const prompt = generatePrompt(params, existingIngredients);
-  console.log('📝 Prompt generado para Perplexity (primeros 500 chars):', prompt.substring(0, 500));
+  const perplexity = new PerplexityClient();
   
   try {
-    const result = await perplexityClient.generateIngredientData(prompt);
-    console.log('✅ Datos generados exitosamente con Perplexity:', result.length, 'ingredientes');
+    // Fetch existing ingredients to avoid duplicates
+    console.log('📋 Fetching existing ingredients to avoid duplicates...');
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.7.1');
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
     
-    // Log quality metrics
-    const hasRealPrices = result.filter(item => item.price_estimate && item.price_estimate > 0).length;
-    const hasSources = result.filter(item => item.sources_consulted && item.sources_consulted.length > 0).length;
-    const hasConfidence = result.filter(item => item.data_confidence).length;
-    
-    console.log('📊 Métricas de calidad:');
-    console.log(`  - Precios reales: ${hasRealPrices}/${result.length}`);
-    console.log(`  - Con fuentes: ${hasSources}/${result.length}`);
-    console.log(`  - Con confianza: ${hasConfidence}/${result.length}`);
-    
-    return result;
-  } catch (error) {
-    console.error('❌ Error generando datos con Perplexity:', error);
-    throw error;
-  }
-}
+    const { data: existingIngredients, error: fetchError } = await supabase
+      .from('ingredients')
+      .select(`
+        id, name, name_en, name_fr, name_it, name_pt, name_zh, name_la,
+        categories!inner(name)
+      `);
 
-export function cleanJsonFromMarkdown(content: string): string {
-  // Remove markdown code blocks
-  const codeBlockRegex = /```(?:json)?\s*([\s\S]*?)\s*```/g;
-  const match = content.match(codeBlockRegex);
-  
-  if (match) {
-    return match[0].replace(/```(?:json)?\s*/, '').replace(/\s*```$/, '').trim();
+    if (fetchError) {
+      console.log('⚠️ Warning: Could not fetch existing ingredients:', fetchError.message);
+    }
+
+    const existingIngredientsData = existingIngredients || [];
+    console.log(`📊 Found ${existingIngredientsData.length} existing ingredients in database`);
+
+    let generatedIngredients: any[] = [];
+
+    if (ingredientsList && ingredientsList.length > 0) {
+      // MANUAL MODE: Generate specific ingredients from the list
+      console.log('🎯 === MANUAL MODE: PROCESSING SPECIFIC INGREDIENTS ===');
+      
+      for (let i = 0; i < ingredientsList.length; i++) {
+        const specificIngredient = ingredientsList[i];
+        console.log(`🔍 Processing ingredient ${i + 1}/${ingredientsList.length}: "${specificIngredient}"`);
+        
+        try {
+          const params: GenerateContentParams = {
+            type: 'ingredient',
+            count: 1,
+            category,
+            region: 'España',
+            ingredient: specificIngredient
+          };
+
+          const prompt = generatePrompt(params, existingIngredientsData);
+          
+          console.log(`📡 Sending request to Perplexity for: ${specificIngredient}`);
+          const response = await perplexity.generateContent(prompt);
+          
+          if (response && response.length > 0) {
+            // Ensure the generated ingredient matches the requested one
+            const generatedIngredient = response[0];
+            generatedIngredient.requested_ingredient = specificIngredient;
+            generatedIngredients.push(generatedIngredient);
+            console.log(`✅ Successfully generated data for: ${specificIngredient}`);
+          } else {
+            console.log(`⚠️ No data generated for: ${specificIngredient}`);
+          }
+          
+          // Small delay to respect API limits
+          if (i < ingredientsList.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        } catch (error) {
+          console.error(`❌ Error generating data for "${specificIngredient}":`, error);
+          // Continue with next ingredient instead of failing completely
+        }
+      }
+      
+      console.log(`🎯 Manual mode completed: ${generatedIngredients.length}/${ingredientsList.length} ingredients processed`);
+      
+    } else {
+      // AUTOMATIC MODE: Let Perplexity decide ingredients
+      console.log('🤖 === AUTOMATIC MODE: PERPLEXITY DECIDES INGREDIENTS ===');
+      
+      const params: GenerateContentParams = {
+        type: 'ingredient',
+        count,
+        category,
+        region: 'España'
+      };
+
+      const prompt = generatePrompt(params, existingIngredientsData);
+      
+      console.log(`📡 Sending request to Perplexity for ${count} random ingredients`);
+      const response = await perplexity.generateContent(prompt);
+      
+      if (response && response.length > 0) {
+        generatedIngredients = response;
+        console.log(`✅ Successfully generated ${response.length} random ingredients`);
+      } else {
+        console.log('⚠️ No ingredients generated in automatic mode');
+      }
+    }
+
+    console.log(`🎉 === GENERATION COMPLETED ===`);
+    console.log(`📊 Total ingredients generated: ${generatedIngredients.length}`);
+    console.log(`🔧 Mode: ${ingredientsList ? 'Manual (Specific List)' : 'Automatic (Perplexity Choice)'}`);
+    
+    return generatedIngredients;
+
+  } catch (error) {
+    console.error('❌ Error in generateIngredientData:', error);
+    throw new Error(`Error generating ingredient data: ${error.message}`);
   }
-  
-  return content.trim();
 }

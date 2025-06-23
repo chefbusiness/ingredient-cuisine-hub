@@ -18,8 +18,8 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
   return useQuery({
     queryKey: ['advanced-ingredients', filters],
     queryFn: async () => {
-      console.log('=== ADVANCED FETCH INGREDIENTS ===');
-      console.log('Filtros avanzados:', filters);
+      console.log('=== NUEVA IMPLEMENTACIÓN DE BÚSQUEDA ===');
+      console.log('Filtros:', filters);
 
       let query = supabase
         .from('ingredients')
@@ -36,46 +36,43 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
       const hasSearchQuery = filters.searchQuery && filters.searchQuery.trim();
       const hasSpecificCategory = filters.category && filters.category !== 'todos';
 
-      // PASO 1: Aplicar filtro de búsqueda PRIMERO (esto es lo más importante)
+      // PASO 1: APLICAR BÚSQUEDA DE TEXTO (PRIORITARIO)
       if (hasSearchQuery) {
-        console.log('🔍 APLICANDO BÚSQUEDA PARA:', filters.searchQuery);
+        console.log('🔍 APLICANDO BÚSQUEDA SIN ACENTOS MEJORADA:', filters.searchQuery);
         
         try {
           query = applyAccentInsensitiveSearch(query, filters.searchQuery);
-          console.log('🔍 Búsqueda aplicada exitosamente');
+          console.log('✅ Búsqueda aplicada correctamente');
         } catch (error) {
-          console.error('❌ Error en búsqueda:', error);
-          // En caso de error, aplicar búsqueda simple
+          console.error('❌ Error en búsqueda mejorada, usando fallback:', error);
+          // Fallback simple si todo falla
           query = query.ilike('name', `%${filters.searchQuery}%`);
         }
       }
 
-      // PASO 2: Aplicar filtro de categoría SOLO si NO hay búsqueda de texto
-      // Esto permite que la búsqueda "azafran" encuentre resultados aunque esté en /directorio?categoria=hierbas
+      // PASO 2: Aplicar filtro de categoría SOLO si NO hay búsqueda activa
       if (hasSpecificCategory && !hasSearchQuery) {
         console.log('📂 Aplicando filtro de categoría:', filters.category);
         query = query.eq('categories.name', filters.category);
       } else if (hasSearchQuery) {
-        console.log('🔍 BÚSQUEDA ACTIVA: Ignorando filtro de categoría para permitir resultados amplios');
+        console.log('🔍 BÚSQUEDA ACTIVA: Ignorando categoría para resultados amplios');
       }
 
-      // PASO 3: Aplicar filtros de rango (popularidad)
+      // PASO 3: Aplicar otros filtros
       if (filters.popularityRange) {
         query = query.gte('popularity', filters.popularityRange[0])
                      .lte('popularity', filters.popularityRange[1]);
       }
 
-      // PASO 4: Aplicar filtro de temporada
       if (filters.season && filters.season !== "todas" && filters.season !== "") {
         query = query.eq('temporada', filters.season);
       }
 
-      // PASO 5: Aplicar filtro de origen
       if (filters.origin && filters.origin.trim()) {
         query = query.ilike('origen', `%${filters.origin}%`);
       }
 
-      // PASO 6: Aplicar ordenamiento (SIN filtros de precio para evitar errores SQL)
+      // PASO 4: Aplicar ordenamiento
       try {
         if (filters.sortBy === 'popularidad') {
           query = query.order('popularity', { ascending: false });
@@ -85,38 +82,42 @@ export const useAdvancedIngredients = (filters: AdvancedFilters) => {
           query = query.order('categories.name', { ascending: true });
         }
       } catch (error) {
-        console.warn('⚠️ Error en ordenamiento, usando orden por defecto:', error);
+        console.warn('⚠️ Error en ordenamiento:', error);
         query = query.order('name', { ascending: true });
       }
 
-      console.log('🚀 Ejecutando query en Supabase...');
+      console.log('🚀 Ejecutando query mejorada...');
       const { data, error } = await query;
 
       if (error) {
-        console.error('❌ Error fetching advanced ingredients:', error);
+        console.error('❌ Error en query:', error);
         throw error;
       }
 
-      console.log(`✅ Encontrados ${data?.length || 0} ingredientes con filtros avanzados`);
+      console.log(`✅ RESULTADOS: ${data?.length || 0} ingredientes encontrados`);
       
-      // LOGGING ESPECÍFICO para búsquedas
+      // LOGGING DETALLADO para depuración
       if (hasSearchQuery) {
-        console.log('🔍 RESULTADOS DE BÚSQUEDA DETALLADOS:');
-        console.log('Total de ingredientes encontrados:', data?.length);
-        console.log('Nombres de ingredientes encontrados:', data?.map(i => i.name));
+        console.log('🔍 ANÁLISIS DE RESULTADOS DE BÚSQUEDA:');
+        console.log('- Término buscado:', filters.searchQuery);
+        console.log('- Total encontrados:', data?.length);
+        console.log('- Ingredientes:', data?.map(i => ({
+          nombre: i.name,
+          categoria: i.categories?.name
+        })));
         
-        // Verificar específicamente si "Azafrán" está en los resultados
-        const azafranFound = data?.find(i => 
+        // Verificar específicamente si encontramos azafrán
+        const azafranResults = data?.filter(i => 
           i.name.toLowerCase().includes('azafr') || 
           i.name_en?.toLowerCase().includes('saffr')
         );
-        console.log('¿Se encontró Azafrán?:', azafranFound ? 'SÍ' : 'NO');
-        if (azafranFound) {
-          console.log('Datos de Azafrán encontrado:', azafranFound);
+        console.log('🌸 Resultados relacionados con azafrán:', azafranResults?.length);
+        if (azafranResults && azafranResults.length > 0) {
+          console.log('🌸 Detalles azafrán encontrado:', azafranResults);
         }
       }
       
-      // Procesar precios como antes
+      // Procesar precios (mantener lógica existente)
       const processedData = data?.map(ingredient => {
         if (ingredient.ingredient_prices && ingredient.ingredient_prices.length > 0) {
           const spanishPrices = ingredient.ingredient_prices.filter(

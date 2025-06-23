@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Settings, Database, Zap } from "lucide-react";
+import { Settings, Database, Zap, Globe, Search } from "lucide-react";
 import LanguageCorrection from "./LanguageCorrection";
 import AuditLogViewer from "./AuditLogViewer";
 
@@ -54,8 +54,24 @@ const AdminSettingsTab = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm">DeepSeek API</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm">Perplexity API</span>
+                <Badge className="bg-blue-100 text-blue-800">
+                  <Globe className="h-3 w-3 mr-1" />
+                  Datos Reales Web
+                </Badge>
+              </div>
               <Badge className="bg-green-100 text-green-800">Conectado</Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm">Perplexity Sonar</span>
+                <Badge className="bg-green-100 text-green-800">
+                  <Search className="h-3 w-3 mr-1" />
+                  Investigación
+                </Badge>
+              </div>
+              <Badge className="bg-green-100 text-green-800">Operativo</Badge>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm">Replicate API (Flux)</span>
@@ -83,7 +99,7 @@ const AdminSettingsTab = () => {
             Configuración General
           </CardTitle>
           <CardDescription>
-            Configuraciones generales del sistema
+            Configuraciones generales del sistema con investigación web real
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -107,9 +123,25 @@ const AdminSettingsTab = () => {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium">Modo de desarrollo</label>
+              <label className="text-sm font-medium">Calidad de datos</label>
               <div className="mt-1">
-                <Badge variant="outline">Deshabilitado</Badge>
+                <Badge className="bg-blue-100 text-blue-800">
+                  <Globe className="h-3 w-3 mr-1" />
+                  Investigación Web
+                </Badge>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+            <div className="text-sm text-blue-800 space-y-2">
+              <div className="font-medium">🌐 Fuentes de Datos Reales:</div>
+              <div className="text-xs text-blue-600 space-y-1">
+                <div>• Precios actuales de mercados mayoristas (Mercamadrid, Mercabarna)</div>
+                <div>• Datos de merma de fuentes profesionales de hostelería</div>
+                <div>• Información nutricional oficial (BEDCA, USDA, FAO)</div>
+                <div>• Recetas auténticas de chefs y libros especializados</div>
+                <div>• Temporadas verificadas en calendarios agrícolas oficiales</div>
               </div>
             </div>
           </div>

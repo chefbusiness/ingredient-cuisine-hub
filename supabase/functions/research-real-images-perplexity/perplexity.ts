@@ -18,20 +18,22 @@ export async function searchImagesWithPerplexity(
   ingredient: { name: string; name_en: string; description: string },
   apiKey: string
 ): Promise<ImageResult[]> {
-  const simplifiedPrompt = `
-  Busca imágenes culinarias DIRECTAS para: ${ingredient.name} (${ingredient.name_en})
+  const enhancedPrompt = `
+  Busca imágenes DIRECTAS y ACCESIBLES para: ${ingredient.name} (${ingredient.name_en})
   
-  RESPONDE SOLO CON JSON VÁLIDO EN ESTE FORMATO EXACTO:
-  {"images": [{"url": "https://ejemplo.com/imagen.jpg", "description": "descripción", "category": "raw", "source": "dominio"}]}
+  INSTRUCCIONES CRÍTICAS:
+  1. SOLO URLs directas que funcionen sin redirecciones
+  2. Prefiere sitios confiables: Wikipedia Commons, Unsplash, servicios CDN
+  3. Evita URLs con parámetros complejos que puedan fallar
+  4. Máximo 4 imágenes de alta calidad
   
-  REQUISITOS CRÍTICOS:
-  - URLs DIRECTAS que terminen en .jpg, .jpeg, .png, .webp
-  - Máximo 6 imágenes
-  - Solo de sitios confiables: Wikipedia, Unsplash, sitios culinarios
-  - NO uses markdown, NO uses bloques de código
-  - SOLO devuelve el JSON sin texto adicional
+  RESPONDE SOLO CON JSON VÁLIDO:
+  {"images": [{"url": "https://ejemplo.com/imagen.jpg", "description": "descripción clara", "category": "raw", "source": "wikipedia"}]}
   
   Categorías: raw, cooked, cut, whole, variety
+  Fuentes preferidas: wikipedia, unsplash, wikimedia
+  
+  NO uses markdown, NO uses bloques de código, SOLO el JSON.
   `;
 
   const response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -45,24 +47,25 @@ export async function searchImagesWithPerplexity(
       messages: [
         {
           role: 'system',
-          content: 'Eres un investigador de imágenes culinarias. SIEMPRE responde con JSON válido sin markdown ni texto adicional. Encuentra URLs directas de imágenes que funcionen.'
+          content: 'Eres un especialista en encontrar imágenes culinarias. SIEMPRE responde SOLO con JSON válido sin texto adicional. Encuentra URLs directas que funcionen sin redirecciones.'
         },
         {
           role: 'user',
-          content: simplifiedPrompt
+          content: enhancedPrompt
         }
       ],
       temperature: 0.1,
       top_p: 0.9,
-      max_tokens: 1500,
+      max_tokens: 1000,
       return_images: false,
       return_related_questions: false,
       search_domain_filter: [
         'upload.wikimedia.org',
         'commons.wikimedia.org',
         'images.unsplash.com',
-        'seriouseats.com',
-        'foodnetwork.com'
+        'unsplash.com',
+        'cdn.pixabay.com',
+        'images.pexels.com'
       ],
       search_recency_filter: 'year',
       frequency_penalty: 1,
@@ -83,85 +86,76 @@ export async function searchImagesWithPerplexity(
     throw new Error('No content received from Perplexity');
   }
 
-  console.log('🔍 Perplexity raw response:', content.substring(0, 300));
+  console.log('🔍 Perplexity raw response:', content.substring(0, 400));
 
-  // Improved JSON parsing with multiple fallback strategies
+  // Enhanced JSON parsing with multiple strategies
   let imagesData: { images: ImageResult[] };
   
   try {
-    // Strategy 1: Try direct JSON parse
+    // Strategy 1: Direct JSON parse
     imagesData = JSON.parse(content.trim());
     console.log('✅ Direct JSON parse successful');
   } catch (firstError) {
-    console.log('❌ Direct parse failed, trying markdown extraction...');
+    console.log('❌ Direct parse failed, trying cleanup strategies...');
     
     try {
-      // Strategy 2: Extract from markdown code blocks
-      const jsonBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-      if (jsonBlockMatch) {
-        const cleanJson = jsonBlockMatch[1].trim();
-        imagesData = JSON.parse(cleanJson);
-        console.log('✅ Markdown extraction successful');
-      } else {
-        throw new Error('No JSON block found');
-      }
-    } catch (secondError) {
-      console.log('❌ Markdown extraction failed, trying object extraction...');
+      // Strategy 2: Clean up common JSON issues
+      let cleanContent = content.trim();
       
-      try {
-        // Strategy 3: Extract JSON object from anywhere in the text
-        const objectMatch = content.match(/\{[\s\S]*\}/);
-        if (objectMatch) {
-          const cleanJson = objectMatch[0];
-          imagesData = JSON.parse(cleanJson);
-          console.log('✅ Object extraction successful');
-        } else {
-          throw new Error('No JSON object found');
-        }
-      } catch (thirdError) {
-        console.error('❌ All parsing strategies failed');
-        console.error('Response content:', content);
-        throw new Error('Unable to parse JSON from Perplexity response after trying multiple strategies');
+      // Remove markdown code blocks
+      cleanContent = cleanContent.replace(/```(?:json)?\s*([\s\S]*?)\s*```/g, '$1');
+      
+      // Remove any leading/trailing text that's not JSON
+      const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        cleanContent = jsonMatch[0];
       }
+      
+      // Fix common JSON issues
+      cleanContent = cleanContent.replace(/,\s*}/g, '}').replace(/,\s*]/g, ']');
+      
+      imagesData = JSON.parse(cleanContent);
+      console.log('✅ Cleanup strategy successful');
+      
+    } catch (secondError) {
+      console.error('❌ All parsing strategies failed');
+      console.error('Response content:', content);
+      throw new Error('Unable to parse JSON from Perplexity response');
     }
   }
 
   const images = imagesData.images || [];
   console.log(`🔍 Extracted ${images.length} images from response`);
   
-  // Enhanced validation
+  // Enhanced validation and filtering
   const validImages = images.filter(img => {
     if (!img.url || typeof img.url !== 'string') {
-      console.log('❌ Invalid URL:', img);
+      console.log('❌ Invalid URL structure:', img);
       return false;
     }
     
-    // Check URL format
+    // Basic URL validation
     if (!img.url.startsWith('http://') && !img.url.startsWith('https://')) {
       console.log('❌ Invalid protocol:', img.url);
       return false;
     }
     
-    // Check image extension
-    const hasImageExt = ['.jpg', '.jpeg', '.png', '.webp', '.gif'].some(ext => 
-      img.url.toLowerCase().includes(ext)
-    );
-    
-    if (!hasImageExt) {
-      console.log('❌ No image extension:', img.url);
+    // Check for valid domain structure
+    if (!img.url.includes('.') || img.url.includes(' ')) {
+      console.log('❌ Invalid URL format:', img.url);
       return false;
     }
     
-    // Check for valid domain
-    if (!img.url.includes('.') || img.url.includes(' ')) {
-      console.log('❌ Invalid domain format:', img.url);
+    // Check for reasonable URL length
+    if (img.url.length < 20 || img.url.length > 500) {
+      console.log('❌ URL length suspicious:', img.url.length, img.url.substring(0, 50));
       return false;
     }
     
     return true;
   });
 
-  console.log(`✅ Final validation: ${validImages.length}/${images.length} valid images`);
+  console.log(`✅ Format validation: ${validImages.length}/${images.length} valid images`);
   
   return validImages;
 }

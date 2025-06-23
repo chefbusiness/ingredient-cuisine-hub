@@ -1,19 +1,20 @@
 
 import { PerplexityRequest, PerplexityResponse } from './types.ts';
-import { fetchWithTimeout, validateApiKey } from './utils.ts';
 
 export class PerplexityClient {
   private apiKey: string;
 
   constructor() {
     const apiKey = Deno.env.get('PERPLEXITY_API_KEY');
-    validateApiKey(apiKey);
-    this.apiKey = apiKey!;
+    if (!apiKey) {
+      throw new Error('PERPLEXITY_API_KEY environment variable is required');
+    }
+    this.apiKey = apiKey;
     
     console.log('🔑 Perplexity API Key configurada, longitud:', this.apiKey.length);
   }
 
-  async generateIngredientData(prompt: string): Promise<any[]> {
+  async generateContent(prompt: string): Promise<any[]> {
     console.log('🔍 === INVESTIGACIÓN CON PERPLEXITY SONAR ===');
     
     const requestBody: PerplexityRequest = {
@@ -37,7 +38,7 @@ export class PerplexityClient {
           content: prompt
         }
       ],
-      temperature: 0.3, // Más bajo para mayor precisión
+      temperature: 0.3,
       max_tokens: 8000,
       top_p: 0.9,
       return_images: false,
@@ -61,14 +62,14 @@ export class PerplexityClient {
     console.log('🎯 Modelo:', requestBody.model);
     console.log('🌐 Filtros de dominio:', requestBody.search_domain_filter?.length, 'sitios');
 
-    const response = await fetchWithTimeout('https://api.perplexity.ai/chat/completions', {
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.apiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(requestBody),
-    }, 45000); // Mayor timeout para investigación profunda
+    });
 
     console.log('📊 Respuesta de Perplexity:', response.status, response.statusText);
 
@@ -163,53 +164,5 @@ export class PerplexityClient {
 
     console.log('🎉 Contenido final parseado:', parsedContent.length, 'elementos');
     return parsedContent;
-  }
-
-  async researchPrices(ingredient: string, region: string): Promise<any> {
-    console.log('💰 === INVESTIGACIÓN DE PRECIOS REALES ===');
-    
-    const pricePrompt = `Investiga los precios ACTUALES de mercado para "${ingredient}" en ${region}. 
-    Consulta mercados mayoristas, minoristas y proveedores profesionales.
-    Busca información de los últimos 30 días en sitios como Mercamadrid, Mercabarna, etc.
-    
-    Formato JSON requerido:
-    {
-      "wholesale_price": precio_mayorista_por_kg,
-      "retail_price": precio_minorista_por_kg,
-      "professional_price": precio_profesional_por_kg,
-      "currency": "EUR",
-      "last_updated": "2024-XX-XX",
-      "sources": ["fuente1", "fuente2"],
-      "market_trend": "estable/subida/bajada",
-      "seasonal_factor": "alta/media/baja temporada"
-    }`;
-
-    const response = await this.generateIngredientData(pricePrompt);
-    return response[0] || null;
-  }
-
-  async researchNutrition(ingredient: string): Promise<any> {
-    console.log('🥗 === INVESTIGACIÓN NUTRICIONAL OFICIAL ===');
-    
-    const nutritionPrompt = `Investiga la información nutricional OFICIAL para "${ingredient}".
-    Consulta bases de datos oficiales como BEDCA (España), USDA, FAO.
-    
-    Formato JSON requerido:
-    {
-      "calories_per_100g": número,
-      "protein_g": número,
-      "carbs_g": número,
-      "fat_g": número,
-      "fiber_g": número,
-      "vitamin_c_mg": número,
-      "iron_mg": número,
-      "calcium_mg": número,
-      "sodium_mg": número,
-      "sources": ["BEDCA", "USDA", "etc"],
-      "verified": true/false
-    }`;
-
-    const response = await this.generateIngredientData(nutritionPrompt);
-    return response[0] || null;
   }
 }

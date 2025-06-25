@@ -19,6 +19,15 @@ export const useIngredientDetail = () => {
   const { hasReachedLimit, recordPageView, getRemainingViews } = usePageViewLimit();
   const { toggleFavorite, isFavorite, loading: favoritesLoading } = useFavorites();
 
+  // Scroll automático al top cuando se carga un nuevo ingrediente
+  useEffect(() => {
+    if (ingredient?.id) {
+      // Usar 'instant' para móviles para evitar problemas de rendimiento
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      console.log('🔝 Scroll automático al top para ingrediente:', ingredient.name);
+    }
+  }, [ingredient?.id]);
+
   // Redirect de URLs antiguas a URLs nuevas
   useEffect(() => {
     if (ingredient && isLegacyUrl && ingredient.slug) {

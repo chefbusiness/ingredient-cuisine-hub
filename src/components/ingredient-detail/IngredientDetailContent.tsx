@@ -50,25 +50,6 @@ const IngredientDetailContent = ({
           />
         )}
 
-        {/* Breadcrumb mejorado */}
-        <nav className="flex items-center space-x-2 mb-6 text-sm">
-          <Link 
-            to="/" 
-            className="text-green-600 hover:text-green-700 transition-colors"
-          >
-            Inicio
-          </Link>
-          <span className="text-gray-400">/</span>
-          <Link 
-            to="/directorio" 
-            className="text-green-600 hover:text-green-700 transition-colors"
-          >
-            Directorio
-          </Link>
-          <span className="text-gray-400">/</span>
-          <span className="text-gray-600 font-medium">{ingredient?.name}</span>
-        </nav>
-
         {/* Botón volver */}
         <div className="mb-6">
           <Link 

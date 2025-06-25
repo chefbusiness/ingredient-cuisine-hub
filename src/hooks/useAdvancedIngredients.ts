@@ -62,8 +62,8 @@ export const useAdvancedIngredients = (filters: AdvancedFilters, pagination: Pag
         }
       }
 
-      // PASO 2: Aplicar filtro de categoría SOLO si NO hay búsqueda
-      if (hasSpecificCategory && !hasSearchQuery) {
+      // PASO 2: Aplicar filtro de categoría SIEMPRE que se especifique
+      if (hasSpecificCategory) {
         console.log('📂 Aplicando filtro de categoría:', filters.category);
         query = query.eq('categories.name', filters.category);
       }

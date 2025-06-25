@@ -11,7 +11,7 @@ export async function GET() {
     ];
 
     // Fetch real ingredients from Supabase for sitemap
-    let ingredientPages: string[] = [];
+    let ingredientPages: Array<{ slug: string; lastmod: string }> = [];
     let categoryPages: string[] = [];
     
     try {
@@ -70,8 +70,8 @@ export async function GET() {
   </url>`).join('')}
   ${ingredientPages.map(item => `
   <url>
-    <loc>${baseUrl}/ingrediente/${typeof item === 'string' ? item : item.slug}</loc>
-    <lastmod>${typeof item === 'string' ? new Date().toISOString() : item.lastmod}</lastmod>
+    <loc>${baseUrl}/ingrediente/${item.slug}</loc>
+    <lastmod>${item.lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`).join('')}

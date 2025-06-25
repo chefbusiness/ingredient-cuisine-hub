@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -32,7 +33,7 @@ export const useDirectorioFilters = () => {
     popularityRange: [0, 100],
     season: "",
     origin: "",
-    country: "España"
+    country: "" // Sin país por defecto - lo determinará la URL
   });
 
   // Inicializar búsqueda y filtros desde URL
@@ -49,17 +50,16 @@ export const useDirectorioFilters = () => {
       page: pageFromUrl 
     });
     
-    if (searchFromUrl || categoryFromUrl || countryFromUrl) {
-      const newFilters = {
-        ...filters,
-        searchQuery: searchFromUrl || "",
-        category: categoryFromUrl || "todos",
-        country: countryFromUrl || "España"
-      };
-      
-      console.log('🔄 Aplicando filtros desde URL:', newFilters);
-      setFilters(newFilters);
-    }
+    // Aplicar filtros desde URL - incluyendo país vacío si no está en URL
+    const newFilters = {
+      ...filters,
+      searchQuery: searchFromUrl || "",
+      category: categoryFromUrl || "todos",
+      country: countryFromUrl || "" // Vacío si no hay país en URL
+    };
+    
+    console.log('🔄 Aplicando filtros desde URL:', newFilters);
+    setFilters(newFilters);
 
     if (pageFromUrl) {
       const pageNum = parseInt(pageFromUrl, 10);
@@ -93,7 +93,7 @@ export const useDirectorioFilters = () => {
       } else {
         newSearchParams.delete('categoria');
       }
-      if (newFilters.country && newFilters.country !== 'España') {
+      if (newFilters.country && newFilters.country.trim()) {
         newSearchParams.set('pais', newFilters.country);
       } else {
         newSearchParams.delete('pais');
@@ -112,7 +112,7 @@ export const useDirectorioFilters = () => {
       popularityRange: [0, 100],
       season: "",
       origin: "",
-      country: "España"
+      country: "" // Sin país por defecto
     });
     setPagination(prev => ({ ...prev, page: 1 }));
     

@@ -45,7 +45,7 @@ export const useAdvancedIngredients = (filters: AdvancedFilters, pagination: Pag
 
       const hasSearchQuery = filters.searchQuery && filters.searchQuery.trim();
       const hasSpecificCategory = filters.category && filters.category !== 'todos';
-      const hasSpecificCountry = filters.country && filters.country !== 'España';
+      const hasCountryFilter = filters.country && filters.country.trim();
 
       // PASO 1: APLICAR BÚSQUEDA DE TEXTO (PRIORIDAD MÁXIMA)
       if (hasSearchQuery) {
@@ -68,14 +68,15 @@ export const useAdvancedIngredients = (filters: AdvancedFilters, pagination: Pag
         query = query.eq('categories.name', filters.category);
       }
 
-      // PASO 3: APLICAR FILTRO DE PAÍS - NUEVA IMPLEMENTACIÓN
-      if (hasSpecificCountry) {
+      // PASO 3: APLICAR FILTRO DE PAÍS - NUEVA LÓGICA CORREGIDA
+      if (hasCountryFilter) {
         console.log('🌍 APLICANDO FILTRO DE PAÍS:', selectedCountry);
-        // Filtrar solo ingredientes que tengan precios en el país seleccionado
+        // SIEMPRE filtrar por el país seleccionado, sin excepciones
         query = query.eq('ingredient_prices.countries.name', selectedCountry);
       } else {
-        // Si no hay país específico o es España, mantener comportamiento actual
-        console.log('🌍 Usando comportamiento por defecto (España)');
+        // Si NO hay filtro de país en la URL, usar España por defecto
+        console.log('🌍 Sin filtro de país específico - usando España por defecto');
+        query = query.eq('ingredient_prices.countries.name', 'España');
       }
 
       // PASO 4: Aplicar otros filtros
@@ -119,31 +120,12 @@ export const useAdvancedIngredients = (filters: AdvancedFilters, pagination: Pag
       // PASO 7: Procesar precios según el país seleccionado
       const processedData = data?.map(ingredient => {
         if (ingredient.ingredient_prices && ingredient.ingredient_prices.length > 0) {
-          // Buscar precios del país seleccionado primero
-          const countryPrices = ingredient.ingredient_prices.filter(
-            price => price.countries?.name === selectedCountry
-          );
-          
-          if (countryPrices.length > 0) {
-            console.log(`💰 Precios encontrados para ${ingredient.name} en ${selectedCountry}`);
-            return {
-              ...ingredient,
-              ingredient_prices: countryPrices
-            };
-          } else if (!hasSpecificCountry) {
-            // Solo hacer fallback a España si NO estamos filtrando por país específico
-            const spanishPrices = ingredient.ingredient_prices.filter(
-              price => price.countries?.name === 'España'
-            );
-            
-            if (spanishPrices.length > 0) {
-              console.log(`💰 Fallback a precios de España para ${ingredient.name}`);
-              return {
-                ...ingredient,
-                ingredient_prices: spanishPrices
-              };
-            }
-          }
+          // Usar solo los precios del país seleccionado (ya filtrados por la query)
+          console.log(`💰 Precios encontrados para ${ingredient.name} en ${selectedCountry}`);
+          return {
+            ...ingredient,
+            ingredient_prices: ingredient.ingredient_prices
+          };
         }
         
         return ingredient;

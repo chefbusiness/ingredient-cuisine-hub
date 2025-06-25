@@ -1,5 +1,4 @@
-
-import { ChefHat, Utensils, TrendingUp, Zap } from "lucide-react";
+import { ChefHat, Utensils, TrendingUp, Zap, Instagram } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Footer = () => {
@@ -14,8 +13,20 @@ const Footer = () => {
               </div>
               <h4 className="text-sm font-medium text-foreground">Directorio de Ingredientes</h4>
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mb-3">
               La herramienta profesional para chefs y profesionales de la hostelería.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Idea original del{" "}
+              <a 
+                href="https://www.instagram.com/johnguerrero_es" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary hover:underline inline-flex items-center gap-1"
+              >
+                <Instagram className="h-3 w-3" />
+                Chef John Guerrero
+              </a>
             </p>
           </div>
           

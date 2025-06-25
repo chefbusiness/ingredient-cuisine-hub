@@ -1,4 +1,4 @@
-import { ChefHat, Utensils, TrendingUp, Zap, Instagram } from "lucide-react";
+import { ChefHat, Utensils, TrendingUp, Zap, Instagram, Youtube, Facebook, X } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const Footer = () => {
@@ -16,7 +16,7 @@ const Footer = () => {
             <p className="text-xs text-muted-foreground mb-3">
               La herramienta profesional para chefs y profesionales de la hostelería.
             </p>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground mb-4">
               Idea original del{" "}
               <a 
                 href="https://www.instagram.com/johnguerrero_es" 
@@ -28,6 +28,56 @@ const Footer = () => {
                 Chef John Guerrero
               </a>
             </p>
+            <div>
+              <p className="text-xs text-muted-foreground mb-2">Síguenos en redes:</p>
+              <div className="flex items-center gap-3">
+                <a 
+                  href="#" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                  title="Instagram"
+                >
+                  <Instagram className="h-4 w-4" />
+                </a>
+                <a 
+                  href="#" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                  title="X (Twitter)"
+                >
+                  <X className="h-4 w-4" />
+                </a>
+                <a 
+                  href="#" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                  title="YouTube"
+                >
+                  <Youtube className="h-4 w-4" />
+                </a>
+                <a 
+                  href="#" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                  title="Facebook"
+                >
+                  <Facebook className="h-4 w-4" />
+                </a>
+                <a 
+                  href="#" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-primary transition-colors text-sm font-medium"
+                  title="TikTok"
+                >
+                  🎵
+                </a>
+              </div>
+            </div>
           </div>
           
           <div>

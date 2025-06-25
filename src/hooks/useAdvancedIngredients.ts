@@ -28,6 +28,9 @@ export const useAdvancedIngredients = (filters: AdvancedFilters, pagination: Pag
       console.log('Filtros:', filters);
       console.log('Paginación:', pagination);
 
+      const selectedCountry = filters.country || 'España';
+      console.log('🌍 País seleccionado:', selectedCountry);
+
       let query = supabase
         .from('ingredients')
         .select(`
@@ -42,6 +45,7 @@ export const useAdvancedIngredients = (filters: AdvancedFilters, pagination: Pag
 
       const hasSearchQuery = filters.searchQuery && filters.searchQuery.trim();
       const hasSpecificCategory = filters.category && filters.category !== 'todos';
+      const hasSpecificCountry = filters.country && filters.country !== 'España';
 
       // PASO 1: APLICAR BÚSQUEDA DE TEXTO (PRIORIDAD MÁXIMA)
       if (hasSearchQuery) {
@@ -64,7 +68,17 @@ export const useAdvancedIngredients = (filters: AdvancedFilters, pagination: Pag
         query = query.eq('categories.name', filters.category);
       }
 
-      // PASO 3: Aplicar otros filtros
+      // PASO 3: APLICAR FILTRO DE PAÍS - NUEVA IMPLEMENTACIÓN
+      if (hasSpecificCountry) {
+        console.log('🌍 APLICANDO FILTRO DE PAÍS:', selectedCountry);
+        // Filtrar solo ingredientes que tengan precios en el país seleccionado
+        query = query.eq('ingredient_prices.countries.name', selectedCountry);
+      } else {
+        // Si no hay país específico o es España, mantener comportamiento actual
+        console.log('🌍 Usando comportamiento por defecto (España)');
+      }
+
+      // PASO 4: Aplicar otros filtros
       if (filters.popularityRange) {
         query = query.gte('popularity', filters.popularityRange[0])
                      .lte('popularity', filters.popularityRange[1]);
@@ -78,7 +92,7 @@ export const useAdvancedIngredients = (filters: AdvancedFilters, pagination: Pag
         query = query.ilike('origen', `%${filters.origin}%`);
       }
 
-      // PASO 4: Aplicar ordenamiento
+      // PASO 5: Aplicar ordenamiento
       if (filters.sortBy === 'popularidad') {
         query = query.order('popularity', { ascending: false });
       } else if (filters.sortBy === 'nombre') {
@@ -87,7 +101,7 @@ export const useAdvancedIngredients = (filters: AdvancedFilters, pagination: Pag
         query = query.order('categories.name', { ascending: true });
       }
 
-      // PASO 5: Aplicar paginación
+      // PASO 6: Aplicar paginación
       const startIndex = (pagination.page - 1) * pagination.limit;
       const endIndex = startIndex + pagination.limit - 1;
       query = query.range(startIndex, endIndex);
@@ -102,10 +116,7 @@ export const useAdvancedIngredients = (filters: AdvancedFilters, pagination: Pag
 
       console.log(`✅ ÉXITO: ${data?.length || 0} ingredientes encontrados de ${count || 0} total`);
       
-      // NUEVO: Procesar precios según el país seleccionado
-      const selectedCountry = filters.country || 'España';
-      console.log('🌍 País seleccionado para precios:', selectedCountry);
-      
+      // PASO 7: Procesar precios según el país seleccionado
       const processedData = data?.map(ingredient => {
         if (ingredient.ingredient_prices && ingredient.ingredient_prices.length > 0) {
           // Buscar precios del país seleccionado primero
@@ -119,8 +130,8 @@ export const useAdvancedIngredients = (filters: AdvancedFilters, pagination: Pag
               ...ingredient,
               ingredient_prices: countryPrices
             };
-          } else {
-            // Fallback a España si no hay precios del país seleccionado
+          } else if (!hasSpecificCountry) {
+            // Solo hacer fallback a España si NO estamos filtrando por país específico
             const spanishPrices = ingredient.ingredient_prices.filter(
               price => price.countries?.name === 'España'
             );

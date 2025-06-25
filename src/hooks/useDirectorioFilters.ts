@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 
@@ -40,16 +39,26 @@ export const useDirectorioFilters = () => {
   useEffect(() => {
     const searchFromUrl = searchParams.get('search');
     const categoryFromUrl = searchParams.get('categoria');
-    const countryFromUrl = searchParams.get('pais'); // Nuevo parámetro
+    const countryFromUrl = searchParams.get('pais');
     const pageFromUrl = searchParams.get('page');
     
+    console.log('🔗 Parámetros URL detectados:', { 
+      search: searchFromUrl, 
+      categoria: categoryFromUrl, 
+      pais: countryFromUrl,
+      page: pageFromUrl 
+    });
+    
     if (searchFromUrl || categoryFromUrl || countryFromUrl) {
-      setFilters(prev => ({
-        ...prev,
+      const newFilters = {
+        ...filters,
         searchQuery: searchFromUrl || "",
         category: categoryFromUrl || "todos",
-        country: countryFromUrl || "España" // Aplicar país desde URL
-      }));
+        country: countryFromUrl || "España"
+      };
+      
+      console.log('🔄 Aplicando filtros desde URL:', newFilters);
+      setFilters(newFilters);
     }
 
     if (pageFromUrl) {
@@ -67,6 +76,7 @@ export const useDirectorioFilters = () => {
     // Evitar actualizaciones innecesarias comparando el contenido
     const hasChanged = JSON.stringify(filters) !== JSON.stringify(newFilters);
     if (hasChanged) {
+      console.log('🔄 Cambiando filtros:', newFilters);
       setFilters(newFilters);
       // Reset pagination when filters change
       setPagination(prev => ({ ...prev, page: 1 }));

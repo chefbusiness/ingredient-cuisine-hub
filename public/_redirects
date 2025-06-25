@@ -1,3 +1,6 @@
 
-/*    /index.html   200
+# Servir sitemap.xml directamente como archivo estático
 /sitemap.xml    /sitemap.xml   200
+
+# Redirección general para SPA
+/*    /index.html   200

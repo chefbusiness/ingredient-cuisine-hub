@@ -29,12 +29,12 @@ export const useDirectorioData = (filters: SearchFilters, pagination: Pagination
   const ingredients = ingredientsResult?.data || [];
   const totalCount = ingredientsResult?.count || 0;
 
-  // Convertir categorías para el componente de filtros
+  // Convertir categorías para el componente de filtros - CORREGIR CASE MISMATCH
   const categories = useMemo(() => {
     const baseCategories = [{ value: "todos", label: "Todas las categorías" }];
     const dynamicCategories = categoriesData.map(cat => ({
-      value: cat.name,
-      label: cat.name.charAt(0).toUpperCase() + cat.name.slice(1)
+      value: cat.name, // Usar el nombre exacto de la BD (minúsculas)
+      label: cat.name.charAt(0).toUpperCase() + cat.name.slice(1) // Solo capitalizar para mostrar
     }));
     return [...baseCategories, ...dynamicCategories];
   }, [categoriesData]);

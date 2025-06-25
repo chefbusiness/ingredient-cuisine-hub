@@ -1,3 +1,4 @@
+
 import { MapPin, Euro, DollarSign } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,11 +11,12 @@ const CountriesSection = () => {
   const { isMobile, isTablet } = useResponsive();
 
   const { data: countryCounts = {} } = useQuery({
-    queryKey: ['country-counts'],
+    queryKey: ['country-ingredient-counts'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('ingredient_prices')
         .select(`
+          ingredient_id,
           countries!inner(
             name,
             code,
@@ -24,27 +26,36 @@ const CountriesSection = () => {
         .order('countries(name)');
 
       if (error) {
-        console.error('Error fetching country counts:', error);
+        console.error('Error fetching country ingredient counts:', error);
         return {};
       }
 
-      // Count ingredients per country
+      // Count unique ingredients per country
       const counts: Record<string, { count: number; symbol: string; code: string }> = {};
+      const countryIngredients: Record<string, Set<string>> = {};
+      
       data.forEach(price => {
         const country = price.countries;
         if (country) {
           const key = country.name;
-          if (!counts[key]) {
+          if (!countryIngredients[key]) {
+            countryIngredients[key] = new Set();
             counts[key] = { count: 0, symbol: country.currency_symbol, code: country.code };
           }
-          counts[key].count += 1;
+          countryIngredients[key].add(price.ingredient_id);
         }
+      });
+
+      // Convert Set sizes to counts
+      Object.keys(countryIngredients).forEach(country => {
+        counts[country].count = countryIngredients[country].size;
       });
 
       return counts;
     },
   });
 
+  // Siempre mostrar 8 países en desktop, 6 en tablet, 4 en móvil
   const maxCountries = isMobile ? 4 : isTablet ? 6 : 8;
   const topCountries = Object.entries(countryCounts)
     .sort(([,a], [,b]) => b.count - a.count)
@@ -75,7 +86,7 @@ const CountriesSection = () => {
     return null;
   }
 
-  // Responsive grid classes
+  // Grid responsive mejorado - siempre 8 en desktop
   const gridClasses = isMobile 
     ? "grid grid-cols-2 gap-3" 
     : isTablet 
@@ -87,10 +98,10 @@ const CountriesSection = () => {
       <div className={`container mx-auto ${isMobile ? 'px-3' : 'px-4'}`}>
         <div className={`text-center ${isMobile ? 'mb-6' : 'mb-8'}`}>
           <h3 className={`font-medium text-foreground mb-2 ${isMobile ? 'text-lg' : 'text-xl'}`}>
-            Precios por País
+            Ingredientes por País
           </h3>
           <p className={`text-muted-foreground ${isMobile ? 'text-xs' : 'text-sm'}`}>
-            Información de precios actualizada en diferentes mercados
+            Explora ingredientes disponibles en diferentes países
           </p>
         </div>
         
@@ -102,13 +113,14 @@ const CountriesSection = () => {
               <Link 
                 key={country.name} 
                 to={`/directorio?pais=${encodeURIComponent(country.name)}`}
+                className="block transition-transform hover:scale-105"
               >
-                <Card className="border border-border bg-background hover:bg-muted/30 transition-colors group h-full">
+                <Card className="border border-border bg-background hover:bg-muted/50 hover:shadow-md transition-all group h-full cursor-pointer">
                   <CardHeader className={`text-center ${isMobile ? 'pb-2 pt-3 px-3' : 'pb-3'}`}>
-                    <div className={`mb-2 ${isMobile ? 'text-xl' : 'text-2xl'}`}>
+                    <div className={`mb-2 ${isMobile ? 'text-xl' : 'text-2xl'} transition-transform group-hover:scale-110`}>
                       {getCountryFlag(country.code)}
                     </div>
-                    <CardTitle className={`font-medium text-foreground ${isMobile ? 'text-sm' : 'text-base'}`}>
+                    <CardTitle className={`font-medium text-foreground group-hover:text-green-600 transition-colors ${isMobile ? 'text-sm' : 'text-base'}`}>
                       {country.name}
                     </CardTitle>
                   </CardHeader>
@@ -119,8 +131,8 @@ const CountriesSection = () => {
                         {country.symbol}
                       </span>
                     </div>
-                    <Badge variant="secondary" className={isMobile ? 'text-xs px-1.5 py-0.5' : 'text-xs'}>
-                      {country.count} precios
+                    <Badge variant="secondary" className={`group-hover:bg-green-100 group-hover:text-green-700 transition-colors ${isMobile ? 'text-xs px-1.5 py-0.5' : 'text-xs'}`}>
+                      {country.count} ingrediente{country.count !== 1 ? 's' : ''}
                     </Badge>
                   </CardContent>
                 </Card>

@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useFavorites } from "@/hooks/useFavorites";
+import { useResponsive } from "@/hooks/useResponsive";
 
 interface Ingredient {
   id: number | string;
@@ -22,7 +23,7 @@ interface Ingredient {
   temporada: string;
   hasAIImage?: boolean;
   hasRealImage?: boolean;
-  slug?: string; // Agregar slug opcional para compatibilidad
+  slug?: string;
 }
 
 interface DirectorioListProps {
@@ -31,6 +32,7 @@ interface DirectorioListProps {
 
 const DirectorioList = ({ ingredients }: DirectorioListProps) => {
   const { toggleFavorite, isFavorite } = useFavorites();
+  const { isMobile } = useResponsive();
 
   const getIngredientImage = (ingredient: Ingredient) => {
     if (ingredient.image) {
@@ -40,25 +42,27 @@ const DirectorioList = ({ ingredients }: DirectorioListProps) => {
   };
 
   const getImageBadge = (ingredient: Ingredient) => {
+    const badgeClass = "text-white text-xs px-1.5 py-0.5 rounded flex items-center gap-1";
+    
     if (ingredient.hasRealImage) {
       return (
-        <div className="bg-green-500/90 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
-          <Camera className="h-3 w-3" />
-          Real
+        <div className={`${badgeClass} bg-green-500/90`}>
+          <Camera className="h-2.5 w-2.5" />
+          {!isMobile && <span>Real</span>}
         </div>
       );
     } else if (ingredient.hasAIImage) {
       return (
-        <div className="bg-blue-500/90 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
-          <Sparkles className="h-3 w-3" />
-          IA
+        <div className={`${badgeClass} bg-blue-500/90`}>
+          <Sparkles className="h-2.5 w-2.5" />
+          {!isMobile && <span>IA</span>}
         </div>
       );
     } else {
       return (
-        <div className="bg-orange-500/90 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
-          <Camera className="h-3 w-3" />
-          Sin imagen
+        <div className={`${badgeClass} bg-orange-500/90`}>
+          <Camera className="h-2.5 w-2.5" />
+          {!isMobile && <span>Sin imagen</span>}
         </div>
       );
     }
@@ -71,19 +75,18 @@ const DirectorioList = ({ ingredients }: DirectorioListProps) => {
   };
 
   const getIngredientUrl = (ingredient: Ingredient) => {
-    // Usar slug si está disponible, si no usar ID
     return `/ingrediente/${ingredient.slug || ingredient.id}`;
   };
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-3 ${isMobile ? 'px-2' : 'space-y-4'}`}>
       {ingredients.map((ingredient) => (
         <div key={ingredient.id} className="relative">
           <Link to={getIngredientUrl(ingredient)}>
             <Card className="clean-card group overflow-hidden">
-              <CardContent className="p-4">
-                <div className="flex gap-4">
-                  <div className="w-24 h-24 flex-shrink-0 relative overflow-hidden rounded-md">
+              <CardContent className={isMobile ? "p-3" : "p-4"}>
+                <div className={`flex gap-3 ${isMobile ? 'gap-3' : 'gap-4'}`}>
+                  <div className={`flex-shrink-0 relative overflow-hidden rounded-md ${isMobile ? 'w-16 h-16' : 'w-24 h-24'}`}>
                     <img
                       src={getIngredientImage(ingredient)}
                       alt={ingredient.name}
@@ -95,44 +98,60 @@ const DirectorioList = ({ ingredients }: DirectorioListProps) => {
                   </div>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h3 className="font-medium text-lg text-foreground mb-1">
+                    <div className={`flex items-start justify-between ${isMobile ? 'mb-1' : 'mb-2'}`}>
+                      <div className="flex-1 min-w-0">
+                        <h3 className={`font-medium text-foreground line-clamp-2 ${isMobile ? 'text-sm mb-0.5' : 'text-lg mb-1'}`}>
                           {ingredient.name}
                         </h3>
-                        <p className="text-sm text-muted-foreground">{ingredient.nameEN}</p>
+                        <p className={`text-muted-foreground line-clamp-1 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                          {ingredient.nameEN}
+                        </p>
                       </div>
                       
-                      <div className="flex items-center space-x-2">
-                        <div className="flex items-center space-x-1 bg-background/90 rounded-md px-2 py-1">
+                      {!isMobile && (
+                        <div className="flex items-center space-x-1 bg-background/90 rounded-md px-2 py-1 ml-2">
                           <TrendingUp className="h-3 w-3 text-primary" />
                           <span className="text-xs font-medium text-foreground">
                             {ingredient.popularity}%
                           </span>
                         </div>
-                      </div>
+                      )}
                     </div>
 
-                    <div className="flex items-center gap-2 mb-3">
-                      <Badge variant="secondary" className="text-xs capitalize">
+                    <div className={`flex items-center gap-2 flex-wrap ${isMobile ? 'mb-1' : 'mb-3'}`}>
+                      <Badge variant="secondary" className={`capitalize ${isMobile ? 'text-xs px-1.5 py-0.5' : 'text-xs'}`}>
                         {ingredient.category}
                       </Badge>
-                      <span className="text-xs text-muted-foreground">{ingredient.temporada}</span>
+                      <span className={`text-muted-foreground ${isMobile ? 'text-xs' : 'text-xs'}`}>
+                        {isMobile ? ingredient.temporada?.slice(0, 6) : ingredient.temporada}
+                      </span>
                       {getImageBadge(ingredient)}
+                      {isMobile && (
+                        <div className="flex items-center space-x-1">
+                          <TrendingUp className="h-2.5 w-2.5 text-primary" />
+                          <span className="text-xs font-medium text-foreground">
+                            {ingredient.popularity}%
+                          </span>
+                        </div>
+                      )}
                     </div>
                     
-                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                      {ingredient.description}
-                    </p>
+                    {!isMobile && (
+                      <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+                        {ingredient.description}
+                      </p>
+                    )}
                     
-                    <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className={`grid gap-2 text-xs ${isMobile ? 'grid-cols-1 gap-1' : 'grid-cols-2 gap-4'}`}>
                       <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Precio España:</span>
+                        <span className="text-muted-foreground">
+                          {isMobile ? 'Precio:' : 'Precio España:'}
+                        </span>
                         <span className="font-medium text-primary">{ingredient.price}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Rendimiento:</span>
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className={isMobile ? 'text-xs px-1 py-0' : 'text-xs'}>
                           {ingredient.rendimiento}%
                         </Badge>
                       </div>
@@ -146,13 +165,13 @@ const DirectorioList = ({ ingredients }: DirectorioListProps) => {
           <Button
             variant="ghost"
             size="sm"
-            className={`absolute top-4 right-4 z-10 h-8 w-8 p-0 bg-background/90 hover:bg-background ${
+            className={`absolute z-10 bg-background/90 hover:bg-background ${
               isFavorite(String(ingredient.id)) ? 'text-red-500' : 'text-muted-foreground'
-            }`}
+            } ${isMobile ? 'top-2 right-2 h-6 w-6 p-0' : 'top-4 right-4 h-8 w-8 p-0'}`}
             onClick={(e) => handleFavoriteClick(e, String(ingredient.id))}
           >
             <Heart 
-              className={`h-4 w-4 ${
+              className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'} ${
                 isFavorite(String(ingredient.id)) ? 'fill-current' : ''
               }`} 
             />

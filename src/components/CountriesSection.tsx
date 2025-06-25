@@ -1,5 +1,5 @@
 
-import { MapPin, Euro, DollarSign } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,8 +19,7 @@ const CountriesSection = () => {
           ingredient_id,
           countries!inner(
             name,
-            code,
-            currency_symbol
+            code
           )
         `)
         .order('countries(name)');
@@ -31,7 +30,7 @@ const CountriesSection = () => {
       }
 
       // Count unique ingredients per country
-      const counts: Record<string, { count: number; symbol: string; code: string }> = {};
+      const counts: Record<string, { count: number; code: string }> = {};
       const countryIngredients: Record<string, Set<string>> = {};
       
       data.forEach(price => {
@@ -40,7 +39,7 @@ const CountriesSection = () => {
           const key = country.name;
           if (!countryIngredients[key]) {
             countryIngredients[key] = new Set();
-            counts[key] = { count: 0, symbol: country.currency_symbol, code: country.code };
+            counts[key] = { count: 0, code: country.code };
           }
           countryIngredients[key].add(price.ingredient_id);
         }
@@ -76,12 +75,6 @@ const CountriesSection = () => {
     return flags[countryCode] || '🌍';
   };
 
-  const getCurrencyIcon = (symbol: string) => {
-    if (symbol === '€') return Euro;
-    if (symbol === '$') return DollarSign;
-    return Euro; // Default
-  };
-
   if (!topCountries.length) {
     return null;
   }
@@ -107,8 +100,6 @@ const CountriesSection = () => {
         
         <div className={gridClasses}>
           {topCountries.map((country) => {
-            const CurrencyIcon = getCurrencyIcon(country.symbol);
-            
             return (
               <Link 
                 key={country.name} 
@@ -125,12 +116,6 @@ const CountriesSection = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className={`text-center ${isMobile ? 'pt-0 pb-3 px-3' : 'pt-0'}`}>
-                    <div className={`flex items-center justify-center gap-1 mb-2 ${isMobile ? 'mb-1' : 'mb-2'}`}>
-                      <CurrencyIcon className={`text-muted-foreground ${isMobile ? 'h-2.5 w-2.5' : 'h-3 w-3'}`} />
-                      <span className={`text-muted-foreground ${isMobile ? 'text-xs' : 'text-xs'}`}>
-                        {country.symbol}
-                      </span>
-                    </div>
                     <Badge variant="secondary" className={`group-hover:bg-green-100 group-hover:text-green-700 transition-colors ${isMobile ? 'text-xs px-1.5 py-0.5' : 'text-xs'}`}>
                       {country.count} ingrediente{country.count !== 1 ? 's' : ''}
                     </Badge>

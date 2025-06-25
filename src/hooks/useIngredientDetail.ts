@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
-import { useIngredientById } from "@/hooks/useIngredients";
+import { useParams, useNavigate } from "react-router-dom";
+import { useIngredientBySlugOrId } from "@/hooks/useIngredientBySlugOrId";
 import { useRealImages } from "@/hooks/useRealImages";
 import { useGenerateImage } from "@/hooks/useGenerateImage";
 import { usePageViewLimit } from "@/hooks/usePageViewLimit";
@@ -9,14 +9,23 @@ import { useFavorites } from "@/hooks/useFavorites";
 
 export const useIngredientDetail = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [activeTab, setActiveTab] = useState("nombres");
   
-  const { data: ingredient, isLoading, error } = useIngredientById(id || "");
-  const { data: realImages = [] } = useRealImages(id || "");
+  const { data: ingredient, isLoading, error, isLegacyUrl } = useIngredientBySlugOrId(id || "");
+  const { data: realImages = [] } = useRealImages(ingredient?.id || "");
   const generateImage = useGenerateImage();
   const { hasReachedLimit, recordPageView, getRemainingViews } = usePageViewLimit();
   const { toggleFavorite, isFavorite, loading: favoritesLoading } = useFavorites();
+
+  // Redirect de URLs antiguas a URLs nuevas
+  useEffect(() => {
+    if (ingredient && isLegacyUrl && ingredient.slug) {
+      // Redirigir a la URL amigable con estado 301 (permanente)
+      navigate(`/ingrediente/${ingredient.slug}`, { replace: true });
+    }
+  }, [ingredient, isLegacyUrl, navigate]);
 
   // Registrar vista de página cuando se carga el ingrediente
   useEffect(() => {
@@ -43,7 +52,6 @@ export const useIngredientDetail = () => {
 
   const handleNavigateToTab = (tabName: string) => {
     setActiveTab(tabName);
-    // Scroll suavemente a las tabs
     const tabsElement = document.querySelector('[role="tablist"]');
     if (tabsElement) {
       tabsElement.scrollIntoView({ behavior: 'smooth', block: 'center' });

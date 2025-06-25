@@ -16,4 +16,5 @@ export interface IngredientFormData {
   popularity: number;
   image_url: string;
   real_image_url: string;
+  slug: string; // Nuevo campo para SEO
 }

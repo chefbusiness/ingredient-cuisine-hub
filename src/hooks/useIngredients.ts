@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -20,6 +19,7 @@ export interface Ingredient {
   origen?: string;
   merma: number;
   rendimiento: number;
+  slug: string; // Nuevo campo para URLs amigables
   created_at: string;
   updated_at: string;
   categories?: {
@@ -162,5 +162,39 @@ export const useIngredientById = (id: string) => {
       return data;
     },
     enabled: !!id,
+  });
+};
+
+// Nuevo hook para buscar por slug
+export const useIngredientBySlug = (slug: string) => {
+  return useQuery({
+    queryKey: ['ingredient-slug', slug],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ingredients')
+        .select(`
+          *,
+          categories(name, name_en),
+          ingredient_prices(
+            price,
+            unit,
+            countries(name, currency_symbol, code)
+          ),
+          nutritional_info(*),
+          ingredient_uses(*),
+          ingredient_recipes(*),
+          ingredient_varieties(*)
+        `)
+        .eq('slug', slug)
+        .single();
+
+      if (error) {
+        console.error('Error fetching ingredient by slug:', error);
+        throw error;
+      }
+
+      return data;
+    },
+    enabled: !!slug,
   });
 };

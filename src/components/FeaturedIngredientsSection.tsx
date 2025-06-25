@@ -1,4 +1,3 @@
-
 import { TrendingUp, Camera, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -92,7 +91,7 @@ const FeaturedIngredientsSection = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {featuredIngredients.map((ingredient) => (
-            <Link key={ingredient.id} to={`/ingrediente/${ingredient.id}`}>
+            <Link key={ingredient.id} to={`/ingrediente/${ingredient.slug}`}>
               <Card className="border border-border bg-background hover:bg-muted/30 transition-colors group overflow-hidden h-full">
                 <div className="aspect-square overflow-hidden relative">
                   <img

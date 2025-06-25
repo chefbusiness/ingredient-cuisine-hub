@@ -3,8 +3,6 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    // In a real implementation, you would fetch ingredients from Supabase
-    // For now, we'll create a basic sitemap structure
     const baseUrl = process.env.VITE_PUBLIC_URL || 'https://your-domain.com';
     
     const staticPages = [
@@ -12,10 +10,31 @@ export async function GET() {
       { url: '/directorio', priority: '0.9', changefreq: 'daily' }
     ];
 
-    // Note: In production, you would fetch real ingredient IDs from database
-    const ingredientPages = [
-      // This would be populated with real ingredient IDs
-    ];
+    // Fetch real ingredients from Supabase for sitemap
+    let ingredientPages: string[] = [];
+    
+    try {
+      // Solo importar supabase si estamos en el servidor
+      if (typeof window === 'undefined') {
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(
+          'https://unqhfgupcutpeyepnavl.supabase.co',
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVucWhmZ3VwY3V0cGV5ZXBuYXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MzYzNTcsImV4cCI6MjA2NjExMjM1N30.fAMG2IznLEqReHQ5F4D2bZB5oh74d1jYK2NSjRXvblk'
+        );
+        
+        const { data: ingredients } = await supabase
+          .from('ingredients')
+          .select('slug')
+          .not('slug', 'is', null);
+        
+        if (ingredients) {
+          ingredientPages = ingredients.map(ing => ing.slug);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching ingredients for sitemap:', error);
+      // Si hay error, continuamos con sitemap básico
+    }
 
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -26,9 +45,9 @@ export async function GET() {
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
   </url>`).join('')}
-  ${ingredientPages.map(ingredientId => `
+  ${ingredientPages.map(slug => `
   <url>
-    <loc>${baseUrl}/ingrediente/${ingredientId}</loc>
+    <loc>${baseUrl}/ingrediente/${slug}</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -38,7 +57,7 @@ export async function GET() {
     return new Response(sitemap, {
       headers: {
         'Content-Type': 'application/xml',
-        'Cache-Control': 'public, max-age=3600' // Cache for 1 hour
+        'Cache-Control': 'public, max-age=3600'
       }
     });
   } catch (error) {

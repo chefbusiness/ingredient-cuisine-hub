@@ -22,6 +22,7 @@ interface Ingredient {
   temporada: string;
   hasAIImage?: boolean;
   hasRealImage?: boolean;
+  slug?: string; // Agregar slug opcional para compatibilidad
 }
 
 interface DirectorioGridProps {
@@ -32,12 +33,10 @@ const DirectorioGrid = ({ ingredients }: DirectorioGridProps) => {
   const { toggleFavorite, isFavorite } = useFavorites();
 
   const getIngredientImage = (ingredient: Ingredient) => {
-    // Usar la imagen disponible o fallback
     if (ingredient.image) {
       return ingredient.image;
     }
     
-    // Fallback genérico solo si no hay imagen
     return 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&h=400&fit=crop';
   };
 
@@ -72,11 +71,16 @@ const DirectorioGrid = ({ ingredients }: DirectorioGridProps) => {
     toggleFavorite(ingredientId);
   };
 
+  const getIngredientUrl = (ingredient: Ingredient) => {
+    // Usar slug si está disponible, si no usar ID
+    return `/ingrediente/${ingredient.slug || ingredient.id}`;
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {ingredients.map((ingredient) => (
         <div key={ingredient.id} className="relative">
-          <Link to={`/ingrediente/${ingredient.id}`}>
+          <Link to={getIngredientUrl(ingredient)}>
             <Card className="clean-card group h-full overflow-hidden">
               <div className="aspect-square overflow-hidden relative">
                 <img
@@ -129,7 +133,6 @@ const DirectorioGrid = ({ ingredients }: DirectorioGridProps) => {
             </Card>
           </Link>
           
-          {/* Botón de favorito flotante */}
           <Button
             variant="ghost"
             size="sm"

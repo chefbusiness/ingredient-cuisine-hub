@@ -22,6 +22,7 @@ interface Ingredient {
   temporada: string;
   hasAIImage?: boolean;
   hasRealImage?: boolean;
+  slug?: string; // Agregar slug opcional para compatibilidad
 }
 
 interface DirectorioListProps {
@@ -69,15 +70,19 @@ const DirectorioList = ({ ingredients }: DirectorioListProps) => {
     toggleFavorite(ingredientId);
   };
 
+  const getIngredientUrl = (ingredient: Ingredient) => {
+    // Usar slug si está disponible, si no usar ID
+    return `/ingrediente/${ingredient.slug || ingredient.id}`;
+  };
+
   return (
     <div className="space-y-4">
       {ingredients.map((ingredient) => (
         <div key={ingredient.id} className="relative">
-          <Link to={`/ingrediente/${ingredient.id}`}>
+          <Link to={getIngredientUrl(ingredient)}>
             <Card className="clean-card group overflow-hidden">
               <CardContent className="p-4">
                 <div className="flex gap-4">
-                  {/* Imagen */}
                   <div className="w-24 h-24 flex-shrink-0 relative overflow-hidden rounded-md">
                     <img
                       src={getIngredientImage(ingredient)}
@@ -89,7 +94,6 @@ const DirectorioList = ({ ingredients }: DirectorioListProps) => {
                     />
                   </div>
 
-                  {/* Contenido principal */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between mb-2">
                       <div>
@@ -139,7 +143,6 @@ const DirectorioList = ({ ingredients }: DirectorioListProps) => {
             </Card>
           </Link>
           
-          {/* Botón de favorito flotante */}
           <Button
             variant="ghost"
             size="sm"

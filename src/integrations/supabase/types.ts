@@ -306,6 +306,7 @@ export type Database = {
           popularity: number
           real_image_url: string | null
           rendimiento: number
+          slug: string
           temporada: string | null
           updated_at: string
         }
@@ -327,6 +328,7 @@ export type Database = {
           popularity?: number
           real_image_url?: string | null
           rendimiento?: number
+          slug: string
           temporada?: string | null
           updated_at?: string
         }
@@ -348,6 +350,7 @@ export type Database = {
           popularity?: number
           real_image_url?: string | null
           rendimiento?: number
+          slug?: string
           temporada?: string | null
           updated_at?: string
         }
@@ -554,6 +557,10 @@ export type Database = {
       delete_real_image_safe: {
         Args: { image_id: string }
         Returns: Json
+      }
+      generate_slug: {
+        Args: { input_text: string }
+        Returns: string
       }
       is_super_admin: {
         Args: { user_id: string }

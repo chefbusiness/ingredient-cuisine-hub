@@ -22,7 +22,7 @@ interface Ingredient {
   temporada: string;
   hasAIImage?: boolean;
   hasRealImage?: boolean;
-  slug?: string; // Agregar slug opcional para compatibilidad
+  slug?: string;
 }
 
 interface DirectorioGridProps {
@@ -72,7 +72,7 @@ const DirectorioGrid = ({ ingredients }: DirectorioGridProps) => {
   };
 
   const getIngredientUrl = (ingredient: Ingredient) => {
-    // Usar slug si está disponible, si no usar ID
+    // Prioritizar slug, si no existe usar ID como fallback
     return `/ingrediente/${ingredient.slug || ingredient.id}`;
   };
 

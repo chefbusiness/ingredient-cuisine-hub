@@ -28,6 +28,11 @@ const IngredientDetailLayout = ({
     const description = `${ingredient.description} Información completa sobre ${ingredient.name}: precios, merma (${ingredient.merma}%), rendimiento (${ingredient.rendimiento}%), usos culinarios y más.`;
     const keywords = `${ingredient.name}, ${ingredient.name_en}, ${ingredient.categories?.name}, precios ${ingredient.name}, merma ${ingredient.name}, rendimiento ${ingredient.name}`;
     
+    // Usar slug limpio para URLs canónicas
+    const canonicalUrl = ingredient.slug 
+      ? `${window.location.origin}/ingrediente/${ingredient.slug}`
+      : `${window.location.origin}/ingrediente/${ingredient.id}`;
+    
     return {
       title,
       description,
@@ -36,7 +41,7 @@ const IngredientDetailLayout = ({
       ogDescription: description,
       ogType: "article",
       ogImage: ingredient.real_image_url || ingredient.image_url,
-      canonical: `${window.location.origin}/ingrediente/${ingredient.id}`
+      canonical: canonicalUrl
     };
   };
 
@@ -45,7 +50,12 @@ const IngredientDetailLayout = ({
   const breadcrumbItems = ingredient ? [
     { name: "Inicio", url: window.location.origin },
     { name: "Directorio", url: `${window.location.origin}/directorio` },
-    { name: ingredient.name, url: `${window.location.origin}/ingrediente/${ingredient.id}` }
+    { 
+      name: ingredient.name, 
+      url: ingredient.slug 
+        ? `${window.location.origin}/ingrediente/${ingredient.slug}`
+        : `${window.location.origin}/ingrediente/${ingredient.id}`
+    }
   ] : [];
 
   const breadcrumbSchema = ingredient ? generateBreadcrumbSchema(breadcrumbItems) : null;

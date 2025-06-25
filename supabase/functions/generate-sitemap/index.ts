@@ -15,18 +15,12 @@ Deno.serve(async (req) => {
   }
 
   try {
-    console.log('🗺️ Generando sitemap dinámico...');
+    console.log('🗺️ [SITEMAP] Iniciando generación de sitemap dinámico...');
     
-    // Crear cliente de Supabase
-    const supabase = createClient(
-      'https://unqhfgupcutpeyepnavl.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVucWhmZ3VwY3V0cGV5ZXBuYXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MzYzNTcsImV4cCI6MjA2NjExMjM1N30.fAMG2IznLEqReHQ5F4D2bZB5oh74d1jYK2NSjRXvblk'
-    );
-
     const baseUrl = 'https://ingredientsindex.pro';
     const currentDate = new Date().toISOString();
 
-    // URLs estáticas del sitio
+    // URLs estáticas del sitio (siempre disponibles)
     const staticPages = [
       { url: '/', priority: '1.0', changefreq: 'daily' },
       { url: '/directorio', priority: '0.9', changefreq: 'daily' },
@@ -38,51 +32,86 @@ Deno.serve(async (req) => {
       { url: '/terminos', priority: '0.3', changefreq: 'yearly' }
     ];
 
+    console.log('✅ [SITEMAP] URLs estáticas preparadas:', staticPages.length);
+
+    // Inicializar arrays para datos dinámicos
     let categoryPages: Array<{ name: string; lastmod: string }> = [];
     let ingredientPages: Array<{ slug: string; lastmod: string }> = [];
 
     try {
-      // Obtener categorías activas
-      console.log('📂 Obteniendo categorías...');
-      const { data: categories, error: categoriesError } = await supabase
+      console.log('🔗 [SITEMAP] Conectando a Supabase...');
+      
+      const supabase = createClient(
+        'https://unqhfgupcutpeyepnavl.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVucWhmZ3VwY3V0cGV5ZXBuYXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MzYzNTcsImV4cCI6MjA2NjExMjM1N30.fAMG2IznLEqReHQ5F4D2bZB5oh74d1jYK2NSjRXvblk'
+      );
+
+      console.log('📂 [SITEMAP] Obteniendo categorías...');
+      
+      // Consulta simplificada para categorías con timeout
+      const categoriesPromise = supabase
         .from('categories')
         .select('name, created_at')
-        .order('name');
+        .order('name')
+        .limit(50); // Limitar para evitar timeouts
+
+      const categoriesResult = await Promise.race([
+        categoriesPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout obteniendo categorías')), 5000)
+        )
+      ]);
+
+      const { data: categories, error: categoriesError } = categoriesResult as any;
 
       if (categoriesError) {
-        console.error('Error obteniendo categorías:', categoriesError);
-      } else if (categories) {
-        categoryPages = categories.map(cat => ({
+        console.warn('⚠️ [SITEMAP] Error obteniendo categorías:', categoriesError.message);
+      } else if (categories && categories.length > 0) {
+        categoryPages = categories.map((cat: any) => ({
           name: cat.name,
           lastmod: cat.created_at || currentDate
         }));
-        console.log(`✅ ${categoryPages.length} categorías encontradas`);
+        console.log(`✅ [SITEMAP] ${categoryPages.length} categorías obtenidas`);
       }
 
-      // Obtener ingredientes con slug válido
-      console.log('🥕 Obteniendo ingredientes...');
-      const { data: ingredients, error: ingredientsError } = await supabase
+      console.log('🥕 [SITEMAP] Obteniendo ingredientes...');
+      
+      // Consulta simplificada para ingredientes con timeout
+      const ingredientsPromise = supabase
         .from('ingredients')
         .select('slug, updated_at')
         .not('slug', 'is', null)
         .neq('slug', '')
-        .order('updated_at', { ascending: false });
+        .order('updated_at', { ascending: false })
+        .limit(500); // Limitar para evitar timeouts
+
+      const ingredientsResult = await Promise.race([
+        ingredientsPromise,
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout obteniendo ingredientes')), 5000)
+        )
+      ]);
+
+      const { data: ingredients, error: ingredientsError } = ingredientsResult as any;
 
       if (ingredientsError) {
-        console.error('Error obteniendo ingredientes:', ingredientsError);
-      } else if (ingredients) {
-        ingredientPages = ingredients.map(ing => ({
+        console.warn('⚠️ [SITEMAP] Error obteniendo ingredientes:', ingredientsError.message);
+      } else if (ingredients && ingredients.length > 0) {
+        ingredientPages = ingredients.map((ing: any) => ({
           slug: ing.slug,
           lastmod: ing.updated_at || currentDate
         }));
-        console.log(`✅ ${ingredientPages.length} ingredientes encontrados`);
+        console.log(`✅ [SITEMAP] ${ingredientPages.length} ingredientes obtenidos`);
       }
+
     } catch (dbError) {
-      console.error('Error accediendo a la base de datos:', dbError);
-      // Continuar con sitemap básico en caso de error
+      console.error('❌ [SITEMAP] Error accediendo a la base de datos:', dbError);
+      console.log('🔄 [SITEMAP] Continuando con sitemap básico...');
     }
 
     // Generar XML del sitemap
+    console.log('📝 [SITEMAP] Generando XML...');
+    
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   ${staticPages.map(page => `
@@ -108,16 +137,18 @@ Deno.serve(async (req) => {
   </url>`).join('')}
 </urlset>`;
 
-    console.log(`🎉 Sitemap generado con ${staticPages.length + categoryPages.length + ingredientPages.length} URLs`);
+    const totalUrls = staticPages.length + categoryPages.length + ingredientPages.length;
+    console.log(`🎉 [SITEMAP] Sitemap generado exitosamente con ${totalUrls} URLs`);
 
     return new Response(sitemap, {
+      status: 200,
       headers: corsHeaders
     });
 
   } catch (error) {
-    console.error('❌ Error generando sitemap:', error);
+    console.error('❌ [SITEMAP] Error crítico generando sitemap:', error);
     
-    // Sitemap básico de emergencia
+    // Sitemap de emergencia con URLs esenciales
     const emergencySitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
@@ -132,9 +163,24 @@ Deno.serve(async (req) => {
     <changefreq>daily</changefreq>
     <priority>0.9</priority>
   </url>
+  <url>
+    <loc>https://ingredientsindex.pro/sobre-nosotros</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://ingredientsindex.pro/contacto</loc>
+    <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+  </url>
 </urlset>`;
 
+    console.log('🚨 [SITEMAP] Enviando sitemap de emergencia');
+
     return new Response(emergencySitemap, {
+      status: 200,
       headers: corsHeaders
     });
   }

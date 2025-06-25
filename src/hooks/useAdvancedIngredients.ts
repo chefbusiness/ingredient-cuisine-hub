@@ -31,11 +31,12 @@ export const useAdvancedIngredients = (filters: AdvancedFilters, pagination: Pag
       const selectedCountry = filters.country || 'España';
       console.log('🌍 País seleccionado:', selectedCountry);
 
+      // CORRECCIÓN CRÍTICA: Usar inner join correcto para categorías
       let query = supabase
         .from('ingredients')
         .select(`
           *,
-          categories!left(name, name_en),
+          categories!inner(name, name_en),
           ingredient_prices!left(
             price,
             unit,
@@ -62,9 +63,10 @@ export const useAdvancedIngredients = (filters: AdvancedFilters, pagination: Pag
         }
       }
 
-      // PASO 2: Aplicar filtro de categoría SOLO si NO hay búsqueda
-      if (hasSpecificCategory && !hasSearchQuery) {
+      // PASO 2: APLICAR FILTRO DE CATEGORÍA - CORRECCIÓN CRÍTICA
+      if (hasSpecificCategory) {
         console.log('📂 Aplicando filtro de categoría:', filters.category);
+        // CORRECCIÓN: Usar la sintaxis correcta para el filtro de categoría
         query = query.eq('categories.name', filters.category);
       }
 

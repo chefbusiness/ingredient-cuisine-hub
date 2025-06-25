@@ -3,7 +3,7 @@ import UnifiedHeader from "@/components/UnifiedHeader";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { ChefHat, Users, Target, Heart } from "lucide-react";
+import { ChefHat, Users, Target, Heart, ExternalLink } from "lucide-react";
 
 const SobreNosotros = () => {
   const seoData = {
@@ -129,24 +129,57 @@ const SobreNosotros = () => {
               
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-xl font-semibold text-foreground mb-2">ChefBusiness</h3>
-                  <p className="text-muted-foreground">
+                  <a 
+                    href="https://chefbusiness.co" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="group inline-flex items-center space-x-2 hover:text-primary transition-colors"
+                    title="Visitar ChefBusiness.co"
+                  >
+                    <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
+                      ChefBusiness
+                    </h3>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </a>
+                  <p className="text-muted-foreground mt-2">
                     Consultoría gastronómica especializada que ayuda a restaurantes y profesionales 
                     a optimizar sus operaciones y maximizar su rentabilidad.
                   </p>
                 </div>
                 
                 <div>
-                  <h3 className="text-xl font-semibold text-foreground mb-2">GastroSEO</h3>
-                  <p className="text-muted-foreground">
+                  <a 
+                    href="https://gastroseo.com" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="group inline-flex items-center space-x-2 hover:text-primary transition-colors"
+                    title="Visitar GastroSEO.com"
+                  >
+                    <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
+                      GastroSEO
+                    </h3>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </a>
+                  <p className="text-muted-foreground mt-2">
                     Servicios de SEO y marketing digital específicamente diseñados para restaurantes 
                     y negocios gastronómicos, ayudándoles a destacar en el mundo digital.
                   </p>
                 </div>
                 
                 <div>
-                  <h3 className="text-xl font-semibold text-foreground mb-2">AIChef.pro</h3>
-                  <p className="text-muted-foreground">
+                  <a 
+                    href="https://aichef.pro" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="group inline-flex items-center space-x-2 hover:text-primary transition-colors"
+                    title="Visitar AIChef.pro"
+                  >
+                    <h3 className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors">
+                      AIChef.pro
+                    </h3>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  </a>
+                  <p className="text-muted-foreground mt-2">
                     Suite de aplicaciones con inteligencia artificial para chefs, incluyendo 
                     herramientas para la creación de recetas, gestión de inventarios y análisis 
                     de costos con tecnología de vanguardia.

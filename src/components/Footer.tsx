@@ -20,20 +20,33 @@ const Footer = () => {
           </div>
           
           <div>
-            <h5 className="text-sm font-medium mb-3 text-foreground">Enlaces</h5>
+            <h5 className="text-sm font-medium mb-3 text-foreground">Navegación</h5>
             <ul className="space-y-1 text-xs text-muted-foreground">
               <li><Link to="/directorio" className="hover:text-foreground transition-colors">Directorio</Link></li>
               <li><Link to="/categorias" className="hover:text-foreground transition-colors">Categorías</Link></li>
-              <li><a href="#" className="hover:text-foreground transition-colors">Sobre Nosotros</a></li>
+              <li><Link to="/sobre-nosotros" className="hover:text-foreground transition-colors">Sobre Nosotros</Link></li>
+              <li><Link to="/contacto" className="hover:text-foreground transition-colors">Contacto</Link></li>
             </ul>
           </div>
           
           <div>
-            <h5 className="text-sm font-medium mb-3 text-foreground">Contacto</h5>
-            <p className="text-xs text-muted-foreground">
-              ¿Tienes sugerencias o necesitas ayuda?<br />
-              Estamos aquí para ayudarte.
-            </p>
+            <h5 className="text-sm font-medium mb-3 text-foreground">Legal</h5>
+            <ul className="space-y-1 text-xs text-muted-foreground">
+              <li><Link to="/privacidad" className="hover:text-foreground transition-colors">Política de Privacidad</Link></li>
+              <li><Link to="/cookies" className="hover:text-foreground transition-colors">Política de Cookies</Link></li>
+              <li><Link to="/terminos" className="hover:text-foreground transition-colors">Términos de Uso</Link></li>
+            </ul>
+            <div className="mt-4">
+              <p className="text-xs text-muted-foreground">
+                ¿Preguntas o sugerencias?<br />
+                <a 
+                  href="mailto:john@chefbusiness.co" 
+                  className="text-primary hover:underline"
+                >
+                  john@chefbusiness.co
+                </a>
+              </p>
+            </div>
           </div>
           
           <div>

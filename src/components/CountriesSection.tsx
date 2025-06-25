@@ -1,4 +1,3 @@
-
 import { MapPin, Euro, DollarSign } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +9,6 @@ import { useResponsive } from "@/hooks/useResponsive";
 const CountriesSection = () => {
   const { isMobile, isTablet } = useResponsive();
 
-  // Get ingredient counts per country with fixed query
   const { data: countryCounts = {} } = useQuery({
     queryKey: ['country-counts'],
     queryFn: async () => {
@@ -47,7 +45,6 @@ const CountriesSection = () => {
     },
   });
 
-  // Select top countries with most ingredients (responsive count)
   const maxCountries = isMobile ? 4 : isTablet ? 6 : 8;
   const topCountries = Object.entries(countryCounts)
     .sort(([,a], [,b]) => b.count - a.count)

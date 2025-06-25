@@ -1,4 +1,3 @@
-
 import { TrendingUp, Camera, Sparkles, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -6,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useResponsive } from "@/hooks/useResponsive";
+import LazyImage from "@/components/LazyImage";
 
 interface Ingredient {
   id: number | string;
@@ -87,12 +87,12 @@ const DirectorioList = ({ ingredients }: DirectorioListProps) => {
               <CardContent className={isMobile ? "p-3" : "p-4"}>
                 <div className={`flex gap-3 ${isMobile ? 'gap-3' : 'gap-4'}`}>
                   <div className={`flex-shrink-0 relative overflow-hidden rounded-md ${isMobile ? 'w-16 h-16' : 'w-24 h-24'}`}>
-                    <img
+                    <LazyImage
                       src={getIngredientImage(ingredient)}
                       alt={ingredient.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="group-hover:scale-105 transition-transform duration-300"
                       onError={(e) => {
-                        e.currentTarget.src = 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&h=400&fit=crop';
+                        console.log('Image failed to load for ingredient:', ingredient.name);
                       }}
                     />
                   </div>

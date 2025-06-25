@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { usePopularIngredients } from "@/hooks/usePopularIngredients";
 import { useIngredients } from "@/hooks/useIngredients";
+import LazyImage from "@/components/LazyImage";
 
 const FeaturedIngredientsSection = () => {
   // Get both popular ingredients from views and general ingredients sorted by popularity
@@ -94,12 +95,12 @@ const FeaturedIngredientsSection = () => {
             <Link key={ingredient.id} to={`/ingrediente/${ingredient.slug}`}>
               <Card className="border border-border bg-background hover:bg-muted/30 transition-colors group overflow-hidden h-full">
                 <div className="aspect-square overflow-hidden relative">
-                  <img
+                  <LazyImage
                     src={getIngredientImage(ingredient)}
                     alt={ingredient.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="group-hover:scale-105 transition-transform duration-300"
                     onError={(e) => {
-                      e.currentTarget.src = 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&h=400&fit=crop';
+                      console.log('Image failed to load for featured ingredient:', ingredient.name);
                     }}
                   />
                   {getImageBadge(ingredient)}

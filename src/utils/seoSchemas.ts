@@ -1,12 +1,14 @@
 
 import { Ingredient } from '@/hooks/useIngredients';
 
+const BASE_URL = 'https://ingredientsindex.pro';
+
 export const generateOrganizationSchema = () => ({
   "@context": "https://schema.org",
   "@type": "Organization",
-  "name": "Directorio de Ingredientes de Cocina y Hostelería",
-  "url": window.location.origin,
-  "logo": `${window.location.origin}/favicon.ico`,
+  "name": "IngredientsIndex.pro - Directorio de Ingredientes de Cocina y Hostelería",
+  "url": BASE_URL,
+  "logo": `${BASE_URL}/favicon.ico`,
   "description": "Directorio profesional de ingredientes culinarios con información detallada sobre precios, mermas, rendimientos y usos para chefs y profesionales de la hostelería",
   "sameAs": [],
   "contactPoint": {
@@ -19,12 +21,12 @@ export const generateOrganizationSchema = () => ({
 export const generateWebsiteSchema = () => ({
   "@context": "https://schema.org",
   "@type": "WebSite",
-  "name": "Directorio de Ingredientes",
-  "url": window.location.origin,
+  "name": "IngredientsIndex.pro",
+  "url": BASE_URL,
   "description": "Directorio profesional de ingredientes culinarios",
   "potentialAction": {
     "@type": "SearchAction",
-    "target": `${window.location.origin}/directorio?search={search_term_string}`,
+    "target": `${BASE_URL}/directorio?search={search_term_string}`,
     "query-input": "required name=search_term_string"
   }
 });
@@ -38,7 +40,7 @@ export const generateIngredientSchema = (ingredient: Ingredient) => ({
   "category": ingredient.categories?.name || "Ingrediente Culinario",
   "brand": {
     "@type": "Brand",
-    "name": "Directorio de Ingredientes"
+    "name": "IngredientsIndex.pro"
   },
   "additionalProperty": [
     {
@@ -62,7 +64,10 @@ export const generateIngredientSchema = (ingredient: Ingredient) => ({
   }),
   ...(ingredient.origen && {
     "countryOfOrigin": ingredient.origen
-  })
+  }),
+  "url": ingredient.slug 
+    ? `${BASE_URL}/ingrediente/${ingredient.slug}`
+    : `${BASE_URL}/ingrediente/${ingredient.id}`
 });
 
 export const generateBreadcrumbSchema = (items: { name: string; url: string }[]) => ({
@@ -79,9 +84,22 @@ export const generateBreadcrumbSchema = (items: { name: string; url: string }[])
 export const generateFoodEstablishmentSchema = () => ({
   "@context": "https://schema.org",
   "@type": "FoodEstablishment",
-  "name": "Directorio de Ingredientes de Cocina y Hostelería",
+  "name": "IngredientsIndex.pro - Directorio de Ingredientes de Cocina y Hostelería",
   "description": "Recurso profesional para chefs y profesionales de la hostelería",
-  "url": window.location.origin,
+  "url": BASE_URL,
   "servesCuisine": ["International", "Professional Cooking"],
   "priceRange": "Free"
+});
+
+export const generateFAQSchema = (faqs: { question: string; answer: string }[]) => ({
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": faqs.map(faq => ({
+    "@type": "Question",
+    "name": faq.question,
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": faq.answer
+    }
+  }))
 });

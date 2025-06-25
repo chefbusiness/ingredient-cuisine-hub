@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const baseUrl = process.env.VITE_PUBLIC_URL || 'https://your-domain.com';
+    const baseUrl = 'https://ingredientsindex.pro';
     
     const staticPages = [
       { url: '/', priority: '1.0', changefreq: 'daily' },
@@ -12,6 +12,7 @@ export async function GET() {
 
     // Fetch real ingredients from Supabase for sitemap
     let ingredientPages: string[] = [];
+    let categoryPages: string[] = [];
     
     try {
       // Solo importar supabase si estamos en el servidor
@@ -22,17 +23,32 @@ export async function GET() {
           'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVucWhmZ3VwY3V0cGV5ZXBuYXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MzYzNTcsImV4cCI6MjA2NjExMjM1N30.fAMG2IznLEqReHQ5F4D2bZB5oh74d1jYK2NSjRXvblk'
         );
         
+        // Obtener ingredientes con slug
         const { data: ingredients } = await supabase
           .from('ingredients')
-          .select('slug')
-          .not('slug', 'is', null);
+          .select('slug, updated_at')
+          .not('slug', 'is', null)
+          .order('updated_at', { ascending: false });
         
         if (ingredients) {
-          ingredientPages = ingredients.map(ing => ing.slug);
+          ingredientPages = ingredients.map(ing => ({
+            slug: ing.slug,
+            lastmod: ing.updated_at || new Date().toISOString()
+          }));
+        }
+
+        // Obtener categorías únicas
+        const { data: categories } = await supabase
+          .from('categories')
+          .select('slug, name')
+          .not('slug', 'is', null);
+        
+        if (categories) {
+          categoryPages = categories.map(cat => cat.slug);
         }
       }
     } catch (error) {
-      console.error('Error fetching ingredients for sitemap:', error);
+      console.error('Error fetching data for sitemap:', error);
       // Si hay error, continuamos con sitemap básico
     }
 
@@ -45,10 +61,17 @@ export async function GET() {
     <changefreq>${page.changefreq}</changefreq>
     <priority>${page.priority}</priority>
   </url>`).join('')}
-  ${ingredientPages.map(slug => `
+  ${categoryPages.map(slug => `
   <url>
-    <loc>${baseUrl}/ingrediente/${slug}</loc>
+    <loc>${baseUrl}/directorio?category=${slug}</loc>
     <lastmod>${new Date().toISOString()}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>`).join('')}
+  ${ingredientPages.map(item => `
+  <url>
+    <loc>${baseUrl}/ingrediente/${typeof item === 'string' ? item : item.slug}</loc>
+    <lastmod>${typeof item === 'string' ? new Date().toISOString() : item.lastmod}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`).join('')}
@@ -57,7 +80,7 @@ export async function GET() {
     return new Response(sitemap, {
       headers: {
         'Content-Type': 'application/xml',
-        'Cache-Control': 'public, max-age=3600'
+        'Cache-Control': 'public, max-age=3600, s-maxage=3600'
       }
     });
   } catch (error) {

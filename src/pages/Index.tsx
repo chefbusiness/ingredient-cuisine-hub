@@ -14,15 +14,15 @@ import { generateOrganizationSchema, generateWebsiteSchema, generateFoodEstablis
 
 const Index = () => {
   const seoData = {
-    title: "Directorio de Ingredientes de Cocina y Hostelería | Precios, Mermas y Rendimientos",
+    title: "Directorio de Ingredientes de Cocina y Hostelería | Precios, Mermas y Rendimientos | IngredientsIndex.pro",
     description: "Directorio profesional de ingredientes culinarios con información detallada sobre precios, mermas, rendimientos y usos para chefs y profesionales de la hostelería. Acceso gratuito a 20+ ingredientes.",
     keywords: "ingredientes cocina, hostelería, precios ingredientes, merma, rendimiento, chefs profesionales, directorio culinario",
-    ogTitle: "Directorio Profesional de Ingredientes Culinarios",
-    ogDescription: "Tu herramienta profesional para encontrar información detallada sobre ingredientes culinarios",
+    ogTitle: "IngredientsIndex.pro - Directorio Profesional de Ingredientes Culinarios",
+    ogDescription: "Tu herramienta profesional para encontrar información detallada sobre ingredientes culinarios con precios, mermas y rendimientos actualizados.",
     ogType: "website",
-    ogImage: "https://lovable.dev/opengraph-image-p98pqg.png",
+    ogImage: "https://ingredientsindex.pro/og-image.jpg",
     twitterCard: "summary_large_image",
-    canonical: window.location.origin
+    canonical: "https://ingredientsindex.pro"
   };
 
   const organizationSchema = generateOrganizationSchema();

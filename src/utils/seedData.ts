@@ -32,6 +32,7 @@ export const seedIngredients = async () => {
       rendimiento: 94.8,
       temporada: "Todo el año",
       origen: "Mediterráneo",
+      slug: "tomate-cherry",
       price_es: 3.50,
       price_us: 4.20
     },
@@ -47,6 +48,7 @@ export const seedIngredients = async () => {
       rendimiento: 65.0,
       temporada: "Todo el año",
       origen: "Noruega",
+      slug: "salmon-noruego",
       price_es: 24.00,
       price_us: 28.80
     },
@@ -62,6 +64,7 @@ export const seedIngredients = async () => {
       rendimiento: 85.0,
       temporada: "Noviembre - Marzo",
       origen: "Francia",
+      slug: "trufa-negra",
       price_es: 800.00,
       price_us: 960.00
     },
@@ -77,6 +80,7 @@ export const seedIngredients = async () => {
       rendimiento: 92.0,
       temporada: "Abril - Octubre",
       origen: "Mediterráneo",
+      slug: "albahaca-fresca",
       price_es: 12.00,
       price_us: 14.40
     },
@@ -92,6 +96,7 @@ export const seedIngredients = async () => {
       rendimiento: 80.0,
       temporada: "Todo el año",
       origen: "España",
+      slug: "ternera-de-avila",
       price_es: 32.00,
       price_us: 38.40
     },
@@ -107,6 +112,7 @@ export const seedIngredients = async () => {
       rendimiento: 100.0,
       temporada: "Todo el año",
       origen: "España",
+      slug: "aceite-de-oliva-virgen-extra",
       price_es: 8.50,
       price_us: 10.20,
       unit: "L"
@@ -123,6 +129,7 @@ export const seedIngredients = async () => {
       rendimiento: 98.0,
       temporada: "Todo el año",
       origen: "España",
+      slug: "queso-manchego",
       price_es: 18.00,
       price_us: 21.60
     },
@@ -138,6 +145,7 @@ export const seedIngredients = async () => {
       rendimiento: 99.5,
       temporada: "Octubre - Noviembre",
       origen: "España",
+      slug: "azafran",
       price_es: 3500.00,
       price_us: 4200.00
     }

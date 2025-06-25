@@ -13,7 +13,7 @@ export const useGenerateImage = () => {
       description?: string;
       ingredientId?: string;
     }) => {
-      console.log('🖼️ === ENHANCED SINGLE IMAGE GENERATION (BATCH COMPATIBLE) ===');
+      console.log('🖼️ === ENHANCED INTELLIGENT IMAGE GENERATION ===');
       console.log('📋 Input parameters:', { 
         ingredientName, 
         ingredientId, 
@@ -25,49 +25,50 @@ export const useGenerateImage = () => {
         throw new Error('ID del ingrediente es requerido para generar imagen');
       }
 
-      // PASO 1: Pre-validación mejorada del ingrediente
-      console.log('🔍 Step 1: Enhanced ingredient pre-validation...');
+      // PASO 1: Validación mejorada del ingrediente
+      console.log('🔍 Step 1: Enhanced ingredient validation...');
       const { data: existingIngredient, error: checkError } = await supabase
         .from('ingredients')
-        .select('id, name, image_url, updated_at, created_at')
+        .select(`
+          id, 
+          name, 
+          description, 
+          image_url, 
+          updated_at, 
+          created_at,
+          categories(name)
+        `)
         .eq('id', ingredientId)
         .maybeSingle();
       
       if (checkError) {
-        console.error('❌ Pre-validation error:', checkError);
+        console.error('❌ Validation error:', checkError);
         throw new Error(`Error verificando ingrediente: ${checkError.message}`);
       }
       
       if (!existingIngredient) {
-        console.error('❌ Ingredient not found during pre-validation:', ingredientId);
+        console.error('❌ Ingredient not found during validation:', ingredientId);
         throw new Error('Ingrediente no encontrado en la base de datos');
       }
       
-      console.log('✅ Pre-validation successful:', { 
+      console.log('✅ Validation successful:', { 
         id: existingIngredient.id, 
         name: existingIngredient.name,
+        category: existingIngredient.categories?.name,
         hasCurrentImage: !!existingIngredient.image_url,
-        createdAt: existingIngredient.created_at,
-        timeSinceCreation: Date.now() - new Date(existingIngredient.created_at).getTime()
+        hasDescription: !!existingIngredient.description
       });
       
-      // PASO 2: Verificación de conectividad de la función
-      console.log('🔗 Step 2: Testing generate-image function connectivity...');
+      // PASO 2: Llamada a la función con contexto mejorado
+      console.log('🧠 Step 2: Calling intelligent image generation...');
       try {
-        // Pequeña pausa adicional si el ingrediente es muy reciente
-        const timeSinceCreation = Date.now() - new Date(existingIngredient.created_at).getTime();
-        if (timeSinceCreation < 2000) {
-          console.log('⏸️ Ingredient very recent, adding extra delay...');
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-        
-        console.log('📤 Calling generate-image function with enhanced payload...');
         const { data, error } = await supabase.functions.invoke('generate-image', {
           body: { 
-            ingredientName: ingredientName,
-            name: ingredientName,
-            description: description,
-            ingredientId: ingredientId // Añadir ID para debugging
+            ingredientName: existingIngredient.name,
+            name: existingIngredient.name,
+            description: existingIngredient.description || description,
+            ingredientId: ingredientId,
+            category: existingIngredient.categories?.name
           }
         });
 
@@ -75,6 +76,7 @@ export const useGenerateImage = () => {
           hasData: !!data,
           success: data?.success,
           hasImageUrl: !!data?.imageUrl,
+          intelligentPrompt: data?.intelligentPrompt,
           hasError: !!error,
           errorMessage: error?.message || 'none'
         });
@@ -94,13 +96,14 @@ export const useGenerateImage = () => {
           throw new Error('No se recibió URL de imagen desde Flux');
         }
         
-        console.log('✅ Image generation successful:', {
+        console.log('✅ Intelligent image generation successful:', {
           imageUrlLength: data.imageUrl.length,
-          imageUrlPrefix: data.imageUrl.substring(0, 50) + '...'
+          imageUrlPrefix: data.imageUrl.substring(0, 50) + '...',
+          intelligentPrompt: data.intelligentPrompt
         });
         
-        // PASO 3: Guardado en base de datos con retry logic
-        console.log('💾 Step 3: Enhanced database save with retry...');
+        // PASO 3: Guardado en base de datos con retry
+        console.log('💾 Step 3: Enhanced database save...');
         
         const saveImageToDb = async (retryCount = 0) => {
           const timestamp = new Date().toISOString();
@@ -141,7 +144,7 @@ export const useGenerateImage = () => {
 
         const updatedIngredient = await saveImageToDb();
         
-        // PASO 4: Verificación final exhaustiva
+        // PASO 4: Verificación final
         console.log('🔎 Step 4: Final verification...');
         if (!updatedIngredient.image_url || updatedIngredient.image_url !== data.imageUrl) {
           console.error('❌ Final verification failed:', {
@@ -151,36 +154,38 @@ export const useGenerateImage = () => {
           throw new Error('Verificación final falló - imagen no guardada correctamente');
         }
 
-        console.log('🎉 === IMAGE GENERATION AND SAVE COMPLETELY SUCCESSFUL ===');
+        console.log('🎉 === INTELLIGENT IMAGE GENERATION COMPLETELY SUCCESSFUL ===');
         
         return {
           success: true,
           imageUrl: data.imageUrl,
           ingredientId: ingredientId,
-          ingredientName: ingredientName,
+          ingredientName: existingIngredient.name,
           savedToDatabase: true,
           verifiedSave: true,
+          intelligentPrompt: data.intelligentPrompt,
+          detectedType: data.detectedType,
           updatedIngredient: updatedIngredient
         };
         
       } catch (functionError) {
-        console.error('❌ Enhanced image generation failed:', functionError);
+        console.error('❌ Intelligent image generation failed:', functionError);
         throw functionError;
       }
     },
     onSuccess: (data) => {
-      console.log('🎉 Enhanced image generation SUCCESS - invalidating queries');
+      console.log('🎉 Intelligent image generation SUCCESS - invalidating queries');
       
       queryClient.invalidateQueries({ queryKey: ['ingredients'] });
       queryClient.invalidateQueries({ queryKey: ['ingredient', data.ingredientId] });
       
       toast({
-        title: "✅ Imagen generada exitosamente",
-        description: `Nueva imagen verificada para ${data.ingredientName}`,
+        title: "✅ Imagen inteligente generada",
+        description: `Nueva imagen optimizada para ${data.ingredientName}`,
       });
     },
     onError: (error) => {
-      console.error('❌ Enhanced image generation FAILED:', error);
+      console.error('❌ Intelligent image generation FAILED:', error);
       toast({
         title: "❌ Error al generar imagen",
         description: error.message,

@@ -26,6 +26,100 @@ const generateSEOFileName = (ingredientName: string) => {
   return `${cleanName}-${timestamp}.webp`;
 };
 
+// Sistema inteligente de prompts por tipo de ingrediente
+const generateIntelligentPrompt = (ingredientName: string, description: string = '', category: string = '') => {
+  const name = ingredientName.toLowerCase();
+  const desc = description.toLowerCase();
+  const cat = category.toLowerCase();
+  
+  console.log('🔍 Analyzing ingredient:', { name, category: cat, hasDescription: !!description });
+  
+  // Detectar tipo de ingrediente basado en múltiples factores
+  const isPescado = name.includes('pescado') || name.includes('pez') || name.includes('lubina') || 
+                   name.includes('sardina') || name.includes('bacalao') || name.includes('merluza') ||
+                   name.includes('salmón') || name.includes('atún') || name.includes('trucha') ||
+                   desc.includes('pescado') || desc.includes('azul') || cat.includes('pescado');
+                   
+  const isMarisco = name.includes('marisco') || name.includes('gamba') || name.includes('langosta') ||
+                   name.includes('mejillón') || name.includes('almeja') || name.includes('pulpo') ||
+                   name.includes('calamar') || name.includes('sepia') || cat.includes('marisco');
+                   
+  const isCarne = name.includes('carne') || name.includes('ternera') || name.includes('cerdo') ||
+                 name.includes('pollo') || name.includes('pato') || name.includes('cordero') ||
+                 name.includes('jamón') || name.includes('lomo') || cat.includes('carne');
+                 
+  const isAve = name.includes('pollo') || name.includes('pato') || name.includes('pavo') ||
+               name.includes('codorniz') || name.includes('gallina') || cat.includes('ave');
+               
+  const isFruta = name.includes('fruta') || name.includes('manzana') || name.includes('pera') ||
+                 name.includes('naranja') || name.includes('limón') || name.includes('uva') ||
+                 cat.includes('fruta');
+                 
+  const isVerdura = name.includes('verdura') || name.includes('lechuga') || name.includes('tomate') ||
+                   name.includes('zanahoria') || name.includes('cebolla') || cat.includes('verdura');
+                   
+  const isEspecia = name.includes('especia') || name.includes('pimienta') || name.includes('azafrán') ||
+                   name.includes('pimentón') || name.includes('comino') || cat.includes('especia') ||
+                   cat.includes('condimento');
+                   
+  const isHierba = name.includes('hierba') || name.includes('romero') || name.includes('tomillo') ||
+                  name.includes('orégano') || name.includes('albahaca') || cat.includes('hierba');
+                  
+  const isLagibre = name.includes('lácteo') || name.includes('leche') || name.includes('queso') ||
+                   name.includes('yogur') || name.includes('mantequilla') || cat.includes('lácteo');
+
+  let prompt = '';
+  
+  if (isPescado) {
+    console.log('🐟 Detected: Fish');
+    prompt = `Professional culinary photography of ${ingredientName}, fresh fish, seafood market quality, clean white background, high-resolution food photography, restaurant presentation, natural lighting`;
+  } else if (isMarisco) {
+    console.log('🦐 Detected: Seafood');
+    prompt = `Professional culinary photography of ${ingredientName}, fresh seafood, premium quality, clean white background, high-resolution food photography, gourmet presentation`;
+  } else if (isAve) {
+    console.log('🦆 Detected: Poultry');
+    prompt = `Professional culinary photography of ${ingredientName}, fresh poultry, butcher quality, clean white background, high-resolution food photography, raw meat presentation`;
+  } else if (isCarne) {
+    console.log('🥩 Detected: Meat');
+    prompt = `Professional culinary photography of ${ingredientName}, fresh meat cut, butcher quality, clean white background, high-resolution food photography, raw meat presentation`;
+  } else if (isFruta) {
+    console.log('🍎 Detected: Fruit');
+    prompt = `Botanical illustration of ${ingredientName}, fresh fruit, vibrant natural colors, scientific botanical drawing style, detailed textures, clean white background, professional illustration`;
+  } else if (isVerdura) {
+    console.log('🥬 Detected: Vegetable');
+    prompt = `Botanical illustration of ${ingredientName}, fresh vegetable, vibrant natural colors, scientific botanical drawing style, detailed textures, clean white background, professional illustration`;
+  } else if (isEspecia) {
+    console.log('🌶️ Detected: Spice');
+    prompt = `Professional macro photography of ${ingredientName}, spice powder or whole spice, culinary presentation, clean white background, high detail, food styling`;
+  } else if (isHierba) {
+    console.log('🌿 Detected: Herb');
+    prompt = `Botanical illustration of ${ingredientName}, fresh herb, detailed leaves, scientific botanical drawing style, vibrant green colors, clean white background, professional illustration`;
+  } else if (isLagibre) {
+    console.log('🥛 Detected: Dairy');
+    prompt = `Professional culinary photography of ${ingredientName}, dairy product, clean presentation, white background, high-resolution food photography, minimalist styling`;
+  } else {
+    console.log('🔄 Detected: Generic ingredient');
+    // Prompt genérico pero específico para ingredientes culinarios
+    prompt = `Professional culinary photography of ${ingredientName}, high-quality ingredient, clean white background, food styling, restaurant quality presentation, natural lighting`;
+  }
+
+  // Añadir contexto de la descripción si contiene información útil
+  if (description && description.length > 20) {
+    const contextKeywords = [];
+    if (desc.includes('fresco')) contextKeywords.push('fresh');
+    if (desc.includes('seco')) contextKeywords.push('dried');
+    if (desc.includes('mediterráneo')) contextKeywords.push('mediterranean style');
+    if (desc.includes('tradicional')) contextKeywords.push('traditional');
+    
+    if (contextKeywords.length > 0) {
+      prompt += `, ${contextKeywords.join(', ')}`;
+    }
+  }
+
+  console.log('📝 Generated intelligent prompt:', prompt);
+  return prompt;
+};
+
 const downloadAndUploadImage = async (imageUrl: string, fileName: string) => {
   console.log('📥 Downloading image from Replicate:', imageUrl.substring(0, 50) + '...');
   
@@ -65,7 +159,7 @@ const downloadAndUploadImage = async (imageUrl: string, fileName: string) => {
 };
 
 serve(async (req) => {
-  console.log('🖼️ === ENHANCED GENERATE-IMAGE WITH STORAGE ===');
+  console.log('🖼️ === ENHANCED INTELLIGENT IMAGE GENERATION ===');
   
   if (req.method === 'OPTIONS') {
     console.log('⚡ Handling CORS preflight');
@@ -77,7 +171,7 @@ serve(async (req) => {
     const body = await req.json();
     console.log('📥 Body received:', JSON.stringify(body, null, 2));
 
-    const { ingredientName, name, description } = body;
+    const { ingredientName, name, description, ingredientId } = body;
     const finalIngredientName = ingredientName || name;
 
     console.log('🔑 Checking REPLICATE_API_KEY...');
@@ -95,9 +189,27 @@ serve(async (req) => {
     }
     console.log('✅ Ingredient name:', finalIngredientName);
 
-    console.log('📝 Creating botanical illustration prompt...');
-    const prompt = `Botanical illustration of ${finalIngredientName}, scientific botanical drawing style, watercolor and digital art technique, detailed textures, vibrant natural colors, clean white background, professional culinary illustration, ultra-detailed, artistic rendering`;
-    console.log('📝 Prompt:', prompt);
+    // Obtener información adicional del ingrediente si tenemos el ID
+    let category = '';
+    let fullDescription = description || '';
+    
+    if (ingredientId) {
+      console.log('🔍 Fetching ingredient details from database...');
+      const { data: ingredientData, error: dbError } = await supabase
+        .from('ingredients')
+        .select('description, categories(name)')
+        .eq('id', ingredientId)
+        .single();
+        
+      if (!dbError && ingredientData) {
+        fullDescription = ingredientData.description || fullDescription;
+        category = ingredientData.categories?.name || '';
+        console.log('✅ Enhanced context:', { category, hasDescription: !!fullDescription });
+      }
+    }
+
+    console.log('🧠 Creating intelligent prompt...');
+    const prompt = generateIntelligentPrompt(finalIngredientName, fullDescription, category);
 
     console.log('🚀 Making Replicate API call...');
     
@@ -184,7 +296,9 @@ serve(async (req) => {
           originalUrl: replicateImageUrl, // Keep original for backup
           storagePath: seoFileName,
           prompt: prompt,
-          model: "flux-1.1-pro"
+          model: "flux-1.1-pro",
+          intelligentPrompt: true,
+          detectedType: 'enhanced'
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -198,7 +312,8 @@ serve(async (req) => {
           imageUrl: replicateImageUrl, // Fallback to Replicate URL
           storageError: storageError.message,
           prompt: prompt,
-          model: "flux-1.1-pro"
+          model: "flux-1.1-pro",
+          intelligentPrompt: true
         }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -213,7 +328,7 @@ serve(async (req) => {
     }
 
   } catch (error) {
-    console.error('❌ GENERAL ERROR in generate-image:', {
+    console.error('❌ GENERAL ERROR in intelligent image generation:', {
       message: error.message,
       stack: error.stack,
       name: error.name

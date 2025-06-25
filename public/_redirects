@@ -1,6 +1,6 @@
 
-# Servir sitemap.xml directamente como archivo estático
-/sitemap.xml    /sitemap.xml   200
+# Servir sitemap.xml directamente con headers anti-cache
+/sitemap.xml    /sitemap.xml   200!  Cache-Control: no-cache,no-store,must-revalidate
 
 # Redirección general para SPA
 /*    /index.html   200

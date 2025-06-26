@@ -15,60 +15,110 @@ export class PerplexityClient {
   }
 
   async generateContent(prompt: string): Promise<any[]> {
-    console.log('🔍 === INVESTIGACIÓN CON PERPLEXITY SONAR ===');
+    console.log('🔍 === INVESTIGACIÓN CON PERPLEXITY SONAR PARA HOSTELERÍA ===');
     
     const requestBody: PerplexityRequest = {
       model: 'llama-3.1-sonar-large-128k-online',
       messages: [
         {
           role: 'system',
-          content: `Eres un investigador experto en ingredientes culinarios con acceso a internet. 
-          Investiga DATOS REALES y ACTUALES de fuentes confiables como:
-          - Mercados mayoristas y minoristas
-          - Estudios de rendimiento culinario
-          - Bases de datos nutricionales oficiales
-          - Publicaciones gastronómicas profesionales
-          - Sitios de proveedores especializados
+          content: `Eres un investigador experto en ingredientes culinarios para HOSTELERÍA Y RESTAURANTES con acceso a internet.
+
+          🏢 ENFOQUE EXCLUSIVO B2B/HORECA:
+          Investiga EXCLUSIVAMENTE datos para restaurantes, chefs profesionales y distribución mayorista.
+          NUNCA uses precios de supermercados de consumo final (Carrefour, Mercadona, Amazon retail).
           
-          IMPORTANTE: Siempre incluye las fuentes consultadas y verifica la información con múltiples referencias.
+          📊 FUENTES PRIORITARIAS PARA PRECIOS:
+          - Distribuidores mayoristas HORECA: Makro, Cash&Carry, Metro
+          - Mercados centrales mayoristas (Mercamadrid, Rungis, etc.)
+          - Plataformas B2B profesionales (Restaurant Depot, US Foods, Sysco)
+          - Distribuidores especializados por región
+          - Proveedores profesionales de hostelería
           
-          CRÍTICO PARA JSON VÁLIDO:
+          🔍 METODOLOGÍA DE INVESTIGACIÓN:
+          1. Busca SIEMPRE en múltiples fuentes mayoristas del mismo país
+          2. Especifica claramente "precios para restaurantes" en tus búsquedas
+          3. Verifica que los precios sean por kg o litro (unidades profesionales)
+          4. Contrasta precios entre diferentes proveedores HORECA
+          5. Rechaza automáticamente precios retail o de envases pequeños
+          
+          ⚖️ VALIDACIÓN DE PRECIOS OBLIGATORIA:
+          - Especias: €8-50/kg (pimienta negra: €15-25/kg)
+          - Aceites: €2-20/litro (oliva virgen: €4-12/litro)
+          - Verduras: €0.80-8/kg (tomates: €1.50-3.50/kg)
+          - Hierbas: €8-40/kg (romero: €10-20/kg)
+          - SI UN PRECIO ESTÁ FUERA DEL RANGO: RE-INVESTIGA en otras fuentes HORECA
+          
+          📋 FUENTES CONFIABLES POR PAÍS:
+          - España: Makro.es, mercados centrales, distribuidores HORECA
+          - Francia: Metro.fr, Rungis, distribuidores professionnels
+          - Italia: Metro, mercados mayoristas, distribuidores ristorazione
+          - EEUU: Restaurant Depot, US Foods, Sysco
+          - México: Distribuidores HORECA, mercados mayoristas
+          - Argentina: Distribuidores gastronómicos, mercados concentradores
+          
+          💡 CONTEXTO CRÍTICO:
+          Los precios deben ser útiles para chefs que compran ingredientes profesionalmente.
+          Un precio de €2.50/kg para pimienta negra es IMPOSIBLE en canal HORECA (sería retail de 40g).
+          Un precio realista de pimienta negra para restaurantes es €18-22/kg en distribución mayorista.
+          
+          🔧 PARA JSON VÁLIDO:
           - En las descripciones, NO uses saltos de línea dentro de las cadenas de texto
           - Escapa todas las comillas dobles dentro del texto usando \"
           - NO uses caracteres de control como \\n, \\r, \\t dentro de las cadenas
           - Mantén cada descripción como una cadena continua sin saltos de línea
           - Usa espacios en lugar de tabulaciones
           
-          Responde SOLO con JSON válido y preciso basado en investigación real de internet.`
+          Responde SOLO con JSON válido basado en investigación real de fuentes HORECA/B2B.`
         },
         {
           role: 'user',
           content: prompt
         }
       ],
-      temperature: 0.3,
+      temperature: 0.2, // Más determinístico para mejor precisión
       max_tokens: 8000,
       top_p: 0.9,
       return_images: false,
       return_related_questions: false,
       search_domain_filter: [
+        // Distribuidores HORECA España
+        'makro.es',
+        'metro.es', 
         'mercamadrid.es',
         'mercabarna.es',
+        
+        // Distribuidores HORECA internacionales
+        'metro.fr',
+        'metro.it',
+        'restaurantdepot.com',
+        'usfoods.com',
+        'sysco.com',
+        
+        // Fuentes profesionales y de investigación
         'fao.org',
         'usda.gov',
         'bedca.net',
-        'gastronomiayvino.com',
+        'alimentacion.es',
         'profesionalhoreca.com',
-        'alimentacion.es'
+        'gastronomiayvino.com',
+        
+        // Mercados mayoristas
+        'rungis-market.com',
+        'mercatiagricoli.it',
+        
+        // Plataformas B2B
+        'alibaba.com',
+        'europages.com'
       ],
       search_recency_filter: 'month',
-      frequency_penalty: 1,
-      presence_penalty: 0
+      frequency_penalty: 1.2, // Evitar repetición de fuentes
+      presence_penalty: 0.2 // Fomentar diversidad de fuentes
     };
 
-    console.log('📡 Llamando a Perplexity API...');
+    console.log('📡 Llamando a Perplexity API con enfoque HORECA...');
     console.log('🎯 Modelo:', requestBody.model);
-    console.log('🌐 Filtros de dominio:', requestBody.search_domain_filter?.length, 'sitios');
+    console.log('🏢 Filtros HORECA:', requestBody.search_domain_filter?.length, 'fuentes mayoristas');
 
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
@@ -118,15 +168,40 @@ export class PerplexityClient {
     const generatedContent = data.choices[0].message.content;
     console.log('📦 Contenido generado (primeros 300 chars):', generatedContent.substring(0, 300));
 
-    // Log citations if available
+    // Log citations if available para verificar fuentes HORECA
     if (data.citations && data.citations.length > 0) {
       console.log('📚 Fuentes consultadas:', data.citations.length);
+      console.log('🏢 === VERIFICACIÓN DE FUENTES HORECA ===');
       data.citations.forEach((citation, index) => {
-        console.log(`  ${index + 1}. ${citation}`);
+        const isHorecaSource = this.isHorecaSource(citation);
+        console.log(`  ${index + 1}. ${citation} ${isHorecaSource ? '✅ HORECA' : '⚠️  NO-HORECA'}`);
       });
     }
 
     return this.parseContent(generatedContent);
+  }
+
+  private isHorecaSource(citation: string): boolean {
+    const horecaKeywords = [
+      'makro', 'metro', 'cash', 'carry', 'restaurant', 'depot', 
+      'sysco', 'foods', 'mercamadrid', 'rungis', 'horeca', 
+      'mayorista', 'wholesale', 'professional', 'b2b'
+    ];
+    
+    const retailKeywords = [
+      'amazon', 'ebay', 'carrefour', 'mercadona', 'alcampo',
+      'corte', 'inglés', 'lidl', 'aldi', 'dia'
+    ];
+    
+    const citationLower = citation.toLowerCase();
+    
+    // Si contiene palabras de retail, no es HORECA
+    if (retailKeywords.some(keyword => citationLower.includes(keyword))) {
+      return false;
+    }
+    
+    // Si contiene palabras de HORECA, sí es válido
+    return horecaKeywords.some(keyword => citationLower.includes(keyword));
   }
 
   private cleanMarkdownJson(content: string): string {
@@ -248,7 +323,75 @@ export class PerplexityClient {
       parsedContent = [parsedContent];
     }
 
+    // VALIDACIÓN DE PRECIOS HORECA
+    console.log('🏢 === VALIDANDO PRECIOS HORECA ===');
+    parsedContent.forEach((item, index) => {
+      if (item.prices_by_country && Array.isArray(item.prices_by_country)) {
+        console.log(`📊 Validando precios para: ${item.name}`);
+        item.prices_by_country.forEach((priceData: any) => {
+          const price = parseFloat(priceData.price);
+          const category = this.guessCategory(item.name);
+          const isValidPrice = this.validateHorecaPrice(price, category, item.name);
+          
+          console.log(`   ${priceData.country}: €${price}/${priceData.unit} ${isValidPrice ? '✅ VÁLIDO' : '❌ SOSPECHOSO'}`);
+          
+          if (!isValidPrice) {
+            console.log(`   ⚠️  PRECIO FUERA DE RANGO HORECA para ${category}: €${price}/${priceData.unit}`);
+          }
+        });
+      }
+    });
+
     console.log('🎉 Contenido final parseado:', parsedContent.length, 'elementos');
     return parsedContent;
+  }
+
+  private guessCategory(ingredientName: string): string {
+    const name = ingredientName.toLowerCase();
+    
+    if (name.includes('pimienta') || name.includes('pepper') || name.includes('especias') || name.includes('canela') || name.includes('clavo')) {
+      return 'especias';
+    }
+    if (name.includes('aceite') || name.includes('oil') || name.includes('vinagre') || name.includes('vinegar')) {
+      return 'aceites';
+    }
+    if (name.includes('tomate') || name.includes('cebolla') || name.includes('patata') || name.includes('verdura')) {
+      return 'verduras';
+    }
+    if (name.includes('romero') || name.includes('tomillo') || name.includes('albahaca') || name.includes('herbs')) {
+      return 'hierbas';
+    }
+    if (name.includes('carne') || name.includes('meat') || name.includes('pollo') || name.includes('beef')) {
+      return 'carnes';
+    }
+    if (name.includes('harina') || name.includes('flour') || name.includes('arroz') || name.includes('rice')) {
+      return 'cereales';
+    }
+    
+    return 'general';
+  }
+
+  private validateHorecaPrice(price: number, category: string, ingredientName: string): boolean {
+    const priceRanges: { [key: string]: { min: number; max: number } } = {
+      'especias': { min: 8, max: 50 },
+      'aceites': { min: 2, max: 20 },
+      'verduras': { min: 0.8, max: 8 },
+      'hierbas': { min: 8, max: 40 },
+      'carnes': { min: 8, max: 60 },
+      'cereales': { min: 0.5, max: 5 },
+      'general': { min: 1, max: 30 }
+    };
+
+    // Casos especiales
+    if (ingredientName.toLowerCase().includes('azafrán') || ingredientName.toLowerCase().includes('saffron')) {
+      return price >= 3000 && price <= 8000; // Azafrán es extremadamente caro
+    }
+
+    if (ingredientName.toLowerCase().includes('pimienta') || ingredientName.toLowerCase().includes('pepper')) {
+      return price >= 15 && price <= 25; // Pimienta negra rango específico
+    }
+
+    const range = priceRanges[category] || priceRanges['general'];
+    return price >= range.min && price <= range.max;
   }
 }

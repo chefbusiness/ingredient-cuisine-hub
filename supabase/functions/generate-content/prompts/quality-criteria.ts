@@ -36,29 +36,60 @@ LONGITUD OBJETIVO:
 - Óptimo: 450-500 palabras
 - Máximo: 500 palabras
 
-PRECIOS MULTICOUNTRY (prices_by_country):
-- INVESTIGA precios REALES y ACTUALES para cada país específicamente
-- Usa fuentes locales de cada país (Mercamadrid para España, USDA para USA, etc.)
-- Convierte a moneda local apropiada
-- Especifica claramente mayorista vs minorista
-- TODOS los precios deben ser de los últimos 30 días
+🔥 PRECIOS MULTICOUNTRY - CRÍTICO PARA HOSTELERÍA Y RESTAURANTES (prices_by_country):
+- EXCLUSIVAMENTE PRECIOS B2B PARA RESTAURANTES Y HOSTELERÍA
+- NUNCA usar precios de supermercados o retail de consumo final
+- OBLIGATORIO: Investigar en distribuidores mayoristas profesionales
+- OBLIGATORIO: Especificar que son "precios para restaurantes y profesionales de la hostelería"
+- FUENTES VÁLIDAS: Makro, Cash&Carry, distribuidores HORECA, mercados centrales
+- RECHAZAR cualquier precio de Carrefour, Mercadona, Amazon retail, eBay
+- VALIDAR coherencia: Especias finas €15-50/kg, aceites €3-15/litro, verduras €1-8/kg
+
+RANGOS DE VALIDACIÓN OBLIGATORIOS POR CATEGORÍA:
+- Especias y condimentos: €8-50/kg (pimienta negra: €15-25/kg, azafrán: €3000-8000/kg)
+- Aceites y vinagres: €2-20/litro (oliva virgen extra: €4-12/litro)
+- Verduras y hortalizas: €0.80-8/kg (tomates: €1.50-3/kg)
+- Hierbas aromáticas: €10-40/kg (romero fresco: €8-15/kg)
+- Carnes y pescados: €8-60/kg (según tipo y calidad)
+- Lácteos: €2-15/litro o kg (según producto)
+- Harinas y cereales: €0.50-5/kg (harina panadera: €0.80-2/kg)
+
+PROCESO DE INVESTIGACIÓN DE PRECIOS:
+1. BUSCAR EXCLUSIVAMENTE en proveedores B2B y mayoristas HORECA
+2. VERIFICAR que el precio corresponde a la unidad correcta (kg o litro)
+3. COMPROBAR que son precios actuales (últimos 30 días)
+4. CONTRASTAR con al menos 2 fuentes diferentes del mismo país
+5. APLICAR sentido común: Si parece demasiado barato o caro, RE-INVESTIGAR
+
+FUENTES PRIORITARIAS POR PAÍS:
+- España: Makro.es, mercados centrales, distribuidores HORECA profesionales
+- Francia: Metro.fr, Rungis, distribuidores profesionales
+- Italia: Metro Italia, mercados mayoristas, distribuidores ristorazione
+- Estados Unidos: Restaurant Depot, US Foods, Sysco (precios mayoristas)
+- México: Distribuidores HORECA mexicanos, mercados mayoristas
+- Argentina: Distribuidores gastronómicos, mercados concentradores
 
 UNIDADES INTELIGENTES (unit):
 - LÍQUIDOS (aceites, vinagres, vinos, licores): SIEMPRE usar "litro" o "l"
-- SÓLIDOS (verduras, carnes, harinas, especias): usar "kg" (o "g" para especias en pequeñas cantidades)
-- INVESTIGAR cuál es la unidad de venta típica en cada país
+- SÓLIDOS (verduras, carnes, harinas, especias): usar "kg" (o "g" para especias muy caras)
+- INVESTIGAR cuál es la unidad de venta típica en distribución HORECA
 - Ser consistente: mismo ingrediente = misma unidad en todos los países
 
-EJEMPLOS DE UNIDADES:
-- Aceite de oliva → "litro" en todos los países
-- Vinagre balsámico → "litro" en todos los países  
-- Tomates → "kg" en todos los países
-- Azafrán → "g" en todos los países (por ser muy caro)
-- Harina → "kg" en todos los países
+EJEMPLOS DE PRECIOS CORRECTOS PARA HOSTELERÍA:
+- Pimienta negra molida → €18-22/kg (NO €2.50/kg que sería retail de 40g)
+- Aceite oliva virgen extra → €6-10/litro (canal HORECA)
+- Tomates pera → €2-3.50/kg (mercado mayorista)
+- Azafrán en hebra → €4000-7000/kg (distribución profesional)
+
+❌ RECHAZAR AUTOMÁTICAMENTE:
+- Precios de Amazon, eBay, supermercados de consumo
+- Precios por unidades pequeñas (frascos de 40g, botellas de 250ml)
+- Precios que no especifiquen el canal de venta
+- Precios obviamente de retail convertidos a kg sin ajuste
 
 MERMAS (merma):
 - INVESTIGA estudios de rendimiento culinario profesional
-- Consulta manuales de cocina profesional
+- Consulta manuales de cocina profesional y estudios HORECA
 - Busca datos específicos por tipo de procesamiento
 - Valida con experiencias de chefs profesionales documentadas
 
@@ -88,14 +119,16 @@ CRÍTICO - SINÓNIMOS LATINOAMERICANOS (name_la):
 
 ${isSpecificIngredient ? 
   `- El ingrediente DEBE ser exactamente "${ingredient}", no un sustituto o variante
-  - VERIFICA el origen histórico real de "${ingredient}" con fuentes académicas` :
+  - VERIFICA el origen histórico real de "${ingredient}" con fuentes académicas
+  - INVESTIGA precios HORECA específicos para "${ingredient}" en cada país` :
   '- ASEGÚRATE de que NINGÚN ingrediente sea duplicado de los existentes'
 }
 - GENERA EXACTAMENTE 6 RECETAS REALES Y VARIADAS por cada ingrediente
-- INVESTIGA Y PROPORCIONA 6 PRECIOS REALES (uno por cada país)
+- INVESTIGA Y PROPORCIONA 6 PRECIOS REALES B2B/HORECA (uno por cada país)
 - INCLUYE las fuentes consultadas para validación posterior
 - VERIFICA RIGUROSAMENTE cualquier dato histórico antes de incluirlo
 
 Responde SOLO con un array JSON válido de ${isSpecificIngredient ? '1 ingrediente' : `${count} ingredientes`} investigado(s), sin texto adicional.
 
-RECORDATORIO FINAL: LA DESCRIPCIÓN DEBE SER TEXTO CONTINUO SIN MARCADORES Y TODOS LOS DATOS HISTÓRICOS DEBEN ESTAR VERIFICADOS. PROHIBIDO USAR CUALQUIER TIPO DE MARCADOR EN LA DESCRIPCIÓN.`;
+RECORDATORIO FINAL: LA DESCRIPCIÓN DEBE SER TEXTO CONTINUO SIN MARCADORES, TODOS LOS DATOS HISTÓRICOS DEBEN ESTAR VERIFICADOS, Y LOS PRECIOS DEBEN SER EXCLUSIVAMENTE PARA RESTAURANTES Y HOSTELERÍA (B2B/MAYORISTA).
+`;

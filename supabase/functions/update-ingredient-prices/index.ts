@@ -1,9 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
-import { PerplexityClient } from '../generate-content/perplexity-client.ts';
-import { validateHorecaPrice, guessCategory } from '../generate-content/price-validator.ts';
-import { processMultiCountryPrices } from '../save-generated-content/pricing.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,10 +12,210 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
+// Perplexity client implementation
+class PerplexityClient {
+  private apiKey: string;
+
+  constructor() {
+    const apiKey = Deno.env.get('PERPLEXITY_API_KEY');
+    if (!apiKey) {
+      throw new Error('PERPLEXITY_API_KEY environment variable is required');
+    }
+    this.apiKey = apiKey;
+  }
+
+  async generateContent(prompt: string): Promise<any[]> {
+    console.log('🔍 === INVESTIGACIÓN CON PERPLEXITY SONAR PARA HOSTELERÍA ===');
+    
+    const requestBody = {
+      model: 'llama-3.1-sonar-large-128k-online',
+      messages: [
+        {
+          role: 'system',
+          content: `Eres un investigador experto en ingredientes culinarios para HOSTELERÍA Y RESTAURANTES con acceso a internet.
+
+          🏢 ENFOQUE EXCLUSIVO B2B/HORECA:
+          Investiga EXCLUSIVAMENTE datos para restaurantes, chefs profesionales y distribución mayorista.
+          NUNCA uses precios de supermercados de consumo final (Carrefour, Mercadona, Amazon retail).
+          
+          🥇 JERARQUÍA DE FUENTES CRÍTICA PARA ESPAÑA:
+          1. FRUTAS ELOY (frutaseloy.com) - FUENTE PRIORITARIA para frutas, verduras, hierbas, germinados
+             - Analiza SIEMPRE precios por kg (no por bandeja o unidad)
+             - Verifica si indica "precio por kg" o "por bandeja de X kg"
+             - Convierte bandejas a kg usando información del producto
+          2. MAKRO España (makro.es) - Fuente secundaria para validación
+          3. Mercamadrid - Mercado central mayorista
+          
+          📊 FUENTES PRIORITARIAS PARA PRECIOS POR PAÍS:
+          - España: Frutas Eloy → Makro → Mercamadrid → otros HORECA
+          - Francia: Metro.fr → Rungis → distribuidores professionnels
+          - Italia: Metro Italia → mercados mayoristas → distribuidores ristorazione
+          - EEUU: Restaurant Depot → US Foods → Sysco
+          - México: Distribuidores HORECA → mercados mayoristas
+          - Argentina: Distribuidores gastronómicos → mercados concentradores
+          
+          Responde SOLO con JSON válido basado en investigación real de fuentes HORECA/B2B priorizando Frutas Eloy para España.`
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.2,
+      max_tokens: 8000,
+      top_p: 0.9,
+      return_images: false,
+      return_related_questions: false,
+      search_domain_filter: [
+        'frutaseloy.com',
+        'makro.es',
+        'metro.fr',
+        'restaurantdepot.com',
+        'sysco.com',
+        'usfoods.com',
+        'fao.org',
+        'usda.gov',
+        'mercamadrid.es',
+        'alibaba.com'
+      ],
+      search_recency_filter: 'month',
+      frequency_penalty: 1.2
+    };
+
+    const response = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Error de Perplexity API: ${response.status} ${response.statusText}. Detalles: ${errorText}`);
+    }
+
+    const data = await response.json();
+    const generatedContent = data.choices[0].message.content;
+    
+    // Parse content
+    return this.parseContent(generatedContent);
+  }
+
+  private parseContent(content: string): any[] {
+    try {
+      // Try to parse as JSON directly
+      const parsed = JSON.parse(content);
+      return Array.isArray(parsed) ? parsed : [parsed];
+    } catch (error) {
+      // If direct parsing fails, try to extract JSON from markdown
+      const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[1]);
+          return Array.isArray(parsed) ? parsed : [parsed];
+        } catch (innerError) {
+          console.error('Error parsing extracted JSON:', innerError);
+        }
+      }
+      
+      // If all else fails, return empty array
+      console.error('Could not parse content as JSON:', content);
+      return [];
+    }
+  }
+}
+
+// Price validation functions
+function guessCategory(ingredientName: string): string {
+  const name = ingredientName.toLowerCase();
+  
+  if (name.includes('fruta') || name.includes('manzana') || name.includes('pera') || 
+      name.includes('plátano') || name.includes('naranja') || name.includes('limón') ||
+      name.includes('uva') || name.includes('mango') || name.includes('aguacate')) {
+    return 'frutas';
+  }
+  
+  if (name.includes('verdura') || name.includes('lechuga') || name.includes('tomate') ||
+      name.includes('cebolla') || name.includes('zanahoria') || name.includes('brócoli')) {
+    return 'verduras';
+  }
+  
+  if (name.includes('hierba') || name.includes('albahaca') || name.includes('perejil') ||
+      name.includes('cilantro') || name.includes('romero') || name.includes('tomillo')) {
+    return 'hierbas';
+  }
+  
+  if (name.includes('carne') || name.includes('pollo') || name.includes('cerdo') ||
+      name.includes('ternera') || name.includes('cordero')) {
+    return 'carnes';
+  }
+  
+  if (name.includes('pescado') || name.includes('salmón') || name.includes('bacalao') ||
+      name.includes('atún') || name.includes('marisco')) {
+    return 'pescados';
+  }
+  
+  return 'otros';
+}
+
+function validateHorecaPrice(price: number, category: string, ingredientName: string): boolean {
+  const priceRanges = {
+    frutas: { min: 1.5, max: 25 },
+    verduras: { min: 0.8, max: 15 },
+    hierbas: { min: 8, max: 50 },
+    carnes: { min: 3, max: 40 },
+    pescados: { min: 4, max: 50 },
+    otros: { min: 0.5, max: 30 }
+  };
+  
+  const range = priceRanges[category as keyof typeof priceRanges] || priceRanges.otros;
+  
+  // Special cases
+  if (ingredientName.toLowerCase().includes('azafrán')) {
+    return price >= 3000 && price <= 8000;
+  }
+  
+  if (ingredientName.toLowerCase().includes('trufa')) {
+    return price >= 500 && price <= 2000;
+  }
+  
+  return price >= range.min && price <= range.max;
+}
+
+// Pricing processor
+async function processMultiCountryPrices(ingredientId: string, pricesData: any[]) {
+  const pricesToInsert = [];
+  
+  for (const priceData of pricesData) {
+    // Get country by code
+    const { data: country } = await supabase
+      .from('countries')
+      .select('id')
+      .eq('code', priceData.country_code)
+      .single();
+    
+    if (country) {
+      pricesToInsert.push({
+        ingredient_id: ingredientId,
+        country_id: country.id,
+        price: priceData.price,
+        unit: priceData.unit || 'kg'
+      });
+    }
+  }
+  
+  if (pricesToInsert.length > 0) {
+    await supabase
+      .from('ingredient_prices')
+      .insert(pricesToInsert);
+  }
+}
+
 // Security function to verify super admin access
 async function verifySuperAdminAccess(authHeader: string | null): Promise<{ authorized: boolean, userEmail?: string }> {
   if (!authHeader) {
-    console.log('❌ No authorization header provided');
     return { authorized: false };
   }
 
@@ -27,7 +224,6 @@ async function verifySuperAdminAccess(authHeader: string | null): Promise<{ auth
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     
     if (userError || !user) {
-      console.log('❌ Invalid or expired token:', userError?.message);
       return { authorized: false };
     }
 
@@ -38,14 +234,11 @@ async function verifySuperAdminAccess(authHeader: string | null): Promise<{ auth
       .single();
 
     if (profileError || profile.role !== 'super_admin') {
-      console.log('❌ User is not a super admin');
       return { authorized: false, userEmail: profile?.email };
     }
 
-    console.log('✅ Super admin access verified for:', profile.email);
     return { authorized: true, userEmail: profile.email };
   } catch (error) {
-    console.log('❌ Error verifying admin access:', error);
     return { authorized: false };
   }
 }
@@ -170,7 +363,9 @@ serve(async (req) => {
           total_processed: 0,
           successful_updates: 0,
           failed_updates: 0,
-          updated_ingredients: []
+          updated_ingredients: [],
+          failed_ingredients: [],
+          mode: mode
         }
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

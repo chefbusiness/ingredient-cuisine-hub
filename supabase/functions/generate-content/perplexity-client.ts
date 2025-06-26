@@ -81,34 +81,17 @@ export class PerplexityClient {
       return_images: false,
       return_related_questions: false,
       search_domain_filter: [
-        // Distribuidores HORECA España
-        'makro.es',
-        'metro.es', 
-        'mercamadrid.es',
-        'mercabarna.es',
-        
-        // Distribuidores HORECA internacionales
-        'metro.fr',
-        'metro.it',
-        'restaurantdepot.com',
-        'usfoods.com',
-        'sysco.com',
-        
-        // Fuentes profesionales y de investigación
-        'fao.org',
-        'usda.gov',
-        'bedca.net',
-        'alimentacion.es',
-        'profesionalhoreca.com',
-        'gastronomiayvino.com',
-        
-        // Mercados mayoristas
-        'rungis-market.com',
-        'mercatiagricoli.it',
-        
-        // Plataformas B2B
-        'alibaba.com',
-        'europages.com'
+        // REDUCIDO A 10 DOMINIOS PRIORITARIOS HORECA (límite de API)
+        'makro.es',               // España - mayorista HORECA
+        'metro.fr',               // Francia - mayorista HORECA  
+        'restaurantdepot.com',    // USA - mayorista restaurantes
+        'sysco.com',              // USA - distribuidor profesional
+        'usfoods.com',            // USA - distribuidor HORECA
+        'fao.org',                // Datos oficiales alimentación
+        'usda.gov',               // Datos oficiales USA
+        'mercamadrid.es',         // Mercado central España
+        'rungis-market.com',      // Mercado central Francia
+        'alibaba.com'             // B2B internacional
       ],
       search_recency_filter: 'month',
       frequency_penalty: 1.2 // Evitar repetición de fuentes
@@ -116,7 +99,7 @@ export class PerplexityClient {
 
     console.log('📡 Llamando a Perplexity API con enfoque HORECA...');
     console.log('🎯 Modelo:', requestBody.model);
-    console.log('🏢 Filtros HORECA:', requestBody.search_domain_filter?.length, 'fuentes mayoristas');
+    console.log('🏢 Filtros HORECA:', requestBody.search_domain_filter?.length, 'fuentes mayoristas (límite respetado)');
 
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',

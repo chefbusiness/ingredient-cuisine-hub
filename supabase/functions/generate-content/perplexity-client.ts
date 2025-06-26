@@ -1,4 +1,3 @@
-
 import { PerplexityRequest, PerplexityResponse } from './types.ts';
 
 export class PerplexityClient {
@@ -112,8 +111,7 @@ export class PerplexityClient {
         'europages.com'
       ],
       search_recency_filter: 'month',
-      frequency_penalty: 1.2, // Evitar repetición de fuentes
-      presence_penalty: 0.2 // Fomentar diversidad de fuentes
+      frequency_penalty: 1.2 // Evitar repetición de fuentes
     };
 
     console.log('📡 Llamando a Perplexity API con enfoque HORECA...');

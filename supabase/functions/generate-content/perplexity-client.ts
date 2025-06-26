@@ -31,48 +31,66 @@ export class PerplexityClient {
           Investiga EXCLUSIVAMENTE datos para restaurantes, chefs profesionales y distribución mayorista.
           NUNCA uses precios de supermercados de consumo final (Carrefour, Mercadona, Amazon retail).
           
-          📊 FUENTES PRIORITARIAS PARA PRECIOS:
-          - Distribuidores mayoristas HORECA: Makro, Cash&Carry, Metro
-          - Mercados centrales mayoristas (Mercamadrid, Rungis, etc.)
-          - Plataformas B2B profesionales (Restaurant Depot, US Foods, Sysco)
-          - Distribuidores especializados por región
-          - Proveedores profesionales de hostelería
+          🥇 JERARQUÍA DE FUENTES CRÍTICA PARA ESPAÑA:
+          1. FRUTAS ELOY (frutaseloy.com) - FUENTE PRIORITARIA para frutas, verduras, hierbas, germinados
+             - Analiza SIEMPRE precios por kg (no por bandeja o unidad)
+             - Verifica si indica "precio por kg" o "por bandeja de X kg"
+             - Convierte bandejas a kg usando información del producto
+          2. MAKRO España (makro.es) - Fuente secundaria para validación
+          3. Mercamadrid - Mercado central mayorista
           
-          🔍 METODOLOGÍA DE INVESTIGACIÓN:
-          1. Busca SIEMPRE en múltiples fuentes mayoristas del mismo país
-          2. Especifica claramente "precios para restaurantes" en tus búsquedas
-          3. Verifica que los precios sean por kg o litro (unidades profesionales)
-          4. Contrasta precios entre diferentes proveedores HORECA
-          5. Rechaza automáticamente precios retail o de envases pequeños
+          📊 FUENTES PRIORITARIAS PARA PRECIOS POR PAÍS:
+          - España: Frutas Eloy → Makro → Mercamadrid → otros HORECA
+          - Francia: Metro.fr → Rungis → distribuidores professionnels
+          - Italia: Metro Italia → mercados mayoristas → distribuidores ristorazione
+          - EEUU: Restaurant Depot → US Foods → Sysco
+          - México: Distribuidores HORECA → mercados mayoristas
+          - Argentina: Distribuidores gastronómicos → mercados concentradores
           
-          ⚖️ VALIDACIÓN DE PRECIOS OBLIGATORIA:
-          - Especias: €8-50/kg (pimienta negra: €15-25/kg)
-          - Aceites: €2-20/litro (oliva virgen: €4-12/litro)
-          - Verduras: €0.80-8/kg (tomates: €1.50-3.50/kg)
-          - Hierbas: €8-40/kg (romero: €10-20/kg)
-          - SI UN PRECIO ESTÁ FUERA DEL RANGO: RE-INVESTIGA en otras fuentes HORECA
+          🔍 METODOLOGÍA DE INVESTIGACIÓN OBLIGATORIA:
+          1. Para ingredientes de España: busca PRIMERO en Frutas Eloy (frutaseloy.com)
+          2. Verifica que el precio sea por kilogramo, NO por bandeja o unidad
+          3. Si Frutas Eloy muestra "bandeja 2kg", divide precio entre 2
+          4. Contrasta con Makro España como fuente secundaria
+          5. Si hay discrepancia >30%, investiga más fuentes
+          6. Especifica claramente "precios para restaurantes" en búsquedas
+          7. Rechaza automáticamente precios retail o de envases pequeños
           
-          📋 FUENTES CONFIABLES POR PAÍS:
-          - España: Makro.es, mercados centrales, distribuidores HORECA
-          - Francia: Metro.fr, Rungis, distribuidores professionnels
-          - Italia: Metro, mercados mayoristas, distribuidores ristorazione
-          - EEUU: Restaurant Depot, US Foods, Sysco
-          - México: Distribuidores HORECA, mercados mayoristas
-          - Argentina: Distribuidores gastronómicos, mercados concentradores
+          ⚖️ VALIDACIÓN DE PRECIOS OBLIGATORIA POR CATEGORÍA:
+          - Frutas tropicales (fruta de la pasión, mango): €8-25/kg
+          - Frutas comunes (manzanas, peras): €2-8/kg
+          - Verduras premium (espárragos, alcachofas): €3-15/kg
+          - Verduras comunes (tomates, cebollas): €0.80-5/kg
+          - Hierbas frescas (albahaca, cilantro): €15-50/kg
+          - Flores comestibles (pensamiento, violetas): €80-200/kg
+          - Germinados (alfalfa, microgreens): €20-40/kg
+          - Especias comunes: €8-30/kg
+          - Aceites: €2-20/litro
+          
+          🚨 CASOS CRÍTICOS ESPECÍFICOS:
+          - Fruta de la pasión: €12-20/kg (NO €3.50/kg - error común)
+          - Pimienta negra: €15-25/kg
+          - Azafrán: €3000-8000/kg
           
           💡 CONTEXTO CRÍTICO:
-          Los precios deben ser útiles para chefs que compran ingredientes profesionalmente.
-          Un precio de €2.50/kg para pimienta negra es IMPOSIBLE en canal HORECA (sería retail de 40g).
-          Un precio realista de pimienta negra para restaurantes es €18-22/kg en distribución mayorista.
+          Un precio de €3.50/kg para fruta de la pasión es IMPOSIBLE en canal HORECA.
+          El precio realista según Frutas Eloy y Makro es €14-17/kg.
           
-          🔧 PARA JSON VÁLIDO:
+          🔧 INSTRUCCIONES PARA JSON VÁLIDO:
           - En las descripciones, NO uses saltos de línea dentro de las cadenas de texto
           - Escapa todas las comillas dobles dentro del texto usando \"
           - NO uses caracteres de control como \\n, \\r, \\t dentro de las cadenas
           - Mantén cada descripción como una cadena continua sin saltos de línea
           - Usa espacios en lugar de tabulaciones
           
-          Responde SOLO con JSON válido basado en investigación real de fuentes HORECA/B2B.`
+          🎯 INSTRUCCIONES ESPECÍFICAS PARA FRUTAS ELOY:
+          - Busca en frutaseloy.com para TODOS los ingredientes de sus categorías
+          - Verifica disponibilidad estacional
+          - Analiza si el precio es por kg, bandeja, o unidad
+          - Convierte correctamente a precio por kg
+          - Usa como referencia principal para precios españoles
+          
+          Responde SOLO con JSON válido basado en investigación real de fuentes HORECA/B2B priorizando Frutas Eloy para España.`
         },
         {
           role: 'user',
@@ -91,7 +109,8 @@ export class PerplexityClient {
 
     console.log('📡 Llamando a Perplexity API con enfoque HORECA...');
     console.log('🎯 Modelo:', requestBody.model);
-    console.log('🏢 Filtros HORECA:', requestBody.search_domain_filter?.length, 'fuentes mayoristas (límite respetado)');
+    console.log('🥇 Prioridad FRUTAS ELOY para España activada');
+    console.log('🏢 Filtros HORECA:', requestBody.search_domain_filter?.length, 'fuentes mayoristas');
 
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',

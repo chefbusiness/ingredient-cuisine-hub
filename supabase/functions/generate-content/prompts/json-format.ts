@@ -17,7 +17,7 @@ export const getJsonFormat = (isSpecificIngredient: boolean, ingredient?: string
     "name_zh": "nombre en chino (caracteres chinos)",
     "name_la": "sinónimos en español de Latinoamérica (ej: papa en lugar de patata, tomate en lugar de jitomate, etc.)",
     ${categoryResponse}
-    "description": "descripción detallada y completa basada en fuentes consultadas (300-400 palabras) - DEBE SER UNA CADENA CONTINUA SIN SALTOS DE LÍNEA - VER INSTRUCCIONES ESPECÍFICAS ABAJO",
+    "description": "descripción científica y técnica detallada basada en investigación real de fuentes especializadas (500-600 palabras) - DEBE SER UNA CADENA CONTINUA SIN SALTOS DE LÍNEA - Seguir estructura de 5 secciones especializadas del Experto Culinario en Léxico Científico: 1) Definición y Características Científicas, 2) Origen Geográfico y Contexto Histórico-Cultural, 3) Análisis Organoléptico y Propiedades Físico-Químicas, 4) Aplicaciones Técnicas en Gastronomía Profesional, 5) Criterios de Calidad, Conservación y Uso Profesional",
     "temporada": "temporada principal basada en calendarios agrícolas reales",
     "origen": "región de origen verificada en fuentes históricas/geográficas",
     "merma": [MERMA_INSTRUCTIONS_PLACEHOLDER],

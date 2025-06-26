@@ -1,6 +1,5 @@
 
-# Servir sitemap.xml directamente con headers anti-cache
-/sitemap.xml    /sitemap.xml   200!  Cache-Control: no-cache,no-store,must-revalidate
+/sitemap.xml /sitemap.xml 200! Content-Type: application/xml Cache-Control: no-cache,no-store,must-revalidate
 
 # Redirección general para SPA
-/*    /index.html   200
+/* /index.html 200

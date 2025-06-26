@@ -1,3 +1,6 @@
+
+import { getAdvancedDescriptionInstructions } from './advanced-description-instructions.ts';
+
 export const getResearchInstructions = (region: string) => `
 🌐 INVESTIGACIÓN WEB OBLIGATORIA - USA TU ACCESO A INTERNET:
 
@@ -15,9 +18,6 @@ PASO 2 - VALIDACIÓN CRUZADA:
 - Anota las fuentes consultadas para cada dato`;
 
 export const getDescriptionInstructions = () => {
-  // Importar las instrucciones avanzadas
-  const { getAdvancedDescriptionInstructions } = await import('./advanced-description-instructions.ts');
-  
   return getAdvancedDescriptionInstructions();
 };
 

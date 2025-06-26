@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
@@ -285,7 +286,7 @@ serve(async (req) => {
       for (const ingredient of data) {
         console.log('🔄 Procesando ingrediente:', ingredient.name, 'con categoría:', ingredient.category);
         
-        // Sanitize input data
+        // Sanitize input data - ¡CORREGIR EL LÍMITE DE DESCRIPCIÓN!
         const sanitizedIngredient = {
           name: sanitizeText(ingredient.name, 100),
           name_en: sanitizeText(ingredient.name_en, 100),
@@ -294,7 +295,7 @@ serve(async (req) => {
           name_it: sanitizeText(ingredient.name_it, 100),
           name_pt: sanitizeText(ingredient.name_pt, 100),
           name_zh: sanitizeText(ingredient.name_zh, 100),
-          description: sanitizeText(ingredient.description, 1000),
+          description: sanitizeText(ingredient.description, 6000), // ✅ AUMENTADO DE 1000 A 6000 CARACTERES
           category: sanitizeText(ingredient.category, 50),
           temporada: sanitizeText(ingredient.temporada, 100),
           origen: sanitizeText(ingredient.origen, 100),

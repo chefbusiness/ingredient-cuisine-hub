@@ -1,14 +1,29 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
-import { sanitizeText, validateIngredientData, isDuplicate } from './validation.ts';
+import { validateIngredientData, isDuplicate } from './validation.ts';
 import { processMultiCountryPrices } from './pricing.ts';
+import { getOrCreateCategory } from './category-manager.ts';
+import { 
+  processNutritionalInfo, 
+  processUses, 
+  processRecipes, 
+  processVarieties 
+} from './related-data-processor.ts';
+import { sanitizeIngredientData, validateLanguageCompleteness } from './data-sanitizer.ts';
+import { processLegacyPricing } from './legacy-pricing.ts';
+import type { IngredientData, ProcessingResult, ProcessingSummary } from './types.ts';
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL') ?? '',
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
-export async function processIngredients(data: any[], userEmail: string): Promise<{ success: boolean, results: any[], data: any[], summary: any }> {
+export async function processIngredients(data: any[], userEmail: string): Promise<{ 
+  success: boolean; 
+  results: ProcessingResult[]; 
+  data: any[]; 
+  summary: ProcessingSummary 
+}> {
   // Validate all ingredients
   for (const ingredient of data) {
     if (!validateIngredientData(ingredient)) {
@@ -17,7 +32,7 @@ export async function processIngredients(data: any[], userEmail: string): Promis
     }
   }
 
-  // Obtener ingredientes existentes para validación de duplicados
+  // Get existing ingredients for duplicate validation
   const { data: existingIngredients, error: fetchError } = await supabase
     .from('ingredients')
     .select('name, name_en, name_fr, name_it, name_pt, name_zh');
@@ -29,7 +44,7 @@ export async function processIngredients(data: any[], userEmail: string): Promis
 
   console.log(`🔍 Found ${existingIngredients?.length || 0} existing ingredients for duplicate check`);
 
-  const results = [];
+  const results: ProcessingResult[] = [];
   const savedIngredientsData = [];
   let duplicatesFound = 0;
   let successfullyCreated = 0;
@@ -38,24 +53,9 @@ export async function processIngredients(data: any[], userEmail: string): Promis
     console.log('🔄 Procesando ingrediente:', ingredient.name, 'con categoría:', ingredient.category);
     
     // Sanitize input data
-    const sanitizedIngredient = {
-      name: sanitizeText(ingredient.name, 100),
-      name_en: sanitizeText(ingredient.name_en, 100),
-      name_la: sanitizeText(ingredient.name_la, 100),
-      name_fr: sanitizeText(ingredient.name_fr, 100),
-      name_it: sanitizeText(ingredient.name_it, 100),
-      name_pt: sanitizeText(ingredient.name_pt, 100),
-      name_zh: sanitizeText(ingredient.name_zh, 100),
-      description: sanitizeText(ingredient.description, 6000), // Increased limit for complete descriptions
-      category: sanitizeText(ingredient.category, 50),
-      temporada: sanitizeText(ingredient.temporada, 100),
-      origen: sanitizeText(ingredient.origen, 100),
-      merma: Math.max(0, Math.min(100, parseFloat(ingredient.merma) || 0)),
-      rendimiento: Math.max(0, Math.min(100, parseFloat(ingredient.rendimiento) || 100)),
-      popularity: Math.max(0, Math.min(100, parseInt(ingredient.popularity) || 0))
-    };
+    const sanitizedIngredient = sanitizeIngredientData(ingredient);
     
-    // Verificar duplicados
+    // Check for duplicates
     if (isDuplicate(sanitizedIngredient, existingIngredients || [])) {
       console.log(`⚠️ DUPLICADO DETECTADO: ${sanitizedIngredient.name} ya existe, saltando...`);
       duplicatesFound++;
@@ -69,50 +69,14 @@ export async function processIngredients(data: any[], userEmail: string): Promis
       continue;
     }
     
-    // Verificar que todos los idiomas críticos estén presentes
-    const requiredLanguages = ['name_fr', 'name_it', 'name_pt', 'name_zh'];
-    const missingLanguages = requiredLanguages.filter(lang => !sanitizedIngredient[lang]);
-    
-    if (missingLanguages.length > 0) {
-      console.log(`⚠️ Ingrediente ${sanitizedIngredient.name} falta idiomas:`, missingLanguages);
+    // Validate language completeness
+    const languageCheck = validateLanguageCompleteness(sanitizedIngredient);
+    if (!languageCheck.complete) {
+      console.log(`⚠️ Ingrediente ${sanitizedIngredient.name} falta idiomas:`, languageCheck.missing);
     }
     
     // Get or create category
-    let categoryName = sanitizedIngredient.category || 'otros';
-    const { data: existingCategory } = await supabase
-      .from('categories')
-      .select('id')
-      .eq('name', categoryName)
-      .single();
-
-    let categoryId = existingCategory?.id;
-    
-    if (!categoryId) {
-      console.log('🆕 Creando nueva categoría:', categoryName);
-      const { data: newCategory, error: categoryError } = await supabase
-        .from('categories')
-        .insert({
-          name: categoryName,
-          name_en: categoryName === 'especias' ? 'spices' : 
-                   categoryName === 'verduras' ? 'vegetables' :
-                   categoryName === 'frutas' ? 'fruits' :
-                   categoryName === 'carnes' ? 'meats' :
-                   categoryName === 'pescados' ? 'fish' :
-                   categoryName === 'lacteos' ? 'dairy' :
-                   categoryName === 'cereales' ? 'cereals' : categoryName,
-          description: `Categoría de ${categoryName}`
-        })
-        .select('id')
-        .single();
-
-      if (categoryError) {
-        console.error('❌ Error creando categoría:', categoryError);
-        throw categoryError;
-      }
-      categoryId = newCategory.id;
-    }
-
-    console.log('📂 Usando categoría ID:', categoryId, 'para ingrediente:', sanitizedIngredient.name);
+    const categoryId = await getOrCreateCategory(sanitizedIngredient.category);
 
     // Create ingredient
     const ingredientData = {
@@ -145,83 +109,18 @@ export async function processIngredients(data: any[], userEmail: string): Promis
 
     console.log('✅ Ingrediente creado exitosamente:', newIngredient.id, '- Name:', newIngredient.name);
 
-    // Process multi-country prices
-    if (ingredient.prices_by_country && Array.isArray(ingredient.prices_by_country)) {
-      await processMultiCountryPrices(newIngredient.id, ingredient.prices_by_country);
-    } else if (ingredient.price_estimate && !isNaN(parseFloat(ingredient.price_estimate))) {
-      // Fallback method for compatibility
-      console.log('📊 Usando método de precio anterior (solo España)');
-      const { data: country } = await supabase
-        .from('countries')
-        .select('id')
-        .eq('code', 'ES')
-        .single();
-
-      if (country) {
-        await supabase
-          .from('ingredient_prices')
-          .insert({
-            ingredient_id: newIngredient.id,
-            country_id: country.id,
-            price: Math.max(0, parseFloat(ingredient.price_estimate)),
-            unit: 'kg'
-          });
-      }
+    // Process pricing
+    if (sanitizedIngredient.prices_by_country && Array.isArray(sanitizedIngredient.prices_by_country)) {
+      await processMultiCountryPrices(newIngredient.id, sanitizedIngredient.prices_by_country);
+    } else if (sanitizedIngredient.price_estimate) {
+      await processLegacyPricing(newIngredient.id, sanitizedIngredient.price_estimate);
     }
 
-    // Add nutritional info
-    if (ingredient.nutritional_info) {
-      await supabase
-        .from('nutritional_info')
-        .insert({
-          ingredient_id: newIngredient.id,
-          calories: Math.max(0, parseInt(ingredient.nutritional_info.calories) || 0),
-          protein: Math.max(0, parseFloat(ingredient.nutritional_info.protein) || 0),
-          carbs: Math.max(0, parseFloat(ingredient.nutritional_info.carbs) || 0),
-          fat: Math.max(0, parseFloat(ingredient.nutritional_info.fat) || 0),
-          fiber: Math.max(0, parseFloat(ingredient.nutritional_info.fiber) || 0),
-          vitamin_c: Math.max(0, parseFloat(ingredient.nutritional_info.vitamin_c) || 0)
-        });
-    }
-
-    // Add uses
-    if (ingredient.uses && Array.isArray(ingredient.uses)) {
-      for (const use of ingredient.uses.slice(0, 10)) {
-        await supabase
-          .from('ingredient_uses')
-          .insert({
-            ingredient_id: newIngredient.id,
-            use_description: sanitizeText(use, 500)
-          });
-      }
-    }
-
-    // Add recipes
-    if (ingredient.recipes && Array.isArray(ingredient.recipes)) {
-      for (const recipe of ingredient.recipes.slice(0, 5)) {
-        await supabase
-          .from('ingredient_recipes')
-          .insert({
-            ingredient_id: newIngredient.id,
-            name: sanitizeText(recipe.name, 200),
-            type: sanitizeText(recipe.type, 50),
-            difficulty: sanitizeText(recipe.difficulty, 20),
-            time: sanitizeText(recipe.time, 50)
-          });
-      }
-    }
-
-    // Add varieties
-    if (ingredient.varieties && Array.isArray(ingredient.varieties)) {
-      for (const variety of ingredient.varieties.slice(0, 10)) {
-        await supabase
-          .from('ingredient_varieties')
-          .insert({
-            ingredient_id: newIngredient.id,
-            variety_name: sanitizeText(variety, 100)
-          });
-      }
-    }
+    // Process related data
+    await processNutritionalInfo(newIngredient.id, sanitizedIngredient.nutritional_info);
+    await processUses(newIngredient.id, sanitizedIngredient.uses);
+    await processRecipes(newIngredient.id, sanitizedIngredient.recipes);
+    await processVarieties(newIngredient.id, sanitizedIngredient.varieties);
 
     successfullyCreated++;
     
@@ -235,9 +134,9 @@ export async function processIngredients(data: any[], userEmail: string): Promis
     results.push({
       id: newIngredient.id,
       name: sanitizedIngredient.name,
-      category: categoryName,
-      languages_complete: missingLanguages.length === 0,
-      missing_languages: missingLanguages,
+      category: sanitizedIngredient.category,
+      languages_complete: languageCheck.complete,
+      missing_languages: languageCheck.missing,
       success: true
     });
   }

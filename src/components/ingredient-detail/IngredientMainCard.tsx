@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Ingredient } from "@/hooks/useIngredients";
+import StructuredDescription from "./StructuredDescription";
 
 interface IngredientMainCardProps {
   ingredient: Ingredient;
@@ -84,9 +85,10 @@ const IngredientMainCard = ({
               </div>
             </div>
             
-            <p className="text-gray-700 leading-relaxed mb-4">
-              {ingredient.description}
-            </p>
+            <StructuredDescription 
+              description={ingredient.description || ""}
+              className="mb-4"
+            />
 
             <div className="grid grid-cols-2 gap-4 text-sm">
               {ingredient.temporada && (

@@ -2,6 +2,15 @@
 export const getQualityCriteria = (isSpecificIngredient: boolean, ingredient?: string, count: number = 1) => `
 🎯 CRITERIOS DE CALIDAD PARA DATOS INVESTIGADOS:
 
+DESCRIPCIÓN EXTENDIDA Y SEO OPTIMIZADA:
+- DEBE tener entre 700-800 palabras para optimización SEO
+- USA marcadores ###SECCION1###, ###SECCION2###, etc. para estructurar
+- COMPLETA TODAS LAS 5 SECCIONES sin cortar abruptamente
+- Cada sección debe tener 140-160 palabras aproximadamente
+- Si el ingrediente es complejo o importante, extiende hasta 800 palabras
+- NO dejes ninguna sección incompleta o cortada
+- El contenido debe ser rico, detallado y técnicamente preciso
+
 PRECIOS MULTICOUNTRY (prices_by_country):
 - INVESTIGA precios REALES y ACTUALES para cada país específicamente
 - Usa fuentes locales de cada país (Mercamadrid para España, USDA para USA, etc.)
@@ -58,7 +67,9 @@ IMPORTANTE:
 - TODAS las unidades deben ser apropiadas (líquidos=litros, sólidos=kg)
 - TODA la información nutricional debe ser de fuentes oficiales
 - TODAS las recetas deben ser auténticas y tener fuente
-- LA DESCRIPCIÓN debe tener EXACTAMENTE 300-400 palabras en 4 conceptos
+- LA DESCRIPCIÓN debe tener EXACTAMENTE 700-800 palabras en 5 secciones estructuradas
+- USA los marcadores ###SECCIONX### para estructurar correctamente
+- NO CORTES LA DESCRIPCIÓN ABRUPTAMENTE, completa todas las secciones
 ${isSpecificIngredient ? 
   `- El ingrediente DEBE ser exactamente "${ingredient}", no un sustituto o variante` :
   '- ASEGÚRATE de que NINGÚN ingrediente sea duplicado de los existentes'

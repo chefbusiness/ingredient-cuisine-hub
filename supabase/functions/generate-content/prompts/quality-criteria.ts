@@ -10,23 +10,31 @@ export const getQualityCriteria = (isSpecificIngredient: boolean, ingredient?: s
 - RECHAZA información histórica sin verificación académica sólida
 - CONSULTA múltiples fuentes históricas antes de afirmar cualquier origen
 
-DESCRIPCIÓN EXTENDIDA Y SEO OPTIMIZADA (400-500 PALABRAS):
-- DEBE tener EXACTAMENTE entre 400-500 palabras para optimización SEO
-- USA ÚNICAMENTE estos marcadores: ###SECCION1###, ###SECCION2###, ###SECCION3###, ###SECCION4###, ###SECCION5###
-- COMPLETA TODAS LAS 5 SECCIONES OBLIGATORIAMENTE - NO PUEDES PARAR HASTA COMPLETAR LA SECCIÓN 5
-- Cada sección debe tener 80-100 palabras aproximadamente
-- NUNCA CORTES EL TEXTO ABRUPTAMENTE - DEBES COMPLETAR TODAS LAS SECCIONES
-- Si alcanzas límite de tokens, PRIORIZA completar la descripción antes que otros campos
-- NO dejes ninguna sección incompleta o cortada
-- El contenido debe ser rico, detallado y técnicamente preciso pero CONCISO
-- OBJETIVO: 400-500 palabras distribuidas en 5 secciones completas
+🚫 DESCRIPCIÓN - PROHIBIDO USAR MARCADORES:
+- ABSOLUTAMENTE PROHIBIDO usar ###SECCION1###, ###SECCION2###, etc.
+- ABSOLUTAMENTE PROHIBIDO usar marcadores de markdown (###, ##, #)
+- ABSOLUTAMENTE PROHIBIDO usar **SECCION**, *SECCION*, ---SECCION---
+- ABSOLUTAMENTE PROHIBIDO dividir en secciones numeradas
+- ABSOLUTAMENTE PROHIBIDO usar cualquier tipo de marcador visual
 
-ESTRUCTURA OBLIGATORIA DE LAS 5 SECCIONES (VERSIÓN COMPACTA):
-1. ###SECCION1### - Definición y Características Científicas (80-100 palabras)
-2. ###SECCION2### - Origen Geográfico y Contexto Histórico-Cultural (80-100 palabras) - ⚠️ VERIFICAR ORIGEN REAL
-3. ###SECCION3### - Análisis Organoléptico y Propiedades Físico-Químicas (80-100 palabras)
-4. ###SECCION4### - Aplicaciones Técnicas en Gastronomía Profesional (80-100 palabras)
-5. ###SECCION5### - Criterios de Calidad, Conservación y Uso Profesional (80-100 palabras)
+✅ DESCRIPCIÓN CORRECTA - TEXTO CONTINUO:
+- DEBE ser un texto completamente continuo de 400-500 palabras
+- SIN INTERRUPCIONES ni marcadores de ningún tipo
+- Información organizada pero en formato de párrafo corrido
+- Transiciones naturales entre temas usando conectores
+- Ejemplo: "Desde el punto de vista científico... Históricamente... En cuanto a sus propiedades... En gastronomía profesional... Para su conservación..."
+
+ESTRUCTURA DEL CONTENIDO (SIN MARCADORES VISIBLES):
+1. Definición científica y características básicas
+2. Origen geográfico e histórico verificado
+3. Propiedades organolépticas y físico-químicas
+4. Aplicaciones en gastronomía profesional
+5. Criterios de calidad y conservación
+
+LONGITUD OBJETIVO:
+- Mínimo: 400 palabras
+- Óptimo: 450-500 palabras
+- Máximo: 500 palabras
 
 PRECIOS MULTICOUNTRY (prices_by_country):
 - INVESTIGA precios REALES y ACTUALES para cada país específicamente
@@ -78,14 +86,6 @@ CRÍTICO - SINÓNIMOS LATINOAMERICANOS (name_la):
 - INVESTIGA nombres regionales específicos por país
 - Ejemplos: patata→papa, judías verdes→ejotes/chauchas, etc.
 
-IMPORTANTE - DESCRIPCIÓN COMPLETA:
-- PRIORIDAD MÁXIMA: COMPLETAR LAS 5 SECCIONES DE LA DESCRIPCIÓN
-- Si hay límite de tokens, reduce otros campos pero NUNCA la descripción
-- La descripción DEBE alcanzar 400-500 palabras completas (NO MÁS)
-- NUNCA termines una descripción a medias
-- CADA SECCIÓN debe estar completa antes de continuar con la siguiente
-- USA los marcadores exactos: ###SECCION1###, ###SECCION2###, ###SECCION3###, ###SECCION4###, ###SECCION5###
-
 ${isSpecificIngredient ? 
   `- El ingrediente DEBE ser exactamente "${ingredient}", no un sustituto o variante
   - VERIFICA el origen histórico real de "${ingredient}" con fuentes académicas` :
@@ -98,4 +98,4 @@ ${isSpecificIngredient ?
 
 Responde SOLO con un array JSON válido de ${isSpecificIngredient ? '1 ingrediente' : `${count} ingredientes`} investigado(s), sin texto adicional.
 
-RECORDATORIO FINAL: LA DESCRIPCIÓN DEBE TENER 5 SECCIONES COMPLETAS CON 400-500 PALABRAS TOTALES Y TODOS LOS DATOS HISTÓRICOS DEBEN ESTAR VERIFICADOS. NO PUEDES ENTREGAR CONTENIDO INCOMPLETO O HISTÓRICAMENTE INCORRECTO.`;
+RECORDATORIO FINAL: LA DESCRIPCIÓN DEBE SER TEXTO CONTINUO SIN MARCADORES Y TODOS LOS DATOS HISTÓRICOS DEBEN ESTAR VERIFICADOS. PROHIBIDO USAR CUALQUIER TIPO DE MARCADOR EN LA DESCRIPCIÓN.`;

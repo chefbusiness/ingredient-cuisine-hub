@@ -4,8 +4,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Content-Type': 'application/xml',
-  'Cache-Control': 'public, max-age=3600, s-maxage=3600'
+  'Content-Type': 'application/xml; charset=utf-8',
+  'Cache-Control': 'public, max-age=3600'
 }
 
 Deno.serve(async (req) => {
@@ -33,99 +33,101 @@ Deno.serve(async (req) => {
     let categoryPages: Array<{ name: string; lastmod: string }> = [];
     let ingredientPages: Array<{ slug: string; lastmod: string }> = [];
 
+    // Intentar obtener datos dinámicos con timeout muy corto
     try {
       const supabase = createClient(
         'https://unqhfgupcutpeyepnavl.supabase.co',
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVucWhmZ3VwY3V0cGV5ZXBuYXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MzYzNTcsImV4cCI6MjA2NjExMjM1N30.fAMG2IznLEqReHQ5F4D2bZB5oh74d1jYK2NSjRXvblk'
       );
 
-      // Consulta para categorías con timeout reducido
-      const categoriesPromise = supabase
-        .from('categories')
-        .select('name, created_at')
-        .order('name')
-        .limit(50);
+      // Timeout muy corto para evitar delays
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), 1500)
+      );
 
-      const categoriesResult = await Promise.race([
-        categoriesPromise,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout categorías')), 2000)
-        )
-      ]);
+      // Obtener categorías
+      try {
+        const categoriesResult = await Promise.race([
+          supabase.from('categories').select('name, created_at').limit(30),
+          timeoutPromise
+        ]) as any;
 
-      const { data: categories, error: categoriesError } = categoriesResult as any;
-
-      if (!categoriesError && categories && categories.length > 0) {
-        categoryPages = categories.map((cat: any) => ({
-          name: cat.name,
-          lastmod: cat.created_at || currentDate
-        }));
+        if (categoriesResult?.data && Array.isArray(categoriesResult.data)) {
+          categoryPages = categoriesResult.data.map((cat: any) => ({
+            name: cat.name,
+            lastmod: cat.created_at || currentDate
+          }));
+        }
+      } catch {
+        // Silenciar errores de categorías
       }
 
-      // Consulta para ingredientes con timeout reducido
-      const ingredientsPromise = supabase
-        .from('ingredients')
-        .select('slug, updated_at')
-        .not('slug', 'is', null)
-        .neq('slug', '')
-        .order('updated_at', { ascending: false })
-        .limit(300);
+      // Obtener ingredientes
+      try {
+        const ingredientsResult = await Promise.race([
+          supabase.from('ingredients').select('slug, updated_at').not('slug', 'is', null).limit(200),
+          timeoutPromise
+        ]) as any;
 
-      const ingredientsResult = await Promise.race([
-        ingredientsPromise,
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Timeout ingredientes')), 2000)
-        )
-      ]);
-
-      const { data: ingredients, error: ingredientsError } = ingredientsResult as any;
-
-      if (!ingredientsError && ingredients && ingredients.length > 0) {
-        ingredientPages = ingredients.map((ing: any) => ({
-          slug: ing.slug,
-          lastmod: ing.updated_at || currentDate
-        }));
+        if (ingredientsResult?.data && Array.isArray(ingredientsResult.data)) {
+          ingredientPages = ingredientsResult.data.map((ing: any) => ({
+            slug: ing.slug,
+            lastmod: ing.updated_at || currentDate
+          }));
+        }
+      } catch {
+        // Silenciar errores de ingredientes
       }
 
-    } catch (dbError) {
-      // Continuar con sitemap básico
+    } catch {
+      // Continuar con sitemap básico si hay errores
     }
 
-    // Construir sitemap XML de forma segura
-    let xmlContent = '<?xml version="1.0" encoding="UTF-8"?>';
-    xmlContent += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">';
+    // Construir sitemap XML limpio
+    const xmlParts = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
+    ];
 
-    // Agregar páginas estáticas
-    for (const page of staticPages) {
-      xmlContent += '<url>';
-      xmlContent += '<loc>' + baseUrl + page.url + '</loc>';
-      xmlContent += '<lastmod>' + currentDate + '</lastmod>';
-      xmlContent += '<changefreq>' + page.changefreq + '</changefreq>';
-      xmlContent += '<priority>' + page.priority + '</priority>';
-      xmlContent += '</url>';
-    }
+    // Páginas estáticas
+    staticPages.forEach(page => {
+      xmlParts.push(
+        '<url>',
+        `<loc>${baseUrl}${page.url}</loc>`,
+        `<lastmod>${currentDate}</lastmod>`,
+        `<changefreq>${page.changefreq}</changefreq>`,
+        `<priority>${page.priority}</priority>`,
+        '</url>'
+      );
+    });
 
-    // Agregar páginas de categorías
-    for (const cat of categoryPages) {
-      xmlContent += '<url>';
-      xmlContent += '<loc>' + baseUrl + '/directorio?categoria=' + encodeURIComponent(cat.name) + '</loc>';
-      xmlContent += '<lastmod>' + cat.lastmod + '</lastmod>';
-      xmlContent += '<changefreq>weekly</changefreq>';
-      xmlContent += '<priority>0.7</priority>';
-      xmlContent += '</url>';
-    }
+    // Páginas de categorías
+    categoryPages.forEach(cat => {
+      xmlParts.push(
+        '<url>',
+        `<loc>${baseUrl}/directorio?categoria=${encodeURIComponent(cat.name)}</loc>`,
+        `<lastmod>${cat.lastmod}</lastmod>`,
+        '<changefreq>weekly</changefreq>',
+        '<priority>0.7</priority>',
+        '</url>'
+      );
+    });
 
-    // Agregar páginas de ingredientes
-    for (const ing of ingredientPages) {
-      xmlContent += '<url>';
-      xmlContent += '<loc>' + baseUrl + '/ingrediente/' + ing.slug + '</loc>';
-      xmlContent += '<lastmod>' + ing.lastmod + '</lastmod>';
-      xmlContent += '<changefreq>weekly</changefreq>';
-      xmlContent += '<priority>0.8</priority>';
-      xmlContent += '</url>';
-    }
+    // Páginas de ingredientes
+    ingredientPages.forEach(ing => {
+      xmlParts.push(
+        '<url>',
+        `<loc>${baseUrl}/ingrediente/${ing.slug}</loc>`,
+        `<lastmod>${ing.lastmod}</lastmod>`,
+        '<changefreq>weekly</changefreq>',
+        '<priority>0.8</priority>',
+        '</url>'
+      );
+    });
 
-    xmlContent += '</urlset>';
+    xmlParts.push('</urlset>');
+
+    const xmlContent = xmlParts.join('');
 
     return new Response(xmlContent, {
       status: 200,
@@ -133,14 +135,24 @@ Deno.serve(async (req) => {
     });
 
   } catch (error) {
-    // Sitemap de emergencia
-    const emergencyXml = '<?xml version="1.0" encoding="UTF-8"?>' +
-      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' +
-      '<url><loc>https://ingredientsindex.pro/</loc><lastmod>' + new Date().toISOString() + '</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>' +
-      '<url><loc>https://ingredientsindex.pro/directorio</loc><lastmod>' + new Date().toISOString() + '</lastmod><changefreq>daily</changefreq><priority>0.9</priority></url>' +
-      '<url><loc>https://ingredientsindex.pro/sobre-nosotros</loc><lastmod>' + new Date().toISOString() + '</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>' +
-      '<url><loc>https://ingredientsindex.pro/contacto</loc><lastmod>' + new Date().toISOString() + '</lastmod><changefreq>monthly</changefreq><priority>0.5</priority></url>' +
-      '</urlset>';
+    // Sitemap de emergencia mínimo
+    const emergencyXml = [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+      '<url>',
+      '<loc>https://ingredientsindex.pro/</loc>',
+      `<lastmod>${new Date().toISOString()}</lastmod>`,
+      '<changefreq>daily</changefreq>',
+      '<priority>1.0</priority>',
+      '</url>',
+      '<url>',
+      '<loc>https://ingredientsindex.pro/directorio</loc>',
+      `<lastmod>${new Date().toISOString()}</lastmod>`,
+      '<changefreq>daily</changefreq>',
+      '<priority>0.9</priority>',
+      '</url>',
+      '</urlset>'
+    ].join('');
 
     return new Response(emergencyXml, {
       status: 200,

@@ -21,23 +21,43 @@ const StructuredDescription = ({ description, className = "" }: StructuredDescri
       "Criterios de Calidad, Conservación y Uso Profesional"
     ];
 
-    // Dividir por marcadores de sección usando regex más específico y robusto
-    const parts = text.split(/###SECCION[1-5]###\s*/);
-    
-    // Filtrar partes vacías y procesar contenido
-    const contentParts = parts.filter(part => part.trim().length > 0);
-    
-    contentParts.forEach((content, index) => {
-      if (content.trim()) {
-        // Limpiar cualquier marcador residual del contenido
-        const cleanContent = content.replace(/###SECCION[1-5]###/g, '').trim();
-        
+    // Extraer cada sección individualmente
+    for (let i = 1; i <= 5; i++) {
+      const startMarker = `###SECCION${i}###`;
+      const nextMarker = `###SECCION${i + 1}###`;
+      
+      const startIndex = text.indexOf(startMarker);
+      if (startIndex === -1) continue;
+      
+      const contentStart = startIndex + startMarker.length;
+      const endIndex = text.indexOf(nextMarker);
+      
+      let sectionContent;
+      if (endIndex === -1) {
+        // Es la última sección
+        sectionContent = text.substring(contentStart);
+      } else {
+        sectionContent = text.substring(contentStart, endIndex);
+      }
+      
+      // Limpiar el contenido
+      const cleanContent = sectionContent
+        .replace(/###SECCION[1-5]###/g, '') // Eliminar cualquier marcador residual
+        .trim();
+      
+      if (cleanContent && cleanContent.length > 0) {
         sections.push({
-          title: sectionTitles[index] || `Sección ${index + 1}`,
+          title: sectionTitles[i - 1] || `Sección ${i}`,
           content: cleanContent
         });
       }
-    });
+    }
+
+    // Si no se encontraron secciones válidas, devolver el texto original limpio
+    if (sections.length === 0) {
+      const cleanText = text.replace(/###SECCION[1-5]###/g, '').trim();
+      return [{ title: "", content: cleanText }];
+    }
 
     return sections;
   };

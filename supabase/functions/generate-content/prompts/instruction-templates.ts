@@ -26,9 +26,36 @@ PASO 2 - VALIDACIÓN CRUZADA:
 - Anota las fuentes consultadas para cada dato
 - RECHAZA información histórica sin verificación académica`;
 
-export const getDescriptionInstructions = () => {
-  return getAdvancedDescriptionInstructions();
-};
+export const getDescriptionInstructions = () => `
+🖋️ INSTRUCCIONES DE DESCRIPCIÓN - TEXTO CONTINUO SIN MARCADORES:
+
+⚠️ CRÍTICO - NO USES MARCADORES DE SECCIÓN:
+- NO incluyas ###SECCION1###, ###SECCION2###, etc.
+- NO uses marcadores de markdown
+- NO dividas en secciones numeradas
+- Escribe un texto CONTINUO y FLUIDO
+
+FORMATO REQUERIDO:
+- Un párrafo largo y continuo de 400-500 palabras
+- Texto natural sin divisiones artificiales
+- Información organizada pero SIN marcadores visibles
+- Flujo narrativo coherente y profesional
+
+CONTENIDO A INCLUIR (en texto continuo):
+- Definición científica y características
+- Origen geográfico e histórico verificado
+- Propiedades organolépticas y físico-químicas
+- Aplicaciones en gastronomía profesional
+- Criterios de calidad y conservación
+
+EJEMPLO DE FORMATO CORRECTO:
+"El tomate (Solanum lycopersicum) es una fruta originaria de América, específicamente de las regiones de México y Perú, donde fue domesticada hace miles de años. Esta planta de la familia Solanaceae se caracteriza por su contenido en licopeno, un antioxidante que le confiere su característico color rojo. En gastronomía profesional, el tomate es fundamental para la elaboración de salsas, conservas y platos frescos. Su versatilidad permite múltiples preparaciones, desde crudos en ensaladas hasta cocidos en guisos complejos..."
+
+RECUERDA:
+- Texto corrido sin interrupciones
+- Sin marcadores ni divisiones
+- Información completa pero fluida
+- Lenguaje profesional pero accesible`;
 
 export const getModeInstructions = (isSpecificIngredient: boolean, ingredient?: string, region: string = 'España') => {
   if (isSpecificIngredient && ingredient) {
@@ -39,7 +66,8 @@ export const getModeInstructions = (isSpecificIngredient: boolean, ingredient?: 
 - Si el ingrediente tiene variantes regionales, usa la variante de ${region}
 - Investiga datos específicos para este ingrediente particular
 - Asegúrate de que toda la información corresponda exactamente a "${ingredient}"
-- VERIFICA el origen histórico del ingrediente con fuentes académicas`;
+- VERIFICA el origen histórico del ingrediente con fuentes académicas
+- IMPORTANTE: NO uses marcadores de sección en la descripción`;
   } else {
     return `
 🤖 MODO AUTOMÁTICO - PERPLEXITY DECIDE:
@@ -47,6 +75,7 @@ export const getModeInstructions = (isSpecificIngredient: boolean, ingredient?: 
 - Prioriza ingredientes comunes en cocina profesional de ${region}
 - Evita ingredientes demasiado exóticos o difíciles de conseguir
 - Asegúrate de que sean ingredientes realmente utilizados en hostelería
-- VERIFICA orígenes históricos antes de incluir información`;
+- VERIFICA orígenes históricos antes de incluir información
+- IMPORTANTE: NO uses marcadores de sección en la descripción`;
   }
 };

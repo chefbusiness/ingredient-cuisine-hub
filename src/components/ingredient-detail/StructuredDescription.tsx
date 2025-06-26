@@ -21,8 +21,8 @@ const StructuredDescription = ({ description, className = "" }: StructuredDescri
       "Criterios de Calidad, Conservación y Uso Profesional"
     ];
 
-    // Dividir por marcadores de sección
-    const parts = text.split(/###SECCION\d+###/);
+    // Dividir por marcadores de sección usando regex más específico
+    const parts = text.split(/###SECCION[1-5]###/);
     
     // El primer elemento puede estar vacío o contener texto previo
     const contentParts = parts.filter(part => part.trim().length > 0);
@@ -44,9 +44,9 @@ const StructuredDescription = ({ description, className = "" }: StructuredDescri
   return (
     <div className={`structured-description ${className}`}>
       {sections.map((section, index) => (
-        <div key={index} className="mb-4 last:mb-0">
+        <div key={index} className="mb-6 last:mb-0">
           {section.title && (
-            <h4 className="text-lg font-semibold text-gray-800 mb-2 border-b border-gray-200 pb-1">
+            <h4 className="text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">
               {section.title}
             </h4>
           )}

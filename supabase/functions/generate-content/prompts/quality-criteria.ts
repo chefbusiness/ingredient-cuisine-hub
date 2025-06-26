@@ -3,13 +3,22 @@ export const getQualityCriteria = (isSpecificIngredient: boolean, ingredient?: s
 🎯 CRITERIOS DE CALIDAD PARA DATOS INVESTIGADOS:
 
 DESCRIPCIÓN EXTENDIDA Y SEO OPTIMIZADA:
-- DEBE tener entre 700-800 palabras para optimización SEO
-- USA marcadores ###SECCION1###, ###SECCION2###, etc. para estructurar
-- COMPLETA TODAS LAS 5 SECCIONES sin cortar abruptamente
+- DEBE tener EXACTAMENTE entre 700-800 palabras para optimización SEO
+- USA ÚNICAMENTE estos marcadores: ###SECCION1###, ###SECCION2###, ###SECCION3###, ###SECCION4###, ###SECCION5###
+- COMPLETA TODAS LAS 5 SECCIONES OBLIGATORIAMENTE - NO PUEDES PARAR HASTA COMPLETAR LA SECCIÓN 5
 - Cada sección debe tener 140-160 palabras aproximadamente
-- Si el ingrediente es complejo o importante, extiende hasta 800 palabras
+- NUNCA CORTES EL TEXTO ABRUPTAMENTE - DEBES COMPLETAR TODAS LAS SECCIONES
+- Si alcanzas límite de tokens, PRIORIZA completar la descripción antes que otros campos
 - NO dejes ninguna sección incompleta o cortada
 - El contenido debe ser rico, detallado y técnicamente preciso
+- OBJETIVO: 700-800 palabras distribuidas en 5 secciones completas
+
+ESTRUCTURA OBLIGATORIA DE LAS 5 SECCIONES:
+1. ###SECCION1### - Definición y Características Científicas (140-160 palabras)
+2. ###SECCION2### - Origen Geográfico y Contexto Histórico-Cultural (140-160 palabras)
+3. ###SECCION3### - Análisis Organoléptico y Propiedades Físico-Químicas (140-160 palabras)
+4. ###SECCION4### - Aplicaciones Técnicas en Gastronomía Profesional (140-160 palabras)
+5. ###SECCION5### - Criterios de Calidad, Conservación y Uso Profesional (140-160 palabras)
 
 PRECIOS MULTICOUNTRY (prices_by_country):
 - INVESTIGA precios REALES y ACTUALES para cada país específicamente
@@ -61,15 +70,14 @@ CRÍTICO - SINÓNIMOS LATINOAMERICANOS (name_la):
 - INVESTIGA nombres regionales específicos por país
 - Ejemplos: patata→papa, judías verdes→ejotes/chauchas, etc.
 
-IMPORTANTE: 
-- TODAS las mermas DEBEN ser investigadas y precisas, no estimaciones
-- TODOS los precios deben ser actuales, reales y específicos por país
-- TODAS las unidades deben ser apropiadas (líquidos=litros, sólidos=kg)
-- TODA la información nutricional debe ser de fuentes oficiales
-- TODAS las recetas deben ser auténticas y tener fuente
-- LA DESCRIPCIÓN debe tener EXACTAMENTE 700-800 palabras en 5 secciones estructuradas
-- USA los marcadores ###SECCIONX### para estructurar correctamente
-- NO CORTES LA DESCRIPCIÓN ABRUPTAMENTE, completa todas las secciones
+IMPORTANTE - DESCRIPCIÓN COMPLETA:
+- PRIORIDAD MÁXIMA: COMPLETAR LAS 5 SECCIONES DE LA DESCRIPCIÓN
+- Si hay límite de tokens, reduce otros campos pero NUNCA la descripción
+- La descripción DEBE alcanzar 700-800 palabras completas
+- NUNCA termines una descripción a medias
+- CADA SECCIÓN debe estar completa antes de continuar con la siguiente
+- USA los marcadores exactos: ###SECCION1###, ###SECCION2###, ###SECCION3###, ###SECCION4###, ###SECCION5###
+
 ${isSpecificIngredient ? 
   `- El ingrediente DEBE ser exactamente "${ingredient}", no un sustituto o variante` :
   '- ASEGÚRATE de que NINGÚN ingrediente sea duplicado de los existentes'
@@ -78,4 +86,6 @@ ${isSpecificIngredient ?
 - INVESTIGA Y PROPORCIONA 6 PRECIOS REALES (uno por cada país)
 - INCLUYE las fuentes consultadas para validación posterior
 
-Responde SOLO con un array JSON válido de ${isSpecificIngredient ? '1 ingrediente' : `${count} ingredientes`} investigado(s), sin texto adicional.`;
+Responde SOLO con un array JSON válido de ${isSpecificIngredient ? '1 ingrediente' : `${count} ingredientes`} investigado(s), sin texto adicional.
+
+RECORDATORIO FINAL: LA DESCRIPCIÓN DEBE TENER 5 SECCIONES COMPLETAS CON 700-800 PALABRAS TOTALES. NO PUEDES ENTREGAR CONTENIDO INCOMPLETO.`;

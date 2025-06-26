@@ -17,9 +17,9 @@ export const getJsonFormat = (isSpecificIngredient: boolean, ingredient?: string
     "name_zh": "nombre en chino (caracteres chinos)",
     "name_la": "sinónimos en español de Latinoamérica (ej: papa en lugar de patata, tomate en lugar de jitomate, etc.)",
     ${categoryResponse}
-    "description": "descripción científica y técnica detallada basada en investigación real de fuentes especializadas (700-800 palabras) - DEBE SER UNA CADENA CONTINUA SIN SALTOS DE LÍNEA - Seguir estructura de 5 secciones especializadas del Experto Culinario en Léxico Científico usando marcadores ###SECCION1###, ###SECCION2###, ###SECCION3###, ###SECCION4###, ###SECCION5### para delimitar cada sección - COMPLETAR TODAS LAS 5 SECCIONES SIN CORTAR ABRUPTAMENTE - ALCANZAR 700-800 PALABRAS TOTALES",
+    "description": "descripción científica y técnica detallada basada en investigación real de fuentes especializadas (400-500 palabras) - DEBE SER UNA CADENA CONTINUA SIN SALTOS DE LÍNEA - Seguir estructura de 5 secciones especializadas del Experto Culinario en Léxico Científico usando marcadores ###SECCION1###, ###SECCION2###, ###SECCION3###, ###SECCION4###, ###SECCION5### para delimitar cada sección - COMPLETAR TODAS LAS 5 SECCIONES SIN CORTAR ABRUPTAMENTE - ALCANZAR 400-500 PALABRAS TOTALES - VERIFICAR ORIGEN HISTÓRICO REAL",
     "temporada": "temporada principal basada en calendarios agrícolas reales",
-    "origen": "región de origen verificada en fuentes históricas/geográficas",
+    "origen": "región de origen VERIFICADA en fuentes históricas/geográficas ACADÉMICAS (ej: tomate=América, patata=Andes)",
     "merma": [MERMA_INSTRUCTIONS_PLACEHOLDER],
     "rendimiento": número entre 20-95 (100 - merma, calculado automáticamente basado en la merma real investigada),
     "popularity": número entre 1-100 basado en frecuencia de uso en recetas profesionales,

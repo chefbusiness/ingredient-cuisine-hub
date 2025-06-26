@@ -21,17 +21,20 @@ const StructuredDescription = ({ description, className = "" }: StructuredDescri
       "Criterios de Calidad, Conservación y Uso Profesional"
     ];
 
-    // Dividir por marcadores de sección usando regex más específico
-    const parts = text.split(/###SECCION[1-5]###/);
+    // Dividir por marcadores de sección usando regex más específico y robusto
+    const parts = text.split(/###SECCION[1-5]###\s*/);
     
-    // El primer elemento puede estar vacío o contener texto previo
+    // Filtrar partes vacías y procesar contenido
     const contentParts = parts.filter(part => part.trim().length > 0);
     
     contentParts.forEach((content, index) => {
       if (content.trim()) {
+        // Limpiar cualquier marcador residual del contenido
+        const cleanContent = content.replace(/###SECCION[1-5]###/g, '').trim();
+        
         sections.push({
           title: sectionTitles[index] || `Sección ${index + 1}`,
-          content: content.trim()
+          content: cleanContent
         });
       }
     });
@@ -44,13 +47,13 @@ const StructuredDescription = ({ description, className = "" }: StructuredDescri
   return (
     <div className={`structured-description ${className}`}>
       {sections.map((section, index) => (
-        <div key={index} className="mb-6 last:mb-0">
+        <div key={index} className="mb-4 last:mb-0">
           {section.title && (
-            <h4 className="text-lg font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">
+            <h4 className="text-base font-semibold text-gray-800 mb-2 border-b border-gray-200 pb-1">
               {section.title}
             </h4>
           )}
-          <p className="text-gray-700 leading-relaxed text-justify">
+          <p className="text-gray-700 leading-relaxed text-sm text-justify">
             {section.content}
           </p>
         </div>

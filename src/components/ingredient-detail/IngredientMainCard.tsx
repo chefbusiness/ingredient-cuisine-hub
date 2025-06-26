@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Ingredient } from "@/hooks/useIngredients";
 import StructuredDescription from "./StructuredDescription";
+import QualityValidator from "@/components/admin/QualityValidator";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 
 interface IngredientMainCardProps {
   ingredient: Ingredient;
@@ -19,9 +21,17 @@ const IngredientMainCard = ({
   onGenerateImage, 
   isGeneratingImage 
 }: IngredientMainCardProps) => {
+  const { isSuperAdmin } = useSuperAdmin();
+
   return (
     <Card className="bg-white/90">
       <CardContent className="p-6">
+        {isSuperAdmin && (
+          <div className="mb-4">
+            <QualityValidator ingredient={ingredient} />
+          </div>
+        )}
+        
         <div className="flex flex-col md:flex-row gap-6">
           <div className="md:w-64 h-64 flex-shrink-0">
             {primaryImage ? (

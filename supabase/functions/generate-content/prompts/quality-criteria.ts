@@ -2,23 +2,31 @@
 export const getQualityCriteria = (isSpecificIngredient: boolean, ingredient?: string, count: number = 1) => `
 🎯 CRITERIOS DE CALIDAD PARA DATOS INVESTIGADOS:
 
-DESCRIPCIÓN EXTENDIDA Y SEO OPTIMIZADA:
-- DEBE tener EXACTAMENTE entre 700-800 palabras para optimización SEO
+⚠️ VERIFICACIÓN HISTÓRICA OBLIGATORIA:
+- VERIFICA orígenes geográficos con fuentes académicas (National Geographic, Smithsonian, universidades)
+- TOMATE: Origen AMERICANO (México/Perú), NO mediterráneo - Llegó a Europa s. XVI
+- PATATA: Origen ANDINO (Perú/Bolivia), NO europeo - Introducida en Europa s. XVI
+- MAÍZ: Origen MESOAMERICANO (México), NO del Viejo Mundo
+- RECHAZA información histórica sin verificación académica sólida
+- CONSULTA múltiples fuentes históricas antes de afirmar cualquier origen
+
+DESCRIPCIÓN EXTENDIDA Y SEO OPTIMIZADA (400-500 PALABRAS):
+- DEBE tener EXACTAMENTE entre 400-500 palabras para optimización SEO
 - USA ÚNICAMENTE estos marcadores: ###SECCION1###, ###SECCION2###, ###SECCION3###, ###SECCION4###, ###SECCION5###
 - COMPLETA TODAS LAS 5 SECCIONES OBLIGATORIAMENTE - NO PUEDES PARAR HASTA COMPLETAR LA SECCIÓN 5
-- Cada sección debe tener 140-160 palabras aproximadamente
+- Cada sección debe tener 80-100 palabras aproximadamente
 - NUNCA CORTES EL TEXTO ABRUPTAMENTE - DEBES COMPLETAR TODAS LAS SECCIONES
 - Si alcanzas límite de tokens, PRIORIZA completar la descripción antes que otros campos
 - NO dejes ninguna sección incompleta o cortada
-- El contenido debe ser rico, detallado y técnicamente preciso
-- OBJETIVO: 700-800 palabras distribuidas en 5 secciones completas
+- El contenido debe ser rico, detallado y técnicamente preciso pero CONCISO
+- OBJETIVO: 400-500 palabras distribuidas en 5 secciones completas
 
-ESTRUCTURA OBLIGATORIA DE LAS 5 SECCIONES:
-1. ###SECCION1### - Definición y Características Científicas (140-160 palabras)
-2. ###SECCION2### - Origen Geográfico y Contexto Histórico-Cultural (140-160 palabras)
-3. ###SECCION3### - Análisis Organoléptico y Propiedades Físico-Químicas (140-160 palabras)
-4. ###SECCION4### - Aplicaciones Técnicas en Gastronomía Profesional (140-160 palabras)
-5. ###SECCION5### - Criterios de Calidad, Conservación y Uso Profesional (140-160 palabras)
+ESTRUCTURA OBLIGATORIA DE LAS 5 SECCIONES (VERSIÓN COMPACTA):
+1. ###SECCION1### - Definición y Características Científicas (80-100 palabras)
+2. ###SECCION2### - Origen Geográfico y Contexto Histórico-Cultural (80-100 palabras) - ⚠️ VERIFICAR ORIGEN REAL
+3. ###SECCION3### - Análisis Organoléptico y Propiedades Físico-Químicas (80-100 palabras)
+4. ###SECCION4### - Aplicaciones Técnicas en Gastronomía Profesional (80-100 palabras)
+5. ###SECCION5### - Criterios de Calidad, Conservación y Uso Profesional (80-100 palabras)
 
 PRECIOS MULTICOUNTRY (prices_by_country):
 - INVESTIGA precios REALES y ACTUALES para cada país específicamente
@@ -73,19 +81,21 @@ CRÍTICO - SINÓNIMOS LATINOAMERICANOS (name_la):
 IMPORTANTE - DESCRIPCIÓN COMPLETA:
 - PRIORIDAD MÁXIMA: COMPLETAR LAS 5 SECCIONES DE LA DESCRIPCIÓN
 - Si hay límite de tokens, reduce otros campos pero NUNCA la descripción
-- La descripción DEBE alcanzar 700-800 palabras completas
+- La descripción DEBE alcanzar 400-500 palabras completas (NO MÁS)
 - NUNCA termines una descripción a medias
 - CADA SECCIÓN debe estar completa antes de continuar con la siguiente
 - USA los marcadores exactos: ###SECCION1###, ###SECCION2###, ###SECCION3###, ###SECCION4###, ###SECCION5###
 
 ${isSpecificIngredient ? 
-  `- El ingrediente DEBE ser exactamente "${ingredient}", no un sustituto o variante` :
+  `- El ingrediente DEBE ser exactamente "${ingredient}", no un sustituto o variante
+  - VERIFICA el origen histórico real de "${ingredient}" con fuentes académicas` :
   '- ASEGÚRATE de que NINGÚN ingrediente sea duplicado de los existentes'
 }
 - GENERA EXACTAMENTE 6 RECETAS REALES Y VARIADAS por cada ingrediente
 - INVESTIGA Y PROPORCIONA 6 PRECIOS REALES (uno por cada país)
 - INCLUYE las fuentes consultadas para validación posterior
+- VERIFICA RIGUROSAMENTE cualquier dato histórico antes de incluirlo
 
 Responde SOLO con un array JSON válido de ${isSpecificIngredient ? '1 ingrediente' : `${count} ingredientes`} investigado(s), sin texto adicional.
 
-RECORDATORIO FINAL: LA DESCRIPCIÓN DEBE TENER 5 SECCIONES COMPLETAS CON 700-800 PALABRAS TOTALES. NO PUEDES ENTREGAR CONTENIDO INCOMPLETO.`;
+RECORDATORIO FINAL: LA DESCRIPCIÓN DEBE TENER 5 SECCIONES COMPLETAS CON 400-500 PALABRAS TOTALES Y TODOS LOS DATOS HISTÓRICOS DEBEN ESTAR VERIFICADOS. NO PUEDES ENTREGAR CONTENIDO INCOMPLETO O HISTÓRICAMENTE INCORRECTO.`;

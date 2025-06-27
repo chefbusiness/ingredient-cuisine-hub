@@ -1,7 +1,5 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { PerplexityClient } from './perplexity-client.ts';
-import { generatePrompt } from './prompts.ts';
 import { verifySuperAdminAccess } from './auth.ts';
 import { logAdminAction } from './logging.ts';
 import { createFallbackData } from './fallback-data.ts';
@@ -19,12 +17,14 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔄 === GENERATE-CONTENT FUNCTION CON PERPLEXITY COMPLETO ===');
+    console.log('🔄 === GENERATE-CONTENT FUNCTION INICIANDO ===');
     console.log('📊 Request method:', req.method);
     console.log('📊 Timestamp:', new Date().toISOString());
     
     // Security check: Verify super admin access
     const authHeader = req.headers.get('authorization');
+    console.log('🔐 Verificando autenticación...');
+    
     const authResult = await verifySuperAdminAccess(authHeader);
     
     if (!authResult.authorized) {
@@ -46,63 +46,62 @@ serve(async (req) => {
     console.log('✅ Authorization successful, processing request...');
 
     // Parse request body
-    const requestBody = await req.json();
-    console.log('📥 Request body received:', requestBody);
-
-    // Verificar si Perplexity API Key está disponible
-    const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
-    if (!perplexityApiKey) {
-      console.log('❌ PERPLEXITY_API_KEY no está configurada');
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      console.log('📥 Request body received:', requestBody);
+    } catch (parseError) {
+      console.error('❌ Error parsing request body:', parseError);
       return new Response(JSON.stringify({ 
-        error: 'La clave PERPLEXITY_API_KEY no está configurada en las variables de entorno.',
-        code: 'PERPLEXITY_KEY_MISSING',
-        ai_provider: 'perplexity_missing'
+        error: 'Invalid JSON in request body',
+        code: 'INVALID_REQUEST_BODY'
       }), {
-        status: 500,
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    console.log('🔑 Perplexity API Key encontrada, longitud:', perplexityApiKey.length);
+    // Verificar si Perplexity API Key está disponible
+    const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
+    console.log('🔑 Perplexity API Key status:', perplexityApiKey ? `Presente (${perplexityApiKey.length} chars)` : 'NO ENCONTRADA');
 
     // Get existing ingredients to avoid duplicates
-    const existingIngredients = await getExistingIngredients();
+    console.log('📋 Obteniendo ingredientes existentes...');
+    let existingIngredients = [];
+    try {
+      existingIngredients = await getExistingIngredients();
+      console.log('📊 Ingredientes existentes cargados:', existingIngredients.length);
+    } catch (existingError) {
+      console.log('⚠️ Error obteniendo ingredientes existentes:', existingError.message);
+    }
 
-    // FUNCIONALIDAD COMPLETA DE PERPLEXITY
-    console.log('🧠 === INICIANDO INVESTIGACIÓN CON PERPLEXITY SONAR DEEP RESEARCH ===');
+    // MODO DEBUGGING TEMPORAL: Usar datos fallback para probar que funciona
+    console.log('🔧 === MODO DEBUGGING: USANDO DATOS FALLBACK ===');
+    console.log('🎯 Esto es temporal para verificar que la función se ejecuta correctamente');
     
     try {
-      const perplexityClient = new PerplexityClient();
-      
-      // Generate prompt with existing ingredients context
-      const prompt = generatePrompt(requestBody, existingIngredients);
-      console.log('📝 Prompt generado para Perplexity (primeros 200 chars):', prompt.substring(0, 200) + '...');
-      
-      // Call Perplexity API
-      console.log('🔍 Llamando a Perplexity Sonar Deep Research...');
-      const generatedData = await perplexityClient.generateContent(prompt);
-      
-      console.log('🎉 Contenido generado exitosamente por Perplexity:', generatedData.length, 'elementos');
-      
-      // Log successful generation
-      await logAdminAction('generate_content_perplexity', requestBody.type || 'ingredient', {
-        count: generatedData.length,
+      const fallbackData = createFallbackData(requestBody);
+      console.log('✅ Datos fallback generados:', fallbackData.length, 'elementos');
+
+      // Log successful generation (modo debugging)
+      await logAdminAction('generate_content_debug', requestBody.type || 'ingredient', {
+        count: fallbackData.length,
         category: requestBody.category,
         region: requestBody.region,
-        generated_count: generatedData.length,
-        ai_provider: 'perplexity_sonar_deep_research',
+        generated_count: fallbackData.length,
+        ai_provider: 'debug_fallback',
         generation_mode: requestBody.ingredientsList ? 'manual' : 'automatic',
-        perplexity_key_length: perplexityApiKey.length
+        debug_mode: true,
+        perplexity_available: !!perplexityApiKey
       });
 
-      const response = buildSuccessResponse(
-        generatedData,
-        'perplexity_sonar_deep_research',
+      const response = buildFallbackResponse(
+        fallbackData,
         requestBody.ingredientsList ? 'manual' : 'automatic',
-        'Contenido generado exitosamente con investigación web real de Perplexity'
+        'Modo debugging activo - usando datos de prueba para verificar funcionamiento'
       );
 
-      console.log('📤 Sending successful Perplexity response:', {
+      console.log('📤 Sending debug response:', {
         success: response.success,
         generated_count: response.generated_count,
         ai_provider: response.ai_provider,
@@ -113,43 +112,14 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
 
-    } catch (perplexityError) {
-      console.error('❌ Error en Perplexity:', perplexityError);
-      console.error('📊 Perplexity error details:', {
-        name: perplexityError.name,
-        message: perplexityError.message,
-        stack: perplexityError.stack?.substring(0, 500)
-      });
-      
-      // En caso de error de Perplexity, devolver datos mock como fallback
-      console.log('🚨 FALLBACK: Generando datos mock debido a error de Perplexity');
-      
-      const fallbackData = createFallbackData(requestBody);
-
-      // Log the fallback action
-      await logAdminAction('generate_content_fallback', requestBody.type || 'ingredient', {
-        count: fallbackData.length,
-        category: requestBody.category,
-        generated_count: fallbackData.length,
-        ai_provider: 'fallback_mock',
-        generation_mode: requestBody.ingredientsList ? 'manual' : 'automatic',
-        error_reason: perplexityError.message,
-        perplexity_key_present: !!perplexityApiKey
-      });
-
-      const response = buildFallbackResponse(
-        fallbackData,
-        requestBody.ingredientsList ? 'manual' : 'automatic'
-      );
-
-      return new Response(JSON.stringify(response), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    } catch (fallbackError) {
+      console.error('❌ Error en datos fallback:', fallbackError);
+      throw fallbackError;
     }
 
   } catch (error) {
     console.error('❌ Error general en generate-content:', error);
-    console.error('📊 General error details:', {
+    console.error('📊 Error details:', {
       name: error.name,
       message: error.message,
       stack: error.stack?.substring(0, 500)

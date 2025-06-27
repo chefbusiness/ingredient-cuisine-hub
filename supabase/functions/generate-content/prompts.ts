@@ -1,41 +1,27 @@
 
 import { GenerateContentParams } from './types.ts';
-import { generateIngredientPrompt } from './prompts/ingredient-prompts.ts';
-import { generateCategoryPrompt } from './prompts/category-prompts.ts';
-import { 
-  generateMarketResearchPrompt,
-  generateWeatherImpactPrompt,
-  generateCulturalVariantsPrompt,
-  generateTrendAnalysisPrompt,
-  generateSupplyChainPrompt
-} from './prompts/research-prompts.ts';
 
 export const generatePrompt = (params: GenerateContentParams, existingIngredients: any[] = []): string => {
-  const { type, category, region = 'España', count = 1, ingredient } = params;
+  const { type, category, region = 'España', count = 1, ingredient, ingredientsList } = params;
   
-  switch (type) {
-    case 'ingredient':
-      return generateIngredientPrompt(params, existingIngredients);
+  console.log('📝 Generando prompt para:', { type, category, region, count, ingredient, ingredientsList });
+  
+  // MODO DEBUGGING: Prompt simplificado
+  if (type === 'ingredient') {
+    if (ingredientsList && ingredientsList.length > 0) {
+      // Modo manual con lista específica
+      return `Genera información detallada para estos ingredientes específicos: ${ingredientsList.join(', ')}. 
+      Región: ${region}. 
+      Categoría: ${category || 'general'}.
       
-    case 'category':
-      return generateCategoryPrompt(count);
+      Responde con un JSON array con la información de cada ingrediente.`;
+    } else {
+      // Modo automático
+      return `Genera ${count} ingrediente(s) de la categoría "${category || 'general'}" típicos de ${region}.
       
-    case 'market_research':
-      return generateMarketResearchPrompt({ ingredient, category, region });
-      
-    case 'weather_impact':
-      return generateWeatherImpactPrompt({ ingredient, category, region });
-      
-    case 'cultural_variants':
-      return generateCulturalVariantsPrompt({ ingredient, category });
-      
-    case 'trend_analysis':
-      return generateTrendAnalysisPrompt({ ingredient, category, region });
-      
-    case 'supply_chain':
-      return generateSupplyChainPrompt({ ingredient, category, region });
-      
-    default:
-      throw new Error(`Tipo de contenido no soportado: ${type}`);
+      Responde con un JSON array con la información de cada ingrediente.`;
+    }
   }
+  
+  return `Genera contenido de tipo ${type} para ${region}`;
 };

@@ -8,7 +8,7 @@ export const generateOrganizationSchema = () => ({
   "@type": "Organization",
   "name": "IngredientsIndex.pro - Directorio de Ingredientes de Cocina y Hostelería",
   "url": BASE_URL,
-  "logo": `${BASE_URL}/favicon.ico`,
+  "logo": `${BASE_URL}/lovable-uploads/84324d50-7dfc-4c95-b2ca-abb45a097a4e.png`,
   "description": "Directorio profesional de ingredientes culinarios con información detallada sobre precios, mermas, rendimientos y usos para chefs y profesionales de la hostelería",
   "sameAs": [],
   "contactPoint": {

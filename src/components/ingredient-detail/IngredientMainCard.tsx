@@ -4,6 +4,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Ingredient } from "@/hooks/useIngredients";
+import StructuredDescription from "./StructuredDescription";
+import QualityValidator from "@/components/admin/QualityValidator";
+import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 
 interface IngredientMainCardProps {
   ingredient: Ingredient;
@@ -18,9 +21,17 @@ const IngredientMainCard = ({
   onGenerateImage, 
   isGeneratingImage 
 }: IngredientMainCardProps) => {
+  const { isSuperAdmin } = useSuperAdmin();
+
   return (
     <Card className="bg-white/90">
       <CardContent className="p-6">
+        {isSuperAdmin && (
+          <div className="mb-4">
+            <QualityValidator ingredient={ingredient} />
+          </div>
+        )}
+        
         <div className="flex flex-col md:flex-row gap-6">
           <div className="md:w-64 h-64 flex-shrink-0">
             {primaryImage ? (
@@ -84,9 +95,10 @@ const IngredientMainCard = ({
               </div>
             </div>
             
-            <p className="text-gray-700 leading-relaxed mb-4">
-              {ingredient.description}
-            </p>
+            <StructuredDescription 
+              description={ingredient.description || ""}
+              className="mb-4"
+            />
 
             <div className="grid grid-cols-2 gap-4 text-sm">
               {ingredient.temporada && (

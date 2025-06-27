@@ -90,3 +90,6 @@ verify_jwt = false
 
 [functions.update-ingredient-prices]
 verify_jwt = true
+
+[functions.test-connection]
+verify_jwt = true

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +8,7 @@ import { useUpdateIngredientPrices } from "@/hooks/useUpdateIngredientPrices";
 import { useToast } from "@/hooks/use-toast";
 import { Image, Wand2, RefreshCw, AlertTriangle, Zap, DollarSign, Clock, Settings } from "lucide-react";
 import IngredientPriceSelector from "./IngredientPriceSelector";
+import DiagnosticPanel from "./DiagnosticPanel";
 
 interface BatchOperationsProps {
   totalIngredients: number;
@@ -97,6 +99,9 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
 
   return (
     <div className="space-y-6">
+      {/* Panel de Diagnóstico - NUEVO */}
+      <DiagnosticPanel />
+
       {/* Progress bars */}
       {(isGeneratingImages || imageProgress.isGenerating) && (
         <div className="space-y-3">

@@ -36,27 +36,37 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
   const [editingPrice, setEditingPrice] = useState<PriceEditData | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
 
-  // Obtener precios actuales del ingrediente con validaciones de seguridad
-  const currentPrices = (ingredient?.ingredient_prices || []).filter(price => 
-    price && 
-    typeof price.price === 'number' && 
-    price.unit &&
-    price.country_id // Usar country_id en lugar de countries?.id
-  );
+  console.log('🔍 IngredientPricesTab - Ingredient data:', ingredient);
+  console.log('🔍 IngredientPricesTab - Raw prices:', ingredient?.ingredient_prices);
 
-  console.log('🔍 Current prices data:', currentPrices);
+  // Obtener precios actuales del ingrediente con validaciones de seguridad
+  const currentPrices = (ingredient?.ingredient_prices || []).filter(priceItem => {
+    const isValid = priceItem && 
+      priceItem.id &&
+      typeof priceItem.price === 'number' && 
+      priceItem.unit &&
+      priceItem.country_id;
+    
+    if (!isValid) {
+      console.warn('❌ Precio inválido encontrado:', priceItem);
+    }
+    
+    return isValid;
+  });
+
+  console.log('✅ Valid current prices:', currentPrices);
   console.log('🌍 Countries data:', countries);
 
   // Detectar precios potencialmente erróneos
   const isPriceErroneous = (price: number, unit: string) => {
     if (unit === 'kg') {
-      return price < 0.5 || price > 100; // Fuera del rango típico para kg
+      return price < 0.5 || price > 100;
     }
     if (unit === 'l' || unit === 'litro') {
-      return price < 0.3 || price > 50; // Fuera del rango típico para litros
+      return price < 0.3 || price > 50;
     }
     if (unit === 'g') {
-      return price > 5; // Muy caro para gramos (debería ser kg)
+      return price > 5;
     }
     return false;
   };
@@ -69,7 +79,7 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
   const handleEditPrice = (priceData: any) => {
     console.log('📝 Editing price:', priceData);
     
-    if (!priceData || !priceData.country_id) {
+    if (!priceData || !priceData.id || !priceData.country_id) {
       console.error('❌ Invalid price data for editing:', priceData);
       return;
     }
@@ -198,13 +208,13 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
               {currentPrices.map((priceData) => {
                 const isEditing = editingPrice?.priceId === priceData.id;
                 const isErroneous = isPriceErroneous(priceData.price, priceData.unit);
-                const countryName = getCountryName(priceData.country_id);
+                const countryName = priceData.countries?.name || getCountryName(priceData.country_id);
                 
                 return (
-                  <TableRow key={priceData.id || `price-${Math.random()}`}>
+                  <TableRow key={priceData.id}>
                     <TableCell className="font-medium">
                       {countryName}
-                      {countryName === 'España' && (
+                      {(countryName === 'España' || priceData.countries?.code === 'ES') && (
                         <Badge className="ml-2 bg-green-100 text-green-700 text-xs">
                           Principal
                         </Badge>

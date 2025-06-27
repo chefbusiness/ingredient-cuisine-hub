@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
@@ -63,8 +64,8 @@ class PerplexityClient {
           content: prompt
         }
       ],
-      temperature: 0.1, // Reducir temperatura para mayor consistencia
-      max_tokens: 4000, // Reducir tokens para respuestas más rápidas
+      temperature: 0.1,
+      max_tokens: 4000,
       top_p: 0.9,
       return_images: false,
       return_related_questions: false,
@@ -78,14 +79,13 @@ class PerplexityClient {
         'mercamadrid.es'
       ],
       search_recency_filter: 'month',
-      frequency_penalty: 1.0 // Reducir para mayor estabilidad
+      frequency_penalty: 1.0
     };
 
     console.log('📡 Enviando consulta optimizada a Perplexity API...');
 
-    // Timeout más corto para detectar problemas más rápido
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45 segundos
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
 
     try {
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -111,7 +111,6 @@ class PerplexityClient {
       
       console.log('📦 Respuesta recibida de Perplexity (primeros 200 chars):', generatedContent.substring(0, 200));
       
-      // Parse content
       return this.parseContent(generatedContent);
     } catch (error) {
       clearTimeout(timeoutId);
@@ -124,20 +123,16 @@ class PerplexityClient {
 
   private parseContent(content: string): any[] {
     try {
-      // Clean the content by removing any markdown code blocks
       let cleanContent = content;
       
-      // Remove markdown code blocks if present
       const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
       if (jsonMatch) {
         cleanContent = jsonMatch[1];
       }
       
-      // Remove any comments that might break JSON parsing (más agresivo)
       cleanContent = cleanContent.replace(/\/\/[^\n\r]*/g, '');
       cleanContent = cleanContent.replace(/\/\*[\s\S]*?\*\//g, '');
       
-      // Try to parse as JSON directly
       const parsed = JSON.parse(cleanContent);
       return Array.isArray(parsed) ? parsed : [parsed];
     } catch (error) {
@@ -152,45 +147,39 @@ class PerplexityClient {
 function guessCategory(ingredientName: string): string {
   const name = ingredientName.toLowerCase();
   
-  // Especias (casos críticos primero)
   if (name.includes('pimienta') && name.includes('negra')) {
-    return 'especias_premium'; // €15-25/kg para pimienta negra
+    return 'especias_premium';
   }
   
   if (name.includes('azafrán') || name.includes('saffron')) {
-    return 'especias_premium'; // €3000-8000/kg
+    return 'especias_premium';
   }
   
   if (name.includes('fruta') && name.includes('pasión')) {
-    return 'frutas_tropicales'; // €12-20/kg
+    return 'frutas_tropicales';
   }
   
-  // Frutas tropicales y exóticas
   if (name.includes('mango') || name.includes('aguacate') || name.includes('papaya') ||
       name.includes('guayaba') || name.includes('maracuyá')) {
     return 'frutas_tropicales';
   }
   
-  // Especias comunes
   if (name.includes('pimienta') || name.includes('canela') || name.includes('clavo') ||
       name.includes('nuez moscada') || name.includes('comino')) {
     return 'especias_comunes';
   }
   
-  // Hierbas frescas
   if (name.includes('albahaca') || name.includes('cilantro') || name.includes('perejil') ||
       name.includes('menta') || name.includes('romero')) {
     return 'hierbas_frescas';
   }
   
-  // Carnes
   if (name.includes('carne') || name.includes('pollo') || name.includes('cerdo') ||
       name.includes('ternera') || name.includes('cordero') || name.includes('jamón') ||
       name.includes('chorizo') || name.includes('morcilla') || name.includes('bacón')) {
     return 'carnes';
   }
   
-  // Aceites
   if (name.includes('aceite')) {
     return 'aceites';
   }
@@ -201,7 +190,7 @@ function guessCategory(ingredientName: string): string {
 function validateHorecaPrice(price: number, category: string, ingredientName: string): boolean {
   const priceRanges = {
     frutas_tropicales: { min: 8, max: 25 },
-    especias_premium: { min: 15, max: 100 }, // Para pimienta negra y especias caras
+    especias_premium: { min: 15, max: 100 },
     especias_comunes: { min: 8, max: 30 },
     hierbas_frescas: { min: 15, max: 50 },
     carnes: { min: 3, max: 60 },
@@ -209,7 +198,6 @@ function validateHorecaPrice(price: number, category: string, ingredientName: st
     general: { min: 0.5, max: 30 }
   };
   
-  // Casos especiales críticos
   const nameLower = ingredientName.toLowerCase();
   
   if (nameLower.includes('azafrán')) {
@@ -217,7 +205,7 @@ function validateHorecaPrice(price: number, category: string, ingredientName: st
   }
 
   if (nameLower.includes('pimienta') && nameLower.includes('negra')) {
-    return price >= 15 && price <= 25; // Rango específico para pimienta negra
+    return price >= 15 && price <= 25;
   }
 
   if (nameLower.includes('fruta') && nameLower.includes('pasión')) {
@@ -228,7 +216,7 @@ function validateHorecaPrice(price: number, category: string, ingredientName: st
   return price >= range.min && price <= range.max;
 }
 
-// Pricing processor
+// Pricing processor (ÚNICA DECLARACIÓN)
 async function processMultiCountryPrices(ingredientId: string, pricesData: any[]) {
   const pricesToInsert = [];
   
@@ -236,7 +224,6 @@ async function processMultiCountryPrices(ingredientId: string, pricesData: any[]
   
   for (const priceData of pricesData) {
     try {
-      // Get country by code
       const { data: country, error: countryError } = await supabase
         .from('countries')
         .select('id')
@@ -314,7 +301,6 @@ serve(async (req) => {
   try {
     console.log('🚀 === INICIANDO ACTUALIZACIÓN OPTIMIZADA DE PRECIOS HORECA ===');
     
-    // Security check: Verify super admin access
     const authHeader = req.headers.get('authorization');
     const authResult = await verifySuperAdminAccess(authHeader);
     
@@ -336,7 +322,7 @@ serve(async (req) => {
     console.log(`👤 Usuario autorizado: ${authResult.userEmail}`);
 
     const requestBody = await req.json();
-    const { mode = 'problematic', ingredientIds, batchSize = 1 } = requestBody; // Forzar batchSize = 1
+    const { mode = 'problematic', ingredientIds, batchSize = 1 } = requestBody;
 
     console.log(`🎯 Modo optimizado: ${mode}, Lote: 1 (forzado para estabilidad)`);
 
@@ -363,7 +349,6 @@ serve(async (req) => {
       console.log(`🎯 Procesando ingredientes específicos: ${targetIngredients.length}`);
       
     } else {
-      // Modo por defecto: ingredientes con precios problemáticos
       console.log('🔍 Identificando ingredientes con precios problemáticos...');
       
       const { data: ingredientsWithPrices, error } = await supabase
@@ -426,7 +411,6 @@ serve(async (req) => {
       });
     }
 
-    // Inicializar cliente de Perplexity
     const perplexityClient = new PerplexityClient();
     
     let processedCount = 0;
@@ -435,14 +419,12 @@ serve(async (req) => {
     const updatedIngredients = [];
     const failedIngredients = [];
 
-    // Procesar de 1 en 1 para máxima estabilidad
     console.log(`🔄 Procesando ${targetIngredients.length} ingredientes de uno en uno...`);
     
     for (const ingredient of targetIngredients) {
       try {
         console.log(`📊 === ACTUALIZANDO: ${ingredient.name} (${processedCount + 1}/${targetIngredients.length}) ===`);
         
-        // Prompt optimizado y limpio para actualización de precios
         const priceUpdatePrompt = `
           Investiga precios HORECA mayoristas para "${ingredient.name}" (${ingredient.name_en || ''}).
           
@@ -503,11 +485,9 @@ serve(async (req) => {
           }
         `;
 
-        // Obtener nuevos precios usando Perplexity con timeout optimizado
         const newPricesData = await perplexityClient.generateContent(priceUpdatePrompt);
         
         if (newPricesData && newPricesData.length > 0 && newPricesData[0].prices_by_country) {
-          // Eliminar precios existentes
           const { error: deleteError } = await supabase
             .from('ingredient_prices')
             .delete()
@@ -519,7 +499,6 @@ serve(async (req) => {
             console.log(`🗑️ Precios antiguos eliminados para ${ingredient.name}`);
           }
 
-          // Insertar nuevos precios
           await processMultiCountryPrices(ingredient.id, newPricesData[0].prices_by_country);
           
           successfulUpdates++;
@@ -552,14 +531,12 @@ serve(async (req) => {
       
       processedCount++;
       
-      // Pausa optimizada entre ingredientes (solo 1 segundo para ser más rápido)
       if (processedCount < targetIngredients.length) {
         console.log('⏸️ Pausa optimizada (1 segundo)...');
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
 
-    // Log the admin action
     try {
       await supabase.rpc('log_admin_action', {
         action_type: 'update_ingredient_prices_bulk_optimized',
@@ -611,131 +588,3 @@ serve(async (req) => {
     });
   }
 });
-
-// Función auxiliar para procesar precios (mantener la existente)
-async function processMultiCountryPrices(ingredientId: string, pricesData: any[]) {
-  const pricesToInsert = [];
-  
-  console.log(`💰 Procesando precios para ingrediente ${ingredientId}:`, pricesData.length, 'países');
-  
-  for (const priceData of pricesData) {
-    try {
-      // Get country by code
-      const { data: country, error: countryError } = await supabase
-        .from('countries')
-        .select('id')
-        .eq('code', priceData.country_code)
-        .single();
-      
-      if (countryError) {
-        console.log(`⚠️ País no encontrado para código ${priceData.country_code}:`, countryError);
-        continue;
-      }
-      
-      if (country && priceData.price && priceData.price > 0) {
-        pricesToInsert.push({
-          ingredient_id: ingredientId,
-          country_id: country.id,
-          price: priceData.price,
-          unit: priceData.unit || 'kg'
-        });
-        console.log(`✅ Precio agregado: ${priceData.country} - €${priceData.price}/${priceData.unit || 'kg'}`);
-      }
-    } catch (error) {
-      console.error(`❌ Error procesando precio para ${priceData.country}:`, error);
-    }
-  }
-  
-  if (pricesToInsert.length > 0) {
-    const { error: insertError } = await supabase
-      .from('ingredient_prices')
-      .insert(pricesToInsert);
-      
-    if (insertError) {
-      console.error('❌ Error insertando precios:', insertError);
-      throw insertError;
-    }
-    
-    console.log(`💾 ${pricesToInsert.length} precios insertados exitosamente`);
-  }
-}
-
-// Funciones de validación existentes
-function guessCategory(ingredientName: string): string {
-  const name = ingredientName.toLowerCase();
-  
-  // Especias (casos críticos primero)
-  if (name.includes('pimienta') && name.includes('negra')) {
-    return 'especias_premium'; // €15-25/kg para pimienta negra
-  }
-  
-  if (name.includes('azafrán') || name.includes('saffron')) {
-    return 'especias_premium'; // €3000-8000/kg
-  }
-  
-  if (name.includes('fruta') && name.includes('pasión')) {
-    return 'frutas_tropicales'; // €12-20/kg
-  }
-  
-  // Frutas tropicales y exóticas
-  if (name.includes('mango') || name.includes('aguacate') || name.includes('papaya') ||
-      name.includes('guayaba') || name.includes('maracuyá')) {
-    return 'frutas_tropicales';
-  }
-  
-  // Especias comunes
-  if (name.includes('pimienta') || name.includes('canela') || name.includes('clavo') ||
-      name.includes('nuez moscada') || name.includes('comino')) {
-    return 'especias_comunes';
-  }
-  
-  // Hierbas frescas
-  if (name.includes('albahaca') || name.includes('cilantro') || name.includes('perejil') ||
-      name.includes('menta') || name.includes('romero')) {
-    return 'hierbas_frescas';
-  }
-  
-  // Carnes
-  if (name.includes('carne') || name.includes('pollo') || name.includes('cerdo') ||
-      name.includes('ternera') || name.includes('cordero') || name.includes('jamón') ||
-      name.includes('chorizo') || name.includes('morcilla') || name.includes('bacón')) {
-    return 'carnes';
-  }
-  
-  // Aceites
-  if (name.includes('aceite')) {
-    return 'aceites';
-  }
-  
-  return 'general';
-}
-
-function validateHorecaPrice(price: number, category: string, ingredientName: string): boolean {
-  const priceRanges = {
-    frutas_tropicales: { min: 8, max: 25 },
-    especias_premium: { min: 15, max: 100 }, // Para pimienta negra y especias caras
-    especias_comunes: { min: 8, max: 30 },
-    hierbas_frescas: { min: 15, max: 50 },
-    carnes: { min: 3, max: 60 },
-    aceites: { min: 2, max: 50 },
-    general: { min: 0.5, max: 30 }
-  };
-  
-  // Casos especiales críticos
-  const nameLower = ingredientName.toLowerCase();
-  
-  if (nameLower.includes('azafrán')) {
-    return price >= 3000 && price <= 8000;
-  }
-
-  if (nameLower.includes('pimienta') && nameLower.includes('negra')) {
-    return price >= 15 && price <= 25; // Rango específico para pimienta negra
-  }
-
-  if (nameLower.includes('fruta') && nameLower.includes('pasión')) {
-    return price >= 12 && price <= 20;
-  }
-
-  const range = priceRanges[category as keyof typeof priceRanges] || priceRanges.general;
-  return price >= range.min && price <= range.max;
-}

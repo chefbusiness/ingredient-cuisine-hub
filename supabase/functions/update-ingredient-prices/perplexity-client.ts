@@ -4,7 +4,14 @@ export class PerplexityClient {
 
   constructor() {
     const apiKey = Deno.env.get('PERPLEXITY_API_KEY');
+    
+    console.log('🔑 Verificando configuración de PERPLEXITY_API_KEY...');
+    console.log('🔑 API Key existe:', !!apiKey);
+    console.log('🔑 API Key longitud:', apiKey ? apiKey.length : 0);
+    console.log('🔑 API Key primeros 10 chars:', apiKey ? apiKey.substring(0, 10) + '...' : 'N/A');
+    
     if (!apiKey) {
+      console.error('❌ PERPLEXITY_API_KEY no está configurada en los secrets de Edge Functions');
       throw new Error('PERPLEXITY_API_KEY environment variable is required');
     }
     this.apiKey = apiKey;
@@ -62,7 +69,7 @@ export class PerplexityClient {
         }
       ],
       temperature: 0.1,
-      max_tokens: 3000, // Reducido para mayor eficiencia
+      max_tokens: 3000,
       top_p: 0.9,
       return_images: false,
       return_related_questions: false,
@@ -80,13 +87,14 @@ export class PerplexityClient {
     };
 
     console.log('📡 Enviando consulta profunda a Sonar Deep Research (timeout: 300s)...');
+    console.log('🔑 Usando API Key configurada correctamente');
     const startTime = Date.now();
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
       console.log('⏰ TIMEOUT: Sonar Deep Research superó los 300 segundos');
       controller.abort();
-    }, 300000); // EXTENDIDO A 300 SEGUNDOS (5 MINUTOS)
+    }, 300000);
 
     try {
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -123,6 +131,12 @@ export class PerplexityClient {
         console.log(`⏰ TIMEOUT tras ${elapsedTime}s: Sonar Deep Research superó 5 minutos - Muy complejo para Deep Research`);
         throw new Error('TIMEOUT_DEEP_RESEARCH: Investigación demasiado compleja para Deep Research');
       }
+      
+      console.error('❌ Error detallado en Deep Research:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
       throw error;
     }
   }
@@ -131,7 +145,7 @@ export class PerplexityClient {
     console.log('🔄 === FALLBACK: Usando Sonar Online Estándar ===');
     
     const requestBody = {
-      model: 'sonar-online', // Modelo estándar más rápido
+      model: 'sonar-online',
       messages: [
         {
           role: 'system',
@@ -166,7 +180,7 @@ export class PerplexityClient {
     const startTime = Date.now();
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // Timeout estándar de 60s
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     try {
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -203,6 +217,12 @@ export class PerplexityClient {
         console.log(`⏰ TIMEOUT tras ${elapsedTime}s: Incluso Sonar Online falló`);
         throw new Error('TIMEOUT_ALL_MODELS: Todos los modelos de Perplexity fallaron por timeout');
       }
+      
+      console.error('❌ Error detallado en Sonar Online:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      });
       throw error;
     }
   }

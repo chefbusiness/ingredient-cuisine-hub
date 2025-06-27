@@ -18,7 +18,7 @@ export class PerplexityClient {
   }
 
   async generateContent(prompt: string): Promise<any[]> {
-    console.log('🔍 === INVESTIGACIÓN CON PERPLEXITY SONAR PARA HOSTELERÍA ===');
+    console.log('🔍 === INVESTIGACIÓN PROFUNDA CON SONAR DEEP RESEARCH PARA HOSTELERÍA ===');
     
     const requestBody: PerplexityRequest = {
       model: PERPLEXITY_CONFIG.model,
@@ -107,7 +107,7 @@ export class PerplexityClient {
       frequency_penalty: PERPLEXITY_CONFIG.frequency_penalty
     };
 
-    console.log('📡 Llamando a Perplexity API con enfoque HORECA...');
+    console.log('📡 Llamando a Sonar Deep Research con enfoque HORECA...');
     console.log('🎯 Modelo:', requestBody.model);
     console.log('🥇 Prioridad FRUTAS ELOY para España activada');
     console.log('🏢 Filtros HORECA:', requestBody.search_domain_filter?.length, 'fuentes mayoristas');
@@ -121,13 +121,13 @@ export class PerplexityClient {
       body: JSON.stringify(requestBody),
     });
 
-    console.log('📊 Respuesta de Perplexity:', response.status, response.statusText);
+    console.log('📊 Respuesta de Sonar Deep Research:', response.status, response.statusText);
 
     const responseText = await response.text();
     console.log('📝 Respuesta recibida (primeros 500 chars):', responseText.substring(0, 500));
 
     if (!response.ok) {
-      console.error('❌ Error de Perplexity API:', response.status, response.statusText);
+      console.error('❌ Error de Sonar Deep Research:', response.status, response.statusText);
       console.error('📄 Detalles del error:', responseText);
       
       let errorDetails = 'Error desconocido';
@@ -138,7 +138,7 @@ export class PerplexityClient {
         errorDetails = responseText;
       }
       
-      throw new Error(`Error de Perplexity API: ${response.status} ${response.statusText}. Detalles: ${errorDetails}`);
+      throw new Error(`Error de Sonar Deep Research: ${response.status} ${response.statusText}. Detalles: ${errorDetails}`);
     }
 
     let data: PerplexityResponse;
@@ -149,12 +149,12 @@ export class PerplexityClient {
     } catch (parseError) {
       console.error('❌ Error parseando respuesta JSON:', parseError);
       console.error('📄 Respuesta completa:', responseText);
-      throw new Error('Respuesta de Perplexity no es JSON válido');
+      throw new Error('Respuesta de Sonar Deep Research no es JSON válido');
     }
 
     if (!data.choices || !data.choices[0] || !data.choices[0].message) {
       console.error('❌ Estructura de respuesta inesperada:', data);
-      throw new Error('Estructura de respuesta de Perplexity inesperada');
+      throw new Error('Estructura de respuesta de Sonar Deep Research inesperada');
     }
 
     const generatedContent = data.choices[0].message.content;

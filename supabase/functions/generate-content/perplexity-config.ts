@@ -1,6 +1,6 @@
 
 export const PERPLEXITY_CONFIG = {
-  model: 'llama-3.1-sonar-large-128k-online',
+  model: 'sonar-deep-research',
   temperature: 0.2,
   max_tokens: 8000,
   top_p: 0.9,

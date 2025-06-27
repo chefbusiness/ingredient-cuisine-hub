@@ -11,10 +11,10 @@ export class PerplexityClient {
   }
 
   async generateContent(prompt: string): Promise<any[]> {
-    console.log('🔍 === INVESTIGACIÓN OPTIMIZADA CON PERPLEXITY SONAR PARA HOSTELERÍA ===');
+    console.log('🔍 === INVESTIGACIÓN PROFUNDA CON SONAR DEEP RESEARCH PARA HOSTELERÍA ===');
     
     const requestBody = {
-      model: 'llama-3.1-sonar-large-128k-online',
+      model: 'sonar-deep-research',
       messages: [
         {
           role: 'system',
@@ -68,10 +68,10 @@ export class PerplexityClient {
       frequency_penalty: 1.0
     };
 
-    console.log('📡 Enviando consulta optimizada a Perplexity API...');
+    console.log('📡 Enviando consulta profunda a Sonar Deep Research...');
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000);
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // Extendido a 60s para investigación profunda
 
     try {
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -88,20 +88,20 @@ export class PerplexityClient {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Error de Perplexity API:', response.status, response.statusText, errorText);
-        throw new Error(`Error de Perplexity API: ${response.status} ${response.statusText}. Detalles: ${errorText}`);
+        console.error('❌ Error de Sonar Deep Research:', response.status, response.statusText, errorText);
+        throw new Error(`Error de Sonar Deep Research: ${response.status} ${response.statusText}. Detalles: ${errorText}`);
       }
 
       const data = await response.json();
       const generatedContent = data.choices[0].message.content;
       
-      console.log('📦 Respuesta recibida de Perplexity (primeros 200 chars):', generatedContent.substring(0, 200));
+      console.log('📦 Respuesta recibida de Sonar Deep Research (primeros 200 chars):', generatedContent.substring(0, 200));
       
       return this.parseContent(generatedContent);
     } catch (error) {
       clearTimeout(timeoutId);
       if (error.name === 'AbortError') {
-        throw new Error('TIMEOUT: Perplexity API tardó más de 45 segundos en responder');
+        throw new Error('TIMEOUT: Sonar Deep Research tardó más de 60 segundos en responder');
       }
       throw error;
     }

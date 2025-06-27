@@ -6,6 +6,7 @@ export interface GenerateContentParams {
   count?: number;
   ingredient?: string;
   search_query?: string;
+  ingredientsList?: string[];
 }
 
 export interface DeepSeekResponse {

@@ -1,0 +1,50 @@
+
+export function createFallbackIngredient(requestBody: any, ingredientName?: string) {
+  const mockIngredient = {
+    name: ingredientName ? `${ingredientName} (Fallback)` : "Ingrediente Fallback",
+    name_en: ingredientName ? `${ingredientName} (Fallback)` : "Fallback Ingredient",
+    name_la: ingredientName ? `${ingredientName} (Fallback)` : "Ingrediente Fallback",
+    name_fr: "Ingrédient de Secours",
+    name_it: "Ingrediente di Riserva",
+    name_pt: "Ingrediente de Reserva",
+    name_zh: "备用配料",
+    description: "Este ingrediente fue generado como respaldo debido a un error temporal con la API de investigación. Los datos son de prueba.",
+    category: requestBody.category || "verduras",
+    temporada: "Todo el año",
+    origen: "Datos de prueba",
+    merma: 15.0,
+    rendimiento: 85.0,
+    popularity: 40,
+    prices_by_country: [
+      {
+        country: "España",
+        price: 8.50,
+        unit: "kg",
+        source: "Fallback - Datos de prueba",
+        date: new Date().toISOString().split('T')[0]
+      }
+    ],
+    recipes: [
+      "Receta de prueba 1",
+      "Receta de prueba 2"
+    ],
+    professional_uses: [
+      "Uso profesional de prueba",
+      "Aplicación gastronómica de prueba"
+    ]
+  };
+
+  if (ingredientName) {
+    mockIngredient.requested_ingredient = ingredientName;
+  }
+
+  return mockIngredient;
+}
+
+export function createFallbackData(requestBody: any): any[] {
+  return requestBody.ingredientsList && requestBody.ingredientsList.length > 0
+    ? requestBody.ingredientsList.map((ingredientName: string) => 
+        createFallbackIngredient(requestBody, ingredientName)
+      )
+    : [createFallbackIngredient(requestBody)];
+}

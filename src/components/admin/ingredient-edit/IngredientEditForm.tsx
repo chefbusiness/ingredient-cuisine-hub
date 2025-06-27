@@ -5,6 +5,7 @@ import IngredientBasicTab from "./IngredientBasicTab";
 import IngredientLanguagesTab from "./IngredientLanguagesTab";
 import IngredientImagesTab from "./IngredientImagesTab";
 import IngredientTechnicalTab from "./IngredientTechnicalTab";
+import IngredientPricesTab from "./IngredientPricesTab";
 import { IngredientFormData } from "./types";
 import { Control, UseFormWatch } from "react-hook-form";
 
@@ -25,10 +26,11 @@ const IngredientEditForm = ({
 }: IngredientEditFormProps) => {
   return (
     <Tabs defaultValue="basic" className="w-full">
-      <TabsList className="grid w-full grid-cols-4">
+      <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="basic">Básico</TabsTrigger>
         <TabsTrigger value="languages">Idiomas</TabsTrigger>
         <TabsTrigger value="images">Imágenes</TabsTrigger>
+        <TabsTrigger value="prices">Precios</TabsTrigger>
         <TabsTrigger value="technical">Técnico</TabsTrigger>
       </TabsList>
 
@@ -45,6 +47,13 @@ const IngredientEditForm = ({
           watch={watch} 
           ingredientId={ingredient?.id}
           onImagesUpdated={onImagesUpdated}
+        />
+      </TabsContent>
+
+      <TabsContent value="prices" className="space-y-4">
+        <IngredientPricesTab 
+          control={control}
+          ingredient={ingredient}
         />
       </TabsContent>
 

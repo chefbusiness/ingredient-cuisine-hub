@@ -5,6 +5,7 @@ import IngredientDetailLoading from "@/components/ingredient-detail/IngredientDe
 import IngredientDetailError from "@/components/ingredient-detail/IngredientDetailError";
 import IngredientDetailLimitReached from "@/components/ingredient-detail/IngredientDetailLimitReached";
 import IngredientDetailContent from "@/components/ingredient-detail/IngredientDetailContent";
+import AIChefBot from "@/components/AIChefBot";
 
 const IngredienteDetalle = () => {
   const {
@@ -46,27 +47,30 @@ const IngredienteDetalle = () => {
   }
 
   return (
-    <IngredientDetailLayout 
-      ingredient={ingredient}
-      showAuthModal={showAuthModal}
-      setShowAuthModal={setShowAuthModal}
-    >
-      <IngredientDetailContent
+    <>
+      <IngredientDetailLayout 
         ingredient={ingredient}
-        realImages={realImages}
-        primaryImage={primaryImage}
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        remainingViews={remainingViews}
+        showAuthModal={showAuthModal}
         setShowAuthModal={setShowAuthModal}
-        handleGenerateImage={handleGenerateImage}
-        isGeneratingImage={generateImage.isPending}
-        handleToggleFavorite={handleToggleFavorite}
-        isFavorite={isFavorite}
-        favoritesLoading={favoritesLoading}
-        handleNavigateToTab={handleNavigateToTab}
-      />
-    </IngredientDetailLayout>
+      >
+        <IngredientDetailContent
+          ingredient={ingredient}
+          realImages={realImages}
+          primaryImage={primaryImage}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          remainingViews={remainingViews}
+          setShowAuthModal={setShowAuthModal}
+          handleGenerateImage={handleGenerateImage}
+          isGeneratingImage={generateImage.isPending}
+          handleToggleFavorite={handleToggleFavorite}
+          isFavorite={isFavorite}
+          favoritesLoading={favoritesLoading}
+          handleNavigateToTab={handleNavigateToTab}
+        />
+      </IngredientDetailLayout>
+      <AIChefBot />
+    </>
   );
 };
 

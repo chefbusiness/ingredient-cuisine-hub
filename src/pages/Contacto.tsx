@@ -4,6 +4,7 @@ import UnifiedHeader from "@/components/UnifiedHeader";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import AIChefBot from "@/components/AIChefBot";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -226,6 +227,7 @@ const Contacto = () => {
       </main>
       
       <Footer />
+      <AIChefBot />
     </div>
   );
 };

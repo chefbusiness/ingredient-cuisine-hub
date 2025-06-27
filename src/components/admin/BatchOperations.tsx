@@ -6,7 +6,7 @@ import { Progress } from "@/components/ui/progress";
 import { useGenerateMissingImages } from "@/hooks/useGenerateMissingImages";
 import { useUpdateIngredientPrices } from "@/hooks/useUpdateIngredientPrices";
 import { useToast } from "@/hooks/use-toast";
-import { Image, Wand2, RefreshCw, AlertTriangle, Zap, DollarSign } from "lucide-react";
+import { Image, Wand2, RefreshCw, AlertTriangle, Zap, DollarSign, Clock } from "lucide-react";
 
 interface BatchOperationsProps {
   totalIngredients: number;
@@ -67,24 +67,24 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
   };
 
   const handleUpdateAllPrices = () => {
-    console.log('🎯 Iniciando actualización de precios HORECA...');
+    console.log('🎯 Iniciando actualización optimizada de precios HORECA...');
     
     toast({
-      title: "💰 Iniciando actualización de precios HORECA",
-      description: "Investigando con Perplexity Sonar desde fuentes mayoristas como Frutas Eloy y Makro...",
+      title: "💰 Iniciando actualización optimizada de precios HORECA",
+      description: "Procesando de uno en uno para mayor estabilidad. Esto puede tomar tiempo...",
     });
     
     setPriceProgress({
       current: 0,
       total: 100,
       isUpdating: true,
-      status: 'Preparando investigación HORECA con Perplexity Sonar...'
+      status: 'Preparando investigación HORECA optimizada con Perplexity Sonar...'
     });
     
-    // Usar lotes pequeños para evitar timeouts
+    // Usar lotes de 1 ingrediente para máxima estabilidad
     updateIngredientPrices({ 
       mode: 'problematic',
-      batchSize: 3  // Lotes más pequeños para mayor estabilidad
+      batchSize: 1  // Un ingrediente a la vez para evitar timeouts
     });
   };
 
@@ -154,7 +154,7 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
               {priceProgress.status}
             </div>
             <div className="text-xs text-muted-foreground">
-              🏢 Consultando: Frutas Eloy → Makro → Mercamadrid → Fuentes HORECA internacionales
+              🏢 Proceso optimizado: 1 ingrediente → Consulta Perplexity → Actualización → Siguiente
             </div>
           </div>
         )}
@@ -184,12 +184,12 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
           >
             <div className="flex items-center gap-2">
               <DollarSign className="h-6 w-6" />
-              <Zap className="h-4 w-4" />
+              <Clock className="h-4 w-4" />
             </div>
             <div className="text-center">
               <div className="font-medium">Actualizar Precios HORECA</div>
               <div className="text-xs opacity-90 mt-1">
-                Solo precios problemáticos - Investigación Perplexity
+                Proceso optimizado - Un ingrediente cada vez
               </div>
             </div>
           </Button>
@@ -212,21 +212,25 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
         <div className="flex justify-between items-center text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
           <span>Total de ingredientes: {totalIngredients}</span>
           <span className="flex items-center gap-1">
-            <Zap className="h-3 w-3" />
-            Flux 1.1 Pro + Perplexity Sonar HORECA
+            <Clock className="h-3 w-3" />
+            Proceso optimizado anti-timeout
           </span>
         </div>
         
-        {/* Debug info cuando esté actualizando precios */}
+        {/* Info mejorada cuando esté actualizando precios */}
         {(isUpdatingPrices || priceProgress.isUpdating) && (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
             <div className="text-sm text-blue-800">
-              <div className="font-medium">🔍 Proceso de Investigación HORECA:</div>
+              <div className="font-medium flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                🔍 Proceso Optimizado Anti-Timeout:
+              </div>
               <div className="mt-1 space-y-1 text-xs">
-                <div>• Identificando ingredientes con precios problemáticos</div>
-                <div>• Consultando Perplexity Sonar con fuentes mayoristas</div>
-                <div>• Priorizando: Frutas Eloy (ES) → Makro → Restaurant Depot (US)</div>
-                <div>• Validando rangos de precios por categoría HORECA</div>
+                <div>• Procesando 1 ingrediente cada vez para máxima estabilidad</div>
+                <div>• Timeout extendido a 5 minutos por ingrediente</div>
+                <div>• Consulta individual a Perplexity Sonar con fuentes HORECA</div>
+                <div>• Pausa de 2 segundos entre ingredientes para evitar saturación</div>
+                <div>• Reintentos automáticos en caso de errores menores</div>
               </div>
             </div>
           </div>

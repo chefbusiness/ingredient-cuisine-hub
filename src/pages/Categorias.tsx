@@ -3,6 +3,7 @@ import UnifiedHeader from "@/components/UnifiedHeader";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import AIChefBot from "@/components/AIChefBot";
 import { useCategories } from "@/hooks/useCategories";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
@@ -125,6 +126,7 @@ const Categorias = () => {
       </main>
       
       <Footer />
+      <AIChefBot />
     </div>
   );
 };

@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import StructuredData from "@/components/StructuredData";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import AIChefBot from "@/components/AIChefBot";
 import { useDirectorioFilters } from "@/hooks/useDirectorioFilters";
 import { useDirectorioData } from "@/hooks/useDirectorioData";
 import { generateBreadcrumbSchema } from "@/utils/seoSchemas";
@@ -102,6 +103,7 @@ const Directorio = () => {
         />
       </main>
       <Footer />
+      <AIChefBot />
     </div>
   );
 };

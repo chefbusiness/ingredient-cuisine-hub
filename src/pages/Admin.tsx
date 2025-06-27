@@ -11,6 +11,7 @@ import AdminAnalyticsTab from "@/components/admin/AdminAnalyticsTab";
 import AdminSettingsTab from "@/components/admin/AdminSettingsTab";
 import AdminManualManagement from "@/components/admin/AdminManualManagement";
 import BatchOperations from "@/components/admin/BatchOperations";
+import AIChefBot from "@/components/AIChefBot";
 import { useIngredients } from "@/hooks/useIngredients";
 import { useCategories } from "@/hooks/useCategories";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
@@ -137,6 +138,7 @@ const Admin = () => {
           </div>
         </Tabs>
       </div>
+      <AIChefBot />
     </div>
   );
 };

@@ -46,12 +46,15 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
   );
 
   const { mutate: updateIngredientPrices, isPending: isUpdatingPrices } = useUpdateIngredientPrices(
-    (progress) => setPriceProgress({
-      current: progress.current,
-      total: progress.total,
-      isUpdating: true,
-      status: progress.status
-    })
+    (progress) => {
+      console.log('📊 Progreso recibido en BatchOperations:', progress);
+      setPriceProgress({
+        current: progress.current,
+        total: progress.total,
+        isUpdating: true,
+        status: progress.status
+      });
+    }
   );
 
   const handleRegenerateAllImages = () => {
@@ -64,21 +67,24 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
   };
 
   const handleUpdateAllPrices = () => {
+    console.log('🎯 Iniciando actualización de precios HORECA...');
+    
     toast({
       title: "💰 Iniciando actualización de precios HORECA",
-      description: "Esto puede tomar varios minutos, se usarán fuentes mayoristas profesionales...",
+      description: "Investigando con Perplexity Sonar desde fuentes mayoristas como Frutas Eloy y Makro...",
     });
     
     setPriceProgress({
       current: 0,
       total: 100,
       isUpdating: true,
-      status: 'Preparando actualización...'
+      status: 'Preparando investigación HORECA con Perplexity Sonar...'
     });
     
+    // Usar lotes pequeños para evitar timeouts
     updateIngredientPrices({ 
-      mode: 'problematic',  // Solo ingredientes con precios problemáticos
-      batchSize: 5 
+      mode: 'problematic',
+      batchSize: 3  // Lotes más pequeños para mayor estabilidad
     });
   };
 
@@ -133,19 +139,22 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
         {(isUpdatingPrices || priceProgress.isUpdating) && (
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="font-medium">
-                Actualizando precios HORECA con Perplexity Sonar...
+              <span className="font-medium text-blue-700">
+                🔍 Investigando precios HORECA con Perplexity Sonar
               </span>
               <span className="text-muted-foreground">
-                {priceProgress.current}/{priceProgress.total}
+                {priceProgress.current > 0 ? `${priceProgress.current} procesados` : 'Iniciando...'}
               </span>
             </div>
             <Progress 
               value={priceProgressPercentage} 
-              className="w-full h-2"
+              className="w-full h-3 bg-blue-100"
             />
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-blue-600 font-medium">
               {priceProgress.status}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              🏢 Consultando: Frutas Eloy → Makro → Mercamadrid → Fuentes HORECA internacionales
             </div>
           </div>
         )}
@@ -180,7 +189,7 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
             <div className="text-center">
               <div className="font-medium">Actualizar Precios HORECA</div>
               <div className="text-xs opacity-90 mt-1">
-                Solo precios problemáticos - Fuentes mayoristas
+                Solo precios problemáticos - Investigación Perplexity
               </div>
             </div>
           </Button>
@@ -204,9 +213,24 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
           <span>Total de ingredientes: {totalIngredients}</span>
           <span className="flex items-center gap-1">
             <Zap className="h-3 w-3" />
-            Flux 1.1 Pro + Perplexity Sonar
+            Flux 1.1 Pro + Perplexity Sonar HORECA
           </span>
         </div>
+        
+        {/* Debug info cuando esté actualizando precios */}
+        {(isUpdatingPrices || priceProgress.isUpdating) && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="text-sm text-blue-800">
+              <div className="font-medium">🔍 Proceso de Investigación HORECA:</div>
+              <div className="mt-1 space-y-1 text-xs">
+                <div>• Identificando ingredientes con precios problemáticos</div>
+                <div>• Consultando Perplexity Sonar con fuentes mayoristas</div>
+                <div>• Priorizando: Frutas Eloy (ES) → Makro → Restaurant Depot (US)</div>
+                <div>• Validando rangos de precios por categoría HORECA</div>
+              </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -54,6 +54,8 @@ class PerplexityClient {
           - México: Distribuidores HORECA → mercados mayoristas
           - Argentina: Distribuidores gastronómicos → mercados concentradores
           
+          IMPORTANTE: Responde SOLO con JSON válido, sin comentarios adicionales ni texto explicativo.
+          
           Responde SOLO con JSON válido basado en investigación real de fuentes HORECA/B2B priorizando Frutas Eloy para España.`
         },
         {
@@ -82,6 +84,8 @@ class PerplexityClient {
       frequency_penalty: 1.2
     };
 
+    console.log('📡 Enviando consulta a Perplexity API...');
+
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
       headers: {
@@ -93,11 +97,14 @@ class PerplexityClient {
 
     if (!response.ok) {
       const errorText = await response.text();
+      console.error('❌ Error de Perplexity API:', response.status, response.statusText, errorText);
       throw new Error(`Error de Perplexity API: ${response.status} ${response.statusText}. Detalles: ${errorText}`);
     }
 
     const data = await response.json();
     const generatedContent = data.choices[0].message.content;
+    
+    console.log('📦 Respuesta recibida de Perplexity (primeros 200 chars):', generatedContent.substring(0, 200));
     
     // Parse content
     return this.parseContent(generatedContent);
@@ -105,23 +112,24 @@ class PerplexityClient {
 
   private parseContent(content: string): any[] {
     try {
-      // Try to parse as JSON directly
-      const parsed = JSON.parse(content);
-      return Array.isArray(parsed) ? parsed : [parsed];
-    } catch (error) {
-      // If direct parsing fails, try to extract JSON from markdown
+      // Clean the content by removing any markdown code blocks
+      let cleanContent = content;
+      
+      // Remove markdown code blocks if present
       const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
       if (jsonMatch) {
-        try {
-          const parsed = JSON.parse(jsonMatch[1]);
-          return Array.isArray(parsed) ? parsed : [parsed];
-        } catch (innerError) {
-          console.error('Error parsing extracted JSON:', innerError);
-        }
+        cleanContent = jsonMatch[1];
       }
       
-      // If all else fails, return empty array
-      console.error('Could not parse content as JSON:', content);
+      // Remove any comments that might break JSON parsing
+      cleanContent = cleanContent.replace(/\/\/[^\n\r]*/g, '');
+      
+      // Try to parse as JSON directly
+      const parsed = JSON.parse(cleanContent);
+      return Array.isArray(parsed) ? parsed : [parsed];
+    } catch (error) {
+      console.error('❌ Error parsing JSON:', error);
+      console.error('📄 Contenido completo recibido:', content);
       return [];
     }
   }
@@ -131,56 +139,79 @@ class PerplexityClient {
 function guessCategory(ingredientName: string): string {
   const name = ingredientName.toLowerCase();
   
-  if (name.includes('fruta') || name.includes('manzana') || name.includes('pera') || 
-      name.includes('plátano') || name.includes('naranja') || name.includes('limón') ||
-      name.includes('uva') || name.includes('mango') || name.includes('aguacate')) {
-    return 'frutas';
+  // Especias (casos críticos primero)
+  if (name.includes('pimienta') && name.includes('negra')) {
+    return 'especias_premium'; // €15-25/kg para pimienta negra
   }
   
-  if (name.includes('verdura') || name.includes('lechuga') || name.includes('tomate') ||
-      name.includes('cebolla') || name.includes('zanahoria') || name.includes('brócoli')) {
-    return 'verduras';
+  if (name.includes('azafrán') || name.includes('saffron')) {
+    return 'especias_premium'; // €3000-8000/kg
   }
   
-  if (name.includes('hierba') || name.includes('albahaca') || name.includes('perejil') ||
-      name.includes('cilantro') || name.includes('romero') || name.includes('tomillo')) {
-    return 'hierbas';
+  if (name.includes('fruta') && name.includes('pasión')) {
+    return 'frutas_tropicales'; // €12-20/kg
   }
   
+  // Frutas tropicales y exóticas
+  if (name.includes('mango') || name.includes('aguacate') || name.includes('papaya') ||
+      name.includes('guayaba') || name.includes('maracuyá')) {
+    return 'frutas_tropicales';
+  }
+  
+  // Especias comunes
+  if (name.includes('pimienta') || name.includes('canela') || name.includes('clavo') ||
+      name.includes('nuez moscada') || name.includes('comino')) {
+    return 'especias_comunes';
+  }
+  
+  // Hierbas frescas
+  if (name.includes('albahaca') || name.includes('cilantro') || name.includes('perejil') ||
+      name.includes('menta') || name.includes('romero')) {
+    return 'hierbas_frescas';
+  }
+  
+  // Carnes
   if (name.includes('carne') || name.includes('pollo') || name.includes('cerdo') ||
-      name.includes('ternera') || name.includes('cordero')) {
+      name.includes('ternera') || name.includes('cordero') || name.includes('jamón') ||
+      name.includes('chorizo') || name.includes('morcilla') || name.includes('bacón')) {
     return 'carnes';
   }
   
-  if (name.includes('pescado') || name.includes('salmón') || name.includes('bacalao') ||
-      name.includes('atún') || name.includes('marisco')) {
-    return 'pescados';
+  // Aceites
+  if (name.includes('aceite')) {
+    return 'aceites';
   }
   
-  return 'otros';
+  return 'general';
 }
 
 function validateHorecaPrice(price: number, category: string, ingredientName: string): boolean {
   const priceRanges = {
-    frutas: { min: 1.5, max: 25 },
-    verduras: { min: 0.8, max: 15 },
-    hierbas: { min: 8, max: 50 },
-    carnes: { min: 3, max: 40 },
-    pescados: { min: 4, max: 50 },
-    otros: { min: 0.5, max: 30 }
+    frutas_tropicales: { min: 8, max: 25 },
+    especias_premium: { min: 15, max: 100 }, // Para pimienta negra y especias caras
+    especias_comunes: { min: 8, max: 30 },
+    hierbas_frescas: { min: 15, max: 50 },
+    carnes: { min: 3, max: 60 },
+    aceites: { min: 2, max: 50 },
+    general: { min: 0.5, max: 30 }
   };
   
-  const range = priceRanges[category as keyof typeof priceRanges] || priceRanges.otros;
+  // Casos especiales críticos
+  const nameLower = ingredientName.toLowerCase();
   
-  // Special cases
-  if (ingredientName.toLowerCase().includes('azafrán')) {
+  if (nameLower.includes('azafrán')) {
     return price >= 3000 && price <= 8000;
   }
-  
-  if (ingredientName.toLowerCase().includes('trufa')) {
-    return price >= 500 && price <= 2000;
+
+  if (nameLower.includes('pimienta') && nameLower.includes('negra')) {
+    return price >= 15 && price <= 25; // Rango específico para pimienta negra
   }
-  
+
+  if (nameLower.includes('fruta') && nameLower.includes('pasión')) {
+    return price >= 12 && price <= 20;
+  }
+
+  const range = priceRanges[category as keyof typeof priceRanges] || priceRanges.general;
   return price >= range.min && price <= range.max;
 }
 
@@ -188,28 +219,47 @@ function validateHorecaPrice(price: number, category: string, ingredientName: st
 async function processMultiCountryPrices(ingredientId: string, pricesData: any[]) {
   const pricesToInsert = [];
   
+  console.log(`💰 Procesando precios para ingrediente ${ingredientId}:`, pricesData.length, 'países');
+  
   for (const priceData of pricesData) {
-    // Get country by code
-    const { data: country } = await supabase
-      .from('countries')
-      .select('id')
-      .eq('code', priceData.country_code)
-      .single();
-    
-    if (country) {
-      pricesToInsert.push({
-        ingredient_id: ingredientId,
-        country_id: country.id,
-        price: priceData.price,
-        unit: priceData.unit || 'kg'
-      });
+    try {
+      // Get country by code
+      const { data: country, error: countryError } = await supabase
+        .from('countries')
+        .select('id')
+        .eq('code', priceData.country_code)
+        .single();
+      
+      if (countryError) {
+        console.log(`⚠️ País no encontrado para código ${priceData.country_code}:`, countryError);
+        continue;
+      }
+      
+      if (country && priceData.price && priceData.price > 0) {
+        pricesToInsert.push({
+          ingredient_id: ingredientId,
+          country_id: country.id,
+          price: priceData.price,
+          unit: priceData.unit || 'kg'
+        });
+        console.log(`✅ Precio agregado: ${priceData.country} - €${priceData.price}/${priceData.unit || 'kg'}`);
+      }
+    } catch (error) {
+      console.error(`❌ Error procesando precio para ${priceData.country}:`, error);
     }
   }
   
   if (pricesToInsert.length > 0) {
-    await supabase
+    const { error: insertError } = await supabase
       .from('ingredient_prices')
       .insert(pricesToInsert);
+      
+    if (insertError) {
+      console.error('❌ Error insertando precios:', insertError);
+      throw insertError;
+    }
+    
+    console.log(`💾 ${pricesToInsert.length} precios insertados exitosamente`);
   }
 }
 
@@ -249,7 +299,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔄 === ACTUALIZACIÓN MASIVA DE PRECIOS HORECA ===');
+    console.log('🚀 === INICIANDO ACTUALIZACIÓN DE PRECIOS HORECA ===');
     
     // Security check: Verify super admin access
     const authHeader = req.headers.get('authorization');
@@ -261,6 +311,7 @@ serve(async (req) => {
         : 'Se requiere autenticación de super admin para esta función.';
         
       return new Response(JSON.stringify({ 
+        success: false,
         error: errorMessage,
         code: 'UNAUTHORIZED'
       }), {
@@ -269,42 +320,37 @@ serve(async (req) => {
       });
     }
 
-    const requestBody = await req.json();
-    const { mode = 'problematic', ingredientIds, batchSize = 5 } = requestBody;
+    console.log(`👤 Usuario autorizado: ${authResult.userEmail}`);
 
-    console.log(`🎯 Modo de actualización: ${mode}`);
-    console.log(`📦 Tamaño de lote: ${batchSize}`);
+    const requestBody = await req.json();
+    const { mode = 'problematic', ingredientIds, batchSize = 3 } = requestBody;
+
+    console.log(`🎯 Modo: ${mode}, Lote: ${batchSize}`);
 
     let targetIngredients = [];
 
     if (mode === 'all') {
-      // Obtener todos los ingredientes
       const { data: allIngredients, error } = await supabase
         .from('ingredients')
         .select('id, name, name_en')
         .order('created_at', { ascending: true });
 
-      if (error) {
-        throw new Error(`Error obteniendo ingredientes: ${error.message}`);
-      }
-      
+      if (error) throw new Error(`Error obteniendo ingredientes: ${error.message}`);
       targetIngredients = allIngredients;
       console.log(`📋 Procesando TODOS los ingredientes: ${targetIngredients.length}`);
+      
     } else if (mode === 'specific' && ingredientIds) {
-      // Ingredientes específicos
       const { data: specificIngredients, error } = await supabase
         .from('ingredients')
         .select('id, name, name_en')
         .in('id', ingredientIds);
 
-      if (error) {
-        throw new Error(`Error obteniendo ingredientes específicos: ${error.message}`);
-      }
-      
+      if (error) throw new Error(`Error obteniendo ingredientes específicos: ${error.message}`);
       targetIngredients = specificIngredients;
       console.log(`🎯 Procesando ingredientes específicos: ${targetIngredients.length}`);
+      
     } else {
-      // Modo por defecto: solo ingredientes con precios problemáticos
+      // Modo por defecto: ingredientes con precios problemáticos
       console.log('🔍 Identificando ingredientes con precios problemáticos...');
       
       const { data: ingredientsWithPrices, error } = await supabase
@@ -316,15 +362,12 @@ serve(async (req) => {
           ingredients!inner(id, name, name_en)
         `);
 
-      if (error) {
-        throw new Error(`Error obteniendo precios existentes: ${error.message}`);
-      }
+      if (error) throw new Error(`Error obteniendo precios existentes: ${error.message}`);
 
       const problematicIngredients = new Set();
       let totalPricesChecked = 0;
       let problematicPricesFound = 0;
 
-      // Identificar ingredientes con precios sospechosos
       for (const priceRecord of ingredientsWithPrices) {
         totalPricesChecked++;
         const ingredient = priceRecord.ingredients;
@@ -334,18 +377,16 @@ serve(async (req) => {
         if (!isValidPrice) {
           problematicIngredients.add(ingredient.id);
           problematicPricesFound++;
+          console.log(`🚨 Precio problemático detectado: ${ingredient.name} - €${priceRecord.price} (categoría: ${category})`);
         }
       }
 
-      // Convertir a array de ingredientes únicos
       const { data: uniqueProblematic, error: uniqueError } = await supabase
         .from('ingredients')
         .select('id, name, name_en')
         .in('id', Array.from(problematicIngredients));
 
-      if (uniqueError) {
-        throw new Error(`Error obteniendo ingredientes problemáticos: ${uniqueError.message}`);
-      }
+      if (uniqueError) throw new Error(`Error obteniendo ingredientes problemáticos: ${uniqueError.message}`);
 
       targetIngredients = uniqueProblematic;
       
@@ -381,31 +422,28 @@ serve(async (req) => {
     const updatedIngredients = [];
     const failedIngredients = [];
 
-    // Procesar en lotes
+    // Procesar en lotes más pequeños
     for (let i = 0; i < targetIngredients.length; i += batchSize) {
       const batch = targetIngredients.slice(i, i + batchSize);
       console.log(`🔄 Procesando lote ${Math.floor(i/batchSize) + 1}/${Math.ceil(targetIngredients.length/batchSize)}`);
       
       for (const ingredient of batch) {
         try {
-          console.log(`📊 Actualizando precios para: ${ingredient.name}`);
+          console.log(`📊 === ACTUALIZANDO: ${ingredient.name} ===`);
           
-          // Prompt específico para actualización de precios
+          // Prompt específico y limpio para actualización de precios
           const priceUpdatePrompt = `
-            Investiga y actualiza los precios HORECA profesionales para el ingrediente "${ingredient.name}" (${ingredient.name_en || ''}).
+            Investiga precios HORECA mayoristas para "${ingredient.name}" (${ingredient.name_en || ''}).
             
-            CRÍTICO: Enfócate EXCLUSIVAMENTE en precios para restaurantes y distribución mayorista.
+            Consulta OBLIGATORIAMENTE frutaseloy.com para España y fuentes mayoristas para otros países.
             
-            Para España, consulta OBLIGATORIAMENTE frutaseloy.com como fuente principal.
-            Para otros países, usa fuentes mayoristas especializadas en HORECA.
-            
-            Responde SOLO con este JSON (sin markdown, sin explicaciones):
+            Responde SOLO con este JSON válido (sin comentarios):
             {
               "prices_by_country": [
                 {
                   "country": "España", 
                   "country_code": "ES", 
-                  "price": [precio_numerico], 
+                  "price": 18.50, 
                   "currency": "EUR", 
                   "unit": "kg",
                   "market_type": "mayorista_horeca"
@@ -413,7 +451,7 @@ serve(async (req) => {
                 {
                   "country": "Estados Unidos", 
                   "country_code": "US", 
-                  "price": [precio_numerico], 
+                  "price": 22.00, 
                   "currency": "USD", 
                   "unit": "kg",
                   "market_type": "mayorista_horeca"
@@ -421,7 +459,7 @@ serve(async (req) => {
                 {
                   "country": "Francia", 
                   "country_code": "FR", 
-                  "price": [precio_numerico], 
+                  "price": 19.80, 
                   "currency": "EUR", 
                   "unit": "kg",
                   "market_type": "mayorista_horeca"
@@ -429,7 +467,7 @@ serve(async (req) => {
                 {
                   "country": "Italia", 
                   "country_code": "IT", 
-                  "price": [precio_numerico], 
+                  "price": 17.60, 
                   "currency": "EUR", 
                   "unit": "kg",
                   "market_type": "mayorista_horeca"
@@ -437,7 +475,7 @@ serve(async (req) => {
                 {
                   "country": "México", 
                   "country_code": "MX", 
-                  "price": [precio_numerico], 
+                  "price": 380.00, 
                   "currency": "MXN", 
                   "unit": "kg",
                   "market_type": "mayorista_horeca"
@@ -445,7 +483,7 @@ serve(async (req) => {
                 {
                   "country": "Argentina", 
                   "country_code": "AR", 
-                  "price": [precio_numerico], 
+                  "price": 4200.00, 
                   "currency": "ARS", 
                   "unit": "kg",
                   "market_type": "mayorista_horeca"
@@ -480,7 +518,7 @@ serve(async (req) => {
               prices_updated: newPricesData[0].prices_by_country.length
             });
             
-            console.log(`✅ Precios actualizados exitosamente para: ${ingredient.name}`);
+            console.log(`✅ ÉXITO: ${ingredient.name} actualizado con ${newPricesData[0].prices_by_country.length} precios`);
           } else {
             console.log(`⚠️ No se obtuvieron precios válidos para: ${ingredient.name}`);
             failedUpdates++;
@@ -503,14 +541,14 @@ serve(async (req) => {
         
         processedCount++;
         
-        // Pausa pequeña entre ingredientes para evitar rate limits
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Pausa entre ingredientes para evitar rate limits
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
       
       // Pausa entre lotes
       if (i + batchSize < targetIngredients.length) {
-        console.log('⏸️ Pausa entre lotes...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        console.log('⏸️ Pausa entre lotes (5 segundos)...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
       }
     }
 
@@ -531,7 +569,7 @@ serve(async (req) => {
       console.log('⚠️ Failed to log admin action:', logError);
     }
 
-    console.log(`🎉 === ACTUALIZACIÓN MASIVA COMPLETADA ===`);
+    console.log(`🎉 === ACTUALIZACIÓN COMPLETADA ===`);
     console.log(`📊 Procesados: ${processedCount}/${targetIngredients.length}`);
     console.log(`✅ Exitosos: ${successfulUpdates}`);
     console.log(`❌ Fallidos: ${failedUpdates}`);
@@ -553,9 +591,10 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('❌ Error in update-ingredient-prices:', error);
+    console.error('❌ Error crítico en update-ingredient-prices:', error);
     
     return new Response(JSON.stringify({ 
+      success: false,
       error: error.message || 'Error interno del servidor',
       code: 'INTERNAL_ERROR'
     }), {

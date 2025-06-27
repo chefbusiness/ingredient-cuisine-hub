@@ -10,6 +10,7 @@ import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
 import StructuredData from "@/components/StructuredData";
+import AIChefBot from "@/components/AIChefBot";
 import { generateOrganizationSchema, generateWebsiteSchema, generateFoodEstablishmentSchema } from "@/utils/seoSchemas";
 
 const Index = () => {
@@ -45,6 +46,7 @@ const Index = () => {
       <FAQSection />
       <CTASection />
       <Footer />
+      <AIChefBot />
     </div>
   );
 };

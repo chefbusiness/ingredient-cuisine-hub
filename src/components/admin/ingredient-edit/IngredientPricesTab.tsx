@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, Plus, Edit, Save, X } from "lucide-react";
+import { Trash2, Plus, Edit, Save, X, AlertTriangle } from "lucide-react";
 import { useCountries } from "@/hooks/useCountries";
 import { useUpdateIngredientPrice, useDeleteIngredientPrice } from "@/hooks/useUpdateIngredientPrice";
 import { Ingredient } from "@/hooks/useIngredients";
@@ -36,8 +36,16 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
   const [editingPrice, setEditingPrice] = useState<PriceEditData | null>(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
 
-  // Obtener precios actuales del ingrediente
-  const currentPrices = ingredient?.ingredient_prices || [];
+  // Obtener precios actuales del ingrediente con validaciones de seguridad
+  const currentPrices = (ingredient?.ingredient_prices || []).filter(price => 
+    price && 
+    typeof price.price === 'number' && 
+    price.unit &&
+    price.country_id // Usar country_id en lugar de countries?.id
+  );
+
+  console.log('🔍 Current prices data:', currentPrices);
+  console.log('🌍 Countries data:', countries);
 
   // Detectar precios potencialmente erróneos
   const isPriceErroneous = (price: number, unit: string) => {
@@ -53,20 +61,43 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
     return false;
   };
 
+  const getCountryName = (countryId: string) => {
+    const country = countries.find(c => c.id === countryId);
+    return country?.name || 'País no especificado';
+  };
+
   const handleEditPrice = (priceData: any) => {
-    const country = countries.find(c => c.id === priceData.countries?.id);
+    console.log('📝 Editing price:', priceData);
+    
+    if (!priceData || !priceData.country_id) {
+      console.error('❌ Invalid price data for editing:', priceData);
+      return;
+    }
+
+    const countryName = getCountryName(priceData.country_id);
+    
     setEditingPrice({
       priceId: priceData.id,
-      countryId: priceData.countries?.id || '',
-      countryName: priceData.countries?.name || '',
-      price: priceData.price,
-      unit: priceData.unit,
+      countryId: priceData.country_id,
+      countryName: countryName,
+      price: priceData.price || 0,
+      unit: priceData.unit || 'kg',
       seasonVariation: priceData.season_variation || ''
     });
   };
 
   const handleSavePrice = () => {
-    if (!editingPrice || !ingredient) return;
+    if (!editingPrice || !ingredient) {
+      console.error('❌ Missing data for saving price');
+      return;
+    }
+
+    if (!editingPrice.countryId) {
+      console.error('❌ Country ID is required');
+      return;
+    }
+
+    console.log('💾 Saving price:', editingPrice);
 
     updatePrice({
       priceId: editingPrice.priceId,
@@ -77,14 +108,23 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
       seasonVariation: editingPrice.seasonVariation
     }, {
       onSuccess: () => {
+        console.log('✅ Price saved successfully');
         setEditingPrice(null);
         setIsAddingNew(false);
+      },
+      onError: (error) => {
+        console.error('❌ Error saving price:', error);
       }
     });
   };
 
   const handleDeletePrice = (priceId: string) => {
-    if (!ingredient) return;
+    if (!ingredient || !priceId) {
+      console.error('❌ Missing data for deleting price');
+      return;
+    }
+    
+    console.log('🗑️ Deleting price:', priceId);
     
     deletePrice({
       priceId,
@@ -93,6 +133,7 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
   };
 
   const handleAddNew = () => {
+    console.log('➕ Adding new price');
     setIsAddingNew(true);
     setEditingPrice({
       countryId: '',
@@ -104,8 +145,20 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
   };
 
   const availableCountries = countries.filter(country => 
-    !currentPrices.some(price => price.countries?.id === country.id)
+    !currentPrices.some(price => price.country_id === country.id)
   );
+
+  // Mostrar estado de error si no se pueden cargar los datos básicos
+  if (!ingredient) {
+    return (
+      <Card>
+        <CardContent className="p-8 text-center">
+          <AlertTriangle className="h-8 w-8 text-yellow-500 mx-auto mb-4" />
+          <p className="text-gray-500">No se puede cargar la información del ingrediente</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -145,12 +198,13 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
               {currentPrices.map((priceData) => {
                 const isEditing = editingPrice?.priceId === priceData.id;
                 const isErroneous = isPriceErroneous(priceData.price, priceData.unit);
+                const countryName = getCountryName(priceData.country_id);
                 
                 return (
-                  <TableRow key={priceData.id || Math.random()}>
+                  <TableRow key={priceData.id || `price-${Math.random()}`}>
                     <TableCell className="font-medium">
-                      {priceData.countries?.name || 'País no especificado'}
-                      {priceData.countries?.name === 'España' && (
+                      {countryName}
+                      {countryName === 'España' && (
                         <Badge className="ml-2 bg-green-100 text-green-700 text-xs">
                           Principal
                         </Badge>

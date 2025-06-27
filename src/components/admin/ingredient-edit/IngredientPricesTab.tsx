@@ -1,31 +1,22 @@
 
 import { useState } from "react";
-import { Control, useWatch } from "react-hook-form";
+import { Control } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Trash2, Plus, Edit, Save, X, AlertTriangle } from "lucide-react";
+import { Plus, AlertTriangle } from "lucide-react";
 import { useCountries } from "@/hooks/useCountries";
 import { useUpdateIngredientPrice, useDeleteIngredientPrice } from "@/hooks/useUpdateIngredientPrice";
 import { Ingredient } from "@/hooks/useIngredients";
 import { IngredientFormData } from "./types";
+import { PriceEditData } from "./price-management/PriceValidation";
+import PriceTableRow from "./price-management/PriceTableRow";
+import PriceEditRow from "./price-management/PriceEditRow";
+import PriceInfoCard from "./price-management/PriceInfoCard";
 
 interface IngredientPricesTabProps {
   control: Control<IngredientFormData>;
   ingredient: Ingredient | null;
-}
-
-interface PriceEditData {
-  priceId?: string;
-  countryId: string;
-  countryName: string;
-  price: number;
-  unit: string;
-  seasonVariation?: string;
 }
 
 const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) => {
@@ -56,20 +47,6 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
 
   console.log('✅ Valid current prices:', currentPrices);
   console.log('🌍 Countries data:', countries);
-
-  // Detectar precios potencialmente erróneos
-  const isPriceErroneous = (price: number, unit: string) => {
-    if (unit === 'kg') {
-      return price < 0.5 || price > 100;
-    }
-    if (unit === 'l' || unit === 'litro') {
-      return price < 0.3 || price > 50;
-    }
-    if (unit === 'g') {
-      return price > 5;
-    }
-    return false;
-  };
 
   const getCountryName = (countryId: string) => {
     const country = countries.find(c => c.id === countryId);
@@ -164,6 +141,12 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
     setIsAddingNew(false);
   };
 
+  const handleUpdateEditingPrice = (updates: Partial<PriceEditData>) => {
+    if (editingPrice) {
+      setEditingPrice({ ...editingPrice, ...updates });
+    }
+  };
+
   const availableCountries = countries.filter(country => 
     !currentPrices.some(price => price.country_id === country.id)
   );
@@ -217,239 +200,48 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
             <TableBody>
               {currentPrices.map((priceData) => {
                 const isEditing = editingPrice?.priceId === priceData.id;
-                const isErroneous = isPriceErroneous(priceData.price, priceData.unit);
                 const countryName = priceData.countries?.name || getCountryName(priceData.country_id);
                 
-                return (
-                  <TableRow key={priceData.id}>
-                    <TableCell className="font-medium">
-                      {countryName}
-                      {(countryName === 'España' || priceData.countries?.code === 'ES') && (
-                        <Badge className="ml-2 bg-green-100 text-green-700 text-xs">
-                          Principal
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {isEditing ? (
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={editingPrice.price}
-                          onChange={(e) => setEditingPrice({
-                            ...editingPrice,
-                            price: parseFloat(e.target.value) || 0
-                          })}
-                          className="w-20"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      ) : (
-                        <span className={isErroneous ? 'text-red-600 font-semibold' : ''}>
-                          €{priceData.price.toFixed(2)}
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {isEditing ? (
-                        <Select 
-                          value={editingPrice.unit} 
-                          onValueChange={(value) => setEditingPrice({
-                            ...editingPrice,
-                            unit: value
-                          })}
-                        >
-                          <SelectTrigger className="w-20" onClick={(e) => e.stopPropagation()}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="kg">kg</SelectItem>
-                            <SelectItem value="l">l</SelectItem>
-                            <SelectItem value="g">g</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      ) : (
-                        priceData.unit
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {isEditing ? (
-                        <Input
-                          value={editingPrice.seasonVariation || ''}
-                          onChange={(e) => setEditingPrice({
-                            ...editingPrice,
-                            seasonVariation: e.target.value
-                          })}
-                          placeholder="Ej: Más caro en invierno"
-                          className="w-32"
-                          onClick={(e) => e.stopPropagation()}
-                        />
-                      ) : (
-                        priceData.season_variation || '-'
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {isErroneous && (
-                        <Badge variant="destructive" className="text-xs">
-                          Revisar
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {isEditing ? (
-                          <>
-                            <Button
-                              size="sm"
-                              onClick={handleSavePrice}
-                              disabled={isUpdating}
-                            >
-                              <Save className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={handleCancelEdit}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </>
-                        ) : (
-                          <>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={(e) => handleEditPrice(priceData, e)}
-                            >
-                              <Edit className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={(e) => handleDeletePrice(priceData.id, e)}
-                              disabled={isDeleting}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                return isEditing && editingPrice ? (
+                  <PriceEditRow
+                    key={priceData.id}
+                    editingPrice={editingPrice}
+                    isAddingNew={false}
+                    isUpdating={isUpdating}
+                    availableCountries={countries}
+                    onUpdateEditingPrice={handleUpdateEditingPrice}
+                    onSave={handleSavePrice}
+                    onCancel={handleCancelEdit}
+                  />
+                ) : (
+                  <PriceTableRow
+                    key={priceData.id}
+                    priceData={priceData}
+                    countryName={countryName}
+                    onEdit={handleEditPrice}
+                    onDelete={handleDeletePrice}
+                    isDeleting={isDeleting}
+                  />
                 );
               })}
 
               {/* Fila para añadir nuevo precio */}
               {isAddingNew && editingPrice && (
-                <TableRow className="bg-blue-50">
-                  <TableCell>
-                    <Select 
-                      value={editingPrice.countryId} 
-                      onValueChange={(value) => {
-                        const country = countries.find(c => c.id === value);
-                        setEditingPrice({
-                          ...editingPrice,
-                          countryId: value,
-                          countryName: country?.name || ''
-                        });
-                      }}
-                    >
-                      <SelectTrigger onClick={(e) => e.stopPropagation()}>
-                        <SelectValue placeholder="Seleccionar país" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableCountries.map((country) => (
-                          <SelectItem key={country.id} value={country.id}>
-                            {country.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={editingPrice.price}
-                      onChange={(e) => setEditingPrice({
-                        ...editingPrice,
-                        price: parseFloat(e.target.value) || 0
-                      })}
-                      placeholder="0.00"
-                      className="w-20"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Select 
-                      value={editingPrice.unit} 
-                      onValueChange={(value) => setEditingPrice({
-                        ...editingPrice,
-                        unit: value
-                      })}
-                    >
-                      <SelectTrigger className="w-20" onClick={(e) => e.stopPropagation()}>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="kg">kg</SelectItem>
-                        <SelectItem value="l">l</SelectItem>
-                        <SelectItem value="g">g</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      value={editingPrice.seasonVariation || ''}
-                      onChange={(e) => setEditingPrice({
-                        ...editingPrice,
-                        seasonVariation: e.target.value
-                      })}
-                      placeholder="Opcional"
-                      className="w-32"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className="text-xs">
-                      Nuevo
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        onClick={handleSavePrice}
-                        disabled={isUpdating || !editingPrice.countryId}
-                      >
-                        <Save className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={handleCancelEdit}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                <PriceEditRow
+                  editingPrice={editingPrice}
+                  isAddingNew={true}
+                  isUpdating={isUpdating}
+                  availableCountries={availableCountries}
+                  onUpdateEditingPrice={handleUpdateEditingPrice}
+                  onSave={handleSavePrice}
+                  onCancel={handleCancelEdit}
+                />
               )}
             </TableBody>
           </Table>
         )}
 
-        {/* Información adicional */}
-        <div className="mt-6 p-3 bg-blue-50 rounded-lg">
-          <p className="text-xs text-blue-700 mb-1">
-            <strong>💡 Información sobre precios:</strong>
-          </p>
-          <ul className="text-xs text-blue-600 space-y-1">
-            <li>• Los precios se muestran en euros por unidad especificada</li>
-            <li>• Los precios marcados como "Revisar" están fuera del rango típico HORECA</li>
-            <li>• España se marca como país principal para referencia</li>
-            <li>• Las variaciones estacionales son opcionales pero recomendadas</li>
-          </ul>
-        </div>
+        <PriceInfoCard />
       </CardContent>
     </Card>
   );

@@ -3,7 +3,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { verifySuperAdminAccess } from './auth.ts';
 import { logAdminAction } from './logging.ts';
 import { PerplexityClient } from './perplexity-client.ts';
-import { generatePrompt } from './prompts.ts';
+import { generateIngredientPrompt } from './prompts/ingredient-prompts.ts';
+import { generateCategoryPrompt } from './prompts/category-prompts.ts';
 import { parseContent } from './content-parser.ts';
 import { validateSources } from './source-validator.ts';
 import { createFallbackData } from './fallback-data.ts';
@@ -85,10 +86,21 @@ serve(async (req) => {
       
       try {
         const perplexityClient = new PerplexityClient();
-        const prompt = generatePrompt(requestBody, existingIngredients);
         
-        console.log('📝 Prompt generado para Perplexity');
-        console.log('🔍 Enviando solicitud a Perplexity...');
+        // USAR EL PROMPT COMPLETO DESARROLLADO
+        let prompt;
+        if (requestBody.type === 'ingredient') {
+          prompt = generateIngredientPrompt(requestBody, existingIngredients);
+          console.log('📝 Usando prompt completo de ingredientes desarrollado');
+        } else if (requestBody.type === 'category') {
+          prompt = generateCategoryPrompt(requestBody.count || 1);
+          console.log('📝 Usando prompt de categorías');
+        } else {
+          throw new Error('Tipo de contenido no soportado');
+        }
+        
+        console.log('🔍 Enviando solicitud a Perplexity con prompt completo...');
+        console.log('📄 Longitud del prompt:', prompt.length, 'caracteres');
         
         const perplexityData = await perplexityClient.generateContent(prompt);
         

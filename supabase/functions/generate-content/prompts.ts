@@ -1,27 +1,17 @@
 
+import { generateIngredientPrompt } from './ingredient-prompts.ts';
+import { generateCategoryPrompt } from './category-prompts.ts';
 import { GenerateContentParams } from './types.ts';
 
+// Este archivo mantiene compatibilidad pero redirige al sistema completo de prompts
 export const generatePrompt = (params: GenerateContentParams, existingIngredients: any[] = []): string => {
-  const { type, category, region = 'España', count = 1, ingredient, ingredientsList } = params;
+  console.log('⚠️ DEPRECATED: Usando generatePrompt legacy, redirigiendo al sistema completo');
   
-  console.log('📝 Generando prompt para:', { type, category, region, count, ingredient, ingredientsList });
-  
-  // MODO DEBUGGING: Prompt simplificado
-  if (type === 'ingredient') {
-    if (ingredientsList && ingredientsList.length > 0) {
-      // Modo manual con lista específica
-      return `Genera información detallada para estos ingredientes específicos: ${ingredientsList.join(', ')}. 
-      Región: ${region}. 
-      Categoría: ${category || 'general'}.
-      
-      Responde con un JSON array con la información de cada ingrediente.`;
-    } else {
-      // Modo automático
-      return `Genera ${count} ingrediente(s) de la categoría "${category || 'general'}" típicos de ${region}.
-      
-      Responde con un JSON array con la información de cada ingrediente.`;
-    }
+  if (params.type === 'ingredient') {
+    return generateIngredientPrompt(params, existingIngredients);
+  } else if (params.type === 'category') {
+    return generateCategoryPrompt(params.count || 1);
   }
   
-  return `Genera contenido de tipo ${type} para ${region}`;
+  throw new Error(`Tipo de contenido no soportado: ${params.type}`);
 };

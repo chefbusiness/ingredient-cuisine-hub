@@ -1,7 +1,6 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
-import { generateIngredientData } from './utils.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -64,9 +63,9 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔄 === GENERACIÓN DE CONTENIDO CON PERPLEXITY ===');
+    console.log('🔄 === GENERATE-CONTENT FUNCTION EJECUTÁNDOSE ===');
     console.log('📊 Request method:', req.method);
-    console.log('📊 Request headers:', Object.fromEntries(req.headers));
+    console.log('📊 Timestamp:', new Date().toISOString());
     
     // Security check: Verify super admin access
     const authHeader = req.headers.get('authorization');
@@ -92,88 +91,76 @@ serve(async (req) => {
 
     // Parse request body
     const requestBody = await req.json();
-    console.log('📥 Request body received:', {
-      type: requestBody.type,
-      count: requestBody.count,
-      category: requestBody.category,
-      hasIngredientsList: !!requestBody.ingredientsList,
-      ingredientsListLength: requestBody.ingredientsList?.length || 0
-    });
+    console.log('📥 Request body received:', requestBody);
 
-    const { type, count, category, additionalPrompt, ingredientsList } = requestBody;
-
-    // Input validation and sanitization
-    if (!type || !['ingredient', 'category'].includes(type)) {
-      console.log('❌ Invalid type parameter:', type);
-      return new Response(JSON.stringify({ 
-        error: 'Invalid type parameter. Must be "ingredient" or "category"',
-        code: 'INVALID_TYPE'
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Validate count parameter
-    const validatedCount = Math.min(Math.max(parseInt(count) || 1, 1), 50); // Limit to prevent abuse
+    // VERSIÓN SIMPLIFICADA - Solo responder con datos mock
+    console.log('🧪 === VERSIÓN DE PRUEBA - GENERANDO DATOS MOCK ===');
     
-    // Sanitize category input
-    const sanitizedCategory = category ? category.toString().trim().slice(0, 100) : '';
-    
-    // Sanitize additional prompt
-    const sanitizedPrompt = additionalPrompt ? additionalPrompt.toString().trim().slice(0, 500) : '';
+    const mockIngredient = {
+      name: "Ingrediente de Prueba",
+      name_en: "Test Ingredient",
+      name_la: "Ingrediente de Prueba",
+      name_fr: "Ingrédient de Test",
+      name_it: "Ingrediente di Prova",
+      name_pt: "Ingrediente de Teste",
+      name_zh: "测试配料",
+      description: "Este es un ingrediente generado para probar que la función funciona correctamente. Se puede usar en diversas preparaciones culinarias.",
+      category: requestBody.category || "verduras",
+      temporada: "Todo el año",
+      origen: "España",
+      merma: 10.0,
+      rendimiento: 90.0,
+      popularity: 50,
+      prices_by_country: [
+        {
+          country: "España",
+          price: 5.50,
+          unit: "kg",
+          source: "Test - Frutas Eloy",
+          date: new Date().toISOString().split('T')[0]
+        },
+        {
+          country: "Francia",
+          price: 6.20,
+          unit: "kg", 
+          source: "Test - Metro France",
+          date: new Date().toISOString().split('T')[0]
+        }
+      ],
+      recipes: [
+        "Ensalada mediterránea de prueba",
+        "Salteado de verduras test",
+        "Crema de ingrediente de prueba"
+      ],
+      professional_uses: [
+        "Ideal para ensaladas y guarniciones",
+        "Perfecto para elaboraciones frías",
+        "Excelente para decoración de platos"
+      ]
+    };
 
-    // Validate and sanitize ingredients list if provided
-    let sanitizedIngredientsList: string[] | undefined;
-    if (ingredientsList && Array.isArray(ingredientsList)) {
-      sanitizedIngredientsList = ingredientsList
-        .map(ingredient => ingredient.toString().trim())
-        .filter(ingredient => ingredient.length > 0 && ingredient.length <= 100)
-        .slice(0, 20); // Limit to 20 ingredients maximum
-      
-      console.log(`📝 Manual ingredient list provided: ${sanitizedIngredientsList.length} ingredients`);
-      sanitizedIngredientsList.forEach((ingredient, idx) => {
-        console.log(`   ${idx + 1}. "${ingredient}" (length: ${ingredient.length})`);
-      });
-    }
+    const mockData = requestBody.ingredientsList && requestBody.ingredientsList.length > 0
+      ? requestBody.ingredientsList.map((ingredientName: string) => ({
+          ...mockIngredient,
+          name: ingredientName,
+          name_en: ingredientName,
+          requested_ingredient: ingredientName
+        }))
+      : [mockIngredient];
 
-    if (sanitizedIngredientsList && sanitizedIngredientsList.length > 0) {
-      console.log(`🎯 MODO MANUAL: Generando datos específicos para ${sanitizedIngredientsList.length} ingredientes`);
-    } else {
-      console.log(`🔄 MODO AUTOMÁTICO: Generando ${validatedCount} ${type}(s) para categoría: ${sanitizedCategory} usando PERPLEXITY SONAR`);
-    }
-
-    let generatedData;
-    if (type === 'ingredient') {
-      console.log('🚀 Starting ingredient data generation...');
-      generatedData = await generateIngredientData(
-        validatedCount, 
-        sanitizedCategory, 
-        sanitizedPrompt,
-        sanitizedIngredientsList
-      );
-      console.log('🏁 Ingredient data generation completed, results:', generatedData.length);
-    } else {
-      // Category generation logic would go here
-      console.log('📂 Category generation not implemented yet');
-      generatedData = [];
-    }
-
-    const generationMode = sanitizedIngredientsList && sanitizedIngredientsList.length > 0 ? 'manual' : 'automatic';
-    console.log(`✅ Successfully generated ${generatedData.length} items with Perplexity research (${generationMode} mode)`);
+    console.log('🎉 Mock data generated successfully:', mockData.length, 'items');
 
     // Log the admin action
     try {
       await supabase.rpc('log_admin_action', {
-        action_type: 'generate_content_perplexity',
-        resource_type: type,
+        action_type: 'generate_content_test',
+        resource_type: requestBody.type || 'ingredient',
         action_details: {
-          count: validatedCount,
-          category: sanitizedCategory,
-          generated_count: generatedData.length,
-          ai_provider: 'perplexity_sonar',
-          generation_mode: generationMode,
-          manual_ingredients: sanitizedIngredientsList || []
+          count: mockData.length,
+          category: requestBody.category,
+          generated_count: mockData.length,
+          ai_provider: 'mock_test',
+          generation_mode: requestBody.ingredientsList ? 'manual' : 'automatic'
         }
       });
     } catch (logError) {
@@ -183,14 +170,15 @@ serve(async (req) => {
 
     const response = { 
       success: true,
-      data: generatedData,
-      generated_count: generatedData.length,
-      ai_provider: 'perplexity_sonar',
-      research_quality: 'high',
-      generation_mode: generationMode
+      data: mockData,
+      generated_count: mockData.length,
+      ai_provider: 'mock_test_version',
+      research_quality: 'test',
+      generation_mode: requestBody.ingredientsList ? 'manual' : 'automatic',
+      message: 'Función ejecutándose correctamente - versión de prueba'
     };
 
-    console.log('📤 Sending response:', {
+    console.log('📤 Sending successful response:', {
       success: response.success,
       generated_count: response.generated_count,
       generation_mode: response.generation_mode
@@ -201,7 +189,7 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('❌ Error in generate-content with Perplexity:', error);
+    console.error('❌ Error in generate-content test version:', error);
     console.error('📊 Error details:', {
       name: error.name,
       message: error.message,
@@ -211,7 +199,7 @@ serve(async (req) => {
     return new Response(JSON.stringify({ 
       error: error.message || 'Internal server error',
       code: 'INTERNAL_ERROR',
-      ai_provider: 'perplexity_sonar'
+      ai_provider: 'mock_test_version'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

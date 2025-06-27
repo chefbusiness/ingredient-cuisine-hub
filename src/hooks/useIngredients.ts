@@ -1,4 +1,5 @@
 
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -74,8 +75,11 @@ export const useIngredients = (searchQuery?: string, categoryFilter?: string, so
           *,
           categories!inner(name, name_en),
           ingredient_prices!left(
+            id,
             price,
             unit,
+            season_variation,
+            country_id,
             countries!left(name, currency_symbol, code)
           )
         `);
@@ -188,8 +192,11 @@ export const useIngredientBySlug = (slug: string) => {
           *,
           categories(name, name_en),
           ingredient_prices(
+            id,
             price,
             unit,
+            season_variation,
+            country_id,
             countries(name, currency_symbol, code)
           ),
           nutritional_info(*),
@@ -210,3 +217,4 @@ export const useIngredientBySlug = (slug: string) => {
     enabled: !!slug,
   });
 };
+

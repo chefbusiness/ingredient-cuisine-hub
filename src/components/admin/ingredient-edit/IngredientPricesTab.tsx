@@ -76,7 +76,8 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
     return country?.name || 'País no especificado';
   };
 
-  const handleEditPrice = (priceData: any) => {
+  const handleEditPrice = (priceData: any, event: React.MouseEvent) => {
+    event.stopPropagation();
     console.log('📝 Editing price:', priceData);
     
     if (!priceData || !priceData.id || !priceData.country_id) {
@@ -96,7 +97,8 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
     });
   };
 
-  const handleSavePrice = () => {
+  const handleSavePrice = (event: React.MouseEvent) => {
+    event.stopPropagation();
     if (!editingPrice || !ingredient) {
       console.error('❌ Missing data for saving price');
       return;
@@ -128,7 +130,8 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
     });
   };
 
-  const handleDeletePrice = (priceId: string) => {
+  const handleDeletePrice = (priceId: string, event: React.MouseEvent) => {
+    event.stopPropagation();
     if (!ingredient || !priceId) {
       console.error('❌ Missing data for deleting price');
       return;
@@ -142,7 +145,8 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
     });
   };
 
-  const handleAddNew = () => {
+  const handleAddNew = (event: React.MouseEvent) => {
+    event.stopPropagation();
     console.log('➕ Adding new price');
     setIsAddingNew(true);
     setEditingPrice({
@@ -152,6 +156,12 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
       unit: 'kg',
       seasonVariation: ''
     });
+  };
+
+  const handleCancelEdit = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    setEditingPrice(null);
+    setIsAddingNew(false);
   };
 
   const availableCountries = countries.filter(country => 
@@ -230,7 +240,8 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
                             ...editingPrice,
                             price: parseFloat(e.target.value) || 0
                           })}
-                          className="w-24"
+                          className="w-20"
+                          onClick={(e) => e.stopPropagation()}
                         />
                       ) : (
                         <span className={isErroneous ? 'text-red-600 font-semibold' : ''}>
@@ -247,7 +258,7 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
                             unit: value
                           })}
                         >
-                          <SelectTrigger className="w-24">
+                          <SelectTrigger className="w-20" onClick={(e) => e.stopPropagation()}>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -270,6 +281,7 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
                           })}
                           placeholder="Ej: Más caro en invierno"
                           className="w-32"
+                          onClick={(e) => e.stopPropagation()}
                         />
                       ) : (
                         priceData.season_variation || '-'
@@ -296,7 +308,7 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => setEditingPrice(null)}
+                              onClick={handleCancelEdit}
                             >
                               <X className="h-3 w-3" />
                             </Button>
@@ -306,14 +318,14 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleEditPrice(priceData)}
+                              onClick={(e) => handleEditPrice(priceData, e)}
                             >
                               <Edit className="h-3 w-3" />
                             </Button>
                             <Button
                               size="sm"
                               variant="destructive"
-                              onClick={() => handleDeletePrice(priceData.id)}
+                              onClick={(e) => handleDeletePrice(priceData.id, e)}
                               disabled={isDeleting}
                             >
                               <Trash2 className="h-3 w-3" />
@@ -341,7 +353,7 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
                         });
                       }}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger onClick={(e) => e.stopPropagation()}>
                         <SelectValue placeholder="Seleccionar país" />
                       </SelectTrigger>
                       <SelectContent>
@@ -363,7 +375,8 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
                         price: parseFloat(e.target.value) || 0
                       })}
                       placeholder="0.00"
-                      className="w-24"
+                      className="w-20"
+                      onClick={(e) => e.stopPropagation()}
                     />
                   </TableCell>
                   <TableCell>
@@ -374,7 +387,7 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
                         unit: value
                       })}
                     >
-                      <SelectTrigger className="w-24">
+                      <SelectTrigger className="w-20" onClick={(e) => e.stopPropagation()}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -393,6 +406,7 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
                       })}
                       placeholder="Opcional"
                       className="w-32"
+                      onClick={(e) => e.stopPropagation()}
                     />
                   </TableCell>
                   <TableCell>
@@ -412,10 +426,7 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => {
-                          setEditingPrice(null);
-                          setIsAddingNew(false);
-                        }}
+                        onClick={handleCancelEdit}
                       >
                         <X className="h-3 w-3" />
                       </Button>

@@ -37,8 +37,6 @@ export class PerplexityClient {
           - Francia: Metro.fr → Rungis → distribuidores professionnels
           - Italia: Metro Italia → mercados mayoristas → distribuidores ristorazione
           - EEUU: Restaurant Depot → US Foods → Sysco
-          - México: Distribuidores HORECA → mercados mayoristas
-          - Argentina: Distribuidores gastronómicos → mercados concentradores
           
           IMPORTANTE: Responde SOLO con JSON válido, sin comentarios adicionales ni texto explicativo.
           NO incluyas comentarios dentro del JSON (como // No disponible).
@@ -71,7 +69,7 @@ export class PerplexityClient {
     console.log('📡 Enviando consulta profunda a Sonar Deep Research...');
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000); // Extendido a 60s para investigación profunda
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // EXTENDIDO A 120 SEGUNDOS
 
     try {
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -101,7 +99,7 @@ export class PerplexityClient {
     } catch (error) {
       clearTimeout(timeoutId);
       if (error.name === 'AbortError') {
-        throw new Error('TIMEOUT: Sonar Deep Research tardó más de 60 segundos en responder');
+        throw new Error('TIMEOUT: Sonar Deep Research tardó más de 2 minutos en responder - Investigación demasiado compleja');
       }
       throw error;
     }

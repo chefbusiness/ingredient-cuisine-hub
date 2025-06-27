@@ -40,16 +40,16 @@ export const useUpdateIngredientPrices = (
         onProgress({
           current: 0,
           total: 100,
-          status: 'Conectando con Perplexity Sonar para investigación HORECA...'
+          status: 'Conectando con Perplexity Sonar para investigación HORECA profunda (2-3 min)...'
         });
       }
 
       try {
         console.log('📡 Invocando función update-ingredient-prices con timeout extendido...');
         
-        // Usar timeout más largo para operaciones de precios
+        // TIMEOUT EXTENDIDO PARA INVESTIGACIÓN PROFUNDA
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('TIMEOUT: La operación tomó más de 5 minutos')), 300000); // 5 minutos
+          setTimeout(() => reject(new Error('TIMEOUT: La operación tomó más de 6 minutos')), 360000); // 6 minutos
         });
 
         const functionPromise = supabase.functions.invoke('update-ingredient-prices', {
@@ -70,7 +70,7 @@ export const useUpdateIngredientPrices = (
           
           // Mejorar el manejo de errores específicos
           if (error.message?.includes('timeout') || error.message?.includes('TIMEOUT')) {
-            throw new Error('TIMEOUT: La actualización está tomando más tiempo del esperado. Algunos ingredientes pueden haberse actualizado correctamente. Revisa el progreso y reintenta si es necesario.');
+            throw new Error('TIMEOUT: La investigación profunda está tomando más tiempo del esperado. Sonar Deep Research necesita tiempo para consultar múltiples fuentes HORECA especializadas.');
           }
           
           if (error.message?.includes('UNAUTHORIZED')) {
@@ -100,7 +100,7 @@ export const useUpdateIngredientPrices = (
         
         // Detectar si es un error de timeout del navegador
         if (functionError.name === 'AbortError' || functionError.message?.includes('AbortError')) {
-          throw new Error('BROWSER_TIMEOUT: La conexión se cortó por timeout del navegador. La actualización puede estar continuando en segundo plano.');
+          throw new Error('BROWSER_TIMEOUT: La conexión se cortó por timeout del navegador. La investigación puede estar continuando en segundo plano.');
         }
         
         throw functionError;
@@ -121,8 +121,8 @@ export const useUpdateIngredientPrices = (
 
       if (successful_updates > 0) {
         toast({
-          title: "✅ Precios HORECA actualizados",
-          description: `Se actualizaron ${successful_updates} ingrediente(s) con precios mayoristas reales de fuentes HORECA especializadas`,
+          title: "✅ Precios HORECA actualizados con investigación profunda",
+          description: `Se actualizaron ${successful_updates} ingrediente(s) con precios mayoristas reales usando Sonar Deep Research de fuentes HORECA especializadas`,
         });
       }
 
@@ -154,11 +154,11 @@ export const useUpdateIngredientPrices = (
         } else if (error.message.includes('PERPLEXITY_API_KEY') || error.message.includes('CONFIGURATION_ERROR')) {
           errorMessage = 'Error de configuración: falta la clave API de Perplexity';
         } else if (error.message.includes('TIMEOUT') || error.message.includes('timeout')) {
-          errorTitle = "⏱️ Timeout en actualización de precios";
-          errorMessage = 'La operación está tomando más tiempo del esperado. Puede estar procesándose en segundo plano. Espera unos minutos antes de reintentar.';
+          errorTitle = "⏱️ Timeout en investigación profunda";
+          errorMessage = 'Sonar Deep Research necesita más tiempo para investigar fuentes HORECA especializadas. La investigación puede completarse en segundo plano. Espera 3-5 minutos antes de reintentar.';
         } else if (error.message.includes('BROWSER_TIMEOUT')) {
           errorTitle = "🌐 Timeout del navegador";
-          errorMessage = 'La conexión se cortó, pero la actualización puede estar continuando. Revisa los resultados en unos minutos.';
+          errorMessage = 'La conexión se cortó, pero la investigación puede estar continuando. Revisa los resultados en unos minutos.';
         } else {
           errorMessage = error.message;
         }
@@ -170,15 +170,15 @@ export const useUpdateIngredientPrices = (
         variant: "destructive",
       });
     },
-    // Configuración optimizada para operaciones largas
+    // Configuración optimizada para operaciones largas de investigación profunda
     retry: (failureCount, error: any) => {
       // No reintentar automáticamente en timeouts para evitar duplicados
       if (error?.message?.includes('TIMEOUT') || error?.message?.includes('timeout')) {
         return false;
       }
-      // Reintentar hasta 2 veces en otros errores
-      return failureCount < 2;
+      // Reintentar hasta 1 vez en otros errores (reducido para evitar sobrecarga)
+      return failureCount < 1;
     },
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Backoff exponencial
+    retryDelay: (attemptIndex) => Math.min(2000 * 2 ** attemptIndex, 60000), // Backoff exponencial más conservador
   });
 };

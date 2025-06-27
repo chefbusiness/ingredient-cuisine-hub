@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -71,15 +70,15 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
     console.log('🎯 Iniciando actualización optimizada de precios HORECA...');
     
     toast({
-      title: "💰 Iniciando actualización automática de precios HORECA",
-      description: "Procesando ingredientes problemáticos de uno en uno para mayor estabilidad...",
+      title: "💰 Iniciando investigación profunda de precios HORECA",
+      description: "Procesando ingredientes problemáticos con Sonar Deep Research (2-3 min por ingrediente)...",
     });
     
     setPriceProgress({
       current: 0,
       total: 100,
       isUpdating: true,
-      status: 'Preparando investigación HORECA optimizada con Perplexity Sonar...'
+      status: 'Preparando investigación HORECA profunda con Sonar Deep Research (Timeout extendido: 2 min)...'
     });
     
     updateIngredientPrices({ 
@@ -126,7 +125,7 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
         <div className="space-y-3">
           <div className="flex justify-between text-sm">
             <span className="font-medium text-blue-700">
-              🔍 Investigando precios HORECA con Perplexity Sonar
+              🔍 Investigación profunda HORECA con Sonar Deep Research
             </span>
             <span className="text-muted-foreground">
               {priceProgress.current > 0 ? `${priceProgress.current} procesados` : 'Iniciando...'}
@@ -140,7 +139,7 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
             {priceProgress.status}
           </div>
           <div className="text-xs text-muted-foreground">
-            🏢 Proceso optimizado: 1 ingrediente → Consulta Perplexity → Actualización → Siguiente
+            🏢 Proceso optimizado: 1 ingrediente → Investigación profunda (2-3 min) → Actualización → Siguiente
           </div>
         </div>
       )}
@@ -153,7 +152,7 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
             Operaciones Automáticas
             <div className="ml-auto flex items-center gap-1 text-sm text-green-600">
               <Zap className="h-4 w-4" />
-              Flux 1.1 Pro + Perplexity Sonar
+              Flux 1.1 Pro + Sonar Deep Research
             </div>
           </CardTitle>
           <CardDescription>
@@ -191,7 +190,7 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
               <div className="text-center">
                 <div className="font-medium">Actualizar Precios Problemáticos</div>
                 <div className="text-xs opacity-90 mt-1">
-                  Proceso automático - Ingredientes con errores de precio
+                  Investigación profunda - Timeout extendido (2-3 min/ingrediente)
                 </div>
               </div>
             </Button>
@@ -215,7 +214,7 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
             <span>Total de ingredientes: {totalIngredients}</span>
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              Proceso optimizado anti-timeout
+              Proceso optimizado anti-timeout (120s Sonar Deep Research)
             </span>
           </div>
         </CardContent>
@@ -239,14 +238,15 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
           <div className="text-sm text-blue-800">
             <div className="font-medium flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              🔍 Proceso Optimizado Anti-Timeout:
+              🔍 Proceso Optimizado con Investigación Profunda:
             </div>
             <div className="mt-1 space-y-1 text-xs">
               <div>• Procesando 1 ingrediente cada vez para máxima estabilidad</div>
-              <div>• Timeout extendido a 5 minutos por ingrediente</div>
-              <div>• Consulta individual a Perplexity Sonar con fuentes HORECA</div>
+              <div>• Timeout extendido a 2 minutos por ingrediente para Sonar Deep Research</div>
+              <div>• Consulta individual a Perplexity Sonar con investigación profunda HORECA</div>
               <div>• Pausa de 2 segundos entre ingredientes para evitar saturación</div>
-              <div>• Reintentos automáticos en caso de errores menores</div>
+              <div>• Consulta optimizada a 4 países (reducida de 6) para mayor velocidad</div>
+              <div>• Reintentos automáticos limitados para evitar duplicados</div>
             </div>
           </div>
         </div>

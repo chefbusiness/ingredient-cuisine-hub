@@ -116,7 +116,7 @@ const IngredientPriceSelector = ({ onProgress }: IngredientPriceSelectorProps) =
           Actualización Manual por Ingrediente
         </CardTitle>
         <CardDescription>
-          Selecciona un ingrediente específico para actualizar sus precios HORECA con Perplexity Sonar
+          Selecciona un ingrediente específico para actualizar sus precios HORECA con Perplexity Sonar Deep Research + Fallback automático
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -186,7 +186,7 @@ const IngredientPriceSelector = ({ onProgress }: IngredientPriceSelectorProps) =
               {isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Actualizando con Perplexity Sonar...
+                  Actualizando con Deep Research + Fallback...
                 </>
               ) : (
                 <>
@@ -197,8 +197,11 @@ const IngredientPriceSelector = ({ onProgress }: IngredientPriceSelectorProps) =
             </Button>
 
             <div className="text-xs text-muted-foreground bg-blue-50 p-2 rounded">
-              🔍 Este proceso consultará Perplexity Sonar Deep Research para obtener precios HORECA actualizados 
-              específicamente para "{selectedIngredientName}" desde fuentes mayoristas especializadas.
+              🔍 <strong>Sistema Mejorado:</strong> Este proceso consultará Perplexity Sonar Deep Research (hasta 5 min) 
+              para obtener precios HORECA actualizados específicamente para "{selectedIngredientName}" desde fuentes mayoristas especializadas.
+              <br />
+              ⚡ <strong>Fallback Automático:</strong> Si Deep Research tarda demasiado, se activará automáticamente 
+              el modelo Sonar Online estándar para garantizar resultados.
             </div>
           </div>
         )}

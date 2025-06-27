@@ -67,18 +67,18 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
   };
 
   const handleUpdateAllPrices = () => {
-    console.log('🎯 Iniciando actualización optimizada de precios HORECA...');
+    console.log('🎯 Iniciando actualización optimizada de precios HORECA con sistema de fallback...');
     
     toast({
-      title: "💰 Iniciando investigación profunda de precios HORECA",
-      description: "Procesando ingredientes problemáticos con Sonar Deep Research (2-3 min por ingrediente)...",
+      title: "💰 Iniciando investigación profunda de precios HORECA con sistema de fallback",
+      description: "Procesando ingredientes problemáticos con Sonar Deep Research (hasta 5 min) + fallback automático a modelo estándar si es necesario...",
     });
     
     setPriceProgress({
       current: 0,
       total: 100,
       isUpdating: true,
-      status: 'Preparando investigación HORECA profunda con Sonar Deep Research (Timeout extendido: 2 min)...'
+      status: 'Preparando investigación HORECA profunda con Sonar Deep Research + sistema de fallback (Timeout: 5 min + fallback automático)...'
     });
     
     updateIngredientPrices({ 
@@ -125,7 +125,7 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
         <div className="space-y-3">
           <div className="flex justify-between text-sm">
             <span className="font-medium text-blue-700">
-              🔍 Investigación profunda HORECA con Sonar Deep Research
+              🔍 Investigación profunda HORECA con Sonar Deep Research + Fallback Automático
             </span>
             <span className="text-muted-foreground">
               {priceProgress.current > 0 ? `${priceProgress.current} procesados` : 'Iniciando...'}
@@ -139,7 +139,7 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
             {priceProgress.status}
           </div>
           <div className="text-xs text-muted-foreground">
-            🏢 Proceso optimizado: 1 ingrediente → Investigación profunda (2-3 min) → Actualización → Siguiente
+            🏢 Proceso optimizado con fallback: 1 ingrediente → Deep Research (5 min) → Si falla: Modelo estándar (1 min) → Actualización → Siguiente
           </div>
         </div>
       )}
@@ -152,11 +152,11 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
             Operaciones Automáticas
             <div className="ml-auto flex items-center gap-1 text-sm text-green-600">
               <Zap className="h-4 w-4" />
-              Flux 1.1 Pro + Sonar Deep Research
+              Flux 1.1 Pro + Sonar Deep Research + Fallback
             </div>
           </CardTitle>
           <CardDescription>
-            Ejecuta acciones masivas automáticas sobre múltiples ingredientes usando IA
+            Ejecuta acciones masivas automáticas sobre múltiples ingredientes usando IA con sistema de fallback
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -190,7 +190,7 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
               <div className="text-center">
                 <div className="font-medium">Actualizar Precios Problemáticos</div>
                 <div className="text-xs opacity-90 mt-1">
-                  Investigación profunda - Timeout extendido (2-3 min/ingrediente)
+                  Deep Research (5 min) + Fallback automático
                 </div>
               </div>
             </Button>
@@ -214,7 +214,7 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
             <span>Total de ingredientes: {totalIngredients}</span>
             <span className="flex items-center gap-1">
               <Clock className="h-3 w-3" />
-              Proceso optimizado anti-timeout (120s Sonar Deep Research)
+              Sistema anti-timeout: Deep Research (300s) + Fallback automático
             </span>
           </div>
         </CardContent>
@@ -238,15 +238,16 @@ const BatchOperations = ({ totalIngredients }: BatchOperationsProps) => {
           <div className="text-sm text-blue-800">
             <div className="font-medium flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              🔍 Proceso Optimizado con Investigación Profunda:
+              🔍 Proceso Optimizado con Sistema de Fallback Inteligente:
             </div>
             <div className="mt-1 space-y-1 text-xs">
+              <div>• <strong>PASO 1:</strong> Intento Sonar Deep Research (timeout: 5 minutos)</div>
+              <div>• <strong>PASO 2:</strong> Si falla → Fallback automático a Sonar Online estándar (1 minuto)</div>
               <div>• Procesando 1 ingrediente cada vez para máxima estabilidad</div>
-              <div>• Timeout extendido a 2 minutos por ingrediente para Sonar Deep Research</div>
-              <div>• Consulta individual a Perplexity Sonar con investigación profunda HORECA</div>
-              <div>• Pausa de 2 segundos entre ingredientes para evitar saturación</div>
               <div>• Consulta optimizada a 4 países (reducida de 6) para mayor velocidad</div>
-              <div>• Reintentos automáticos limitados para evitar duplicados</div>
+              <div>• Pausa de 2 segundos entre ingredientes para evitar saturación</div>
+              <div>• Sistema de doble tolerancia: Deep Research + Fallback garantizan resultado</div>
+              <div>• Logging detallado para monitorear tiempo de cada modelo</div>
             </div>
           </div>
         </div>

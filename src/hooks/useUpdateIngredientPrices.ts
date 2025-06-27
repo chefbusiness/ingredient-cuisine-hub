@@ -35,21 +35,21 @@ export const useUpdateIngredientPrices = (
     mutationFn: async ({ mode, ingredientIds, batchSize = 1 }: UpdatePricesParams): Promise<UpdatePricesResult> => {
       console.log('🔄 Iniciando actualización optimizada de precios HORECA:', { mode, batchSize });
       
-      // Update progress
+      // Update progress con mensaje mejorado
       if (onProgress) {
         onProgress({
           current: 0,
           total: 100,
-          status: 'Conectando con Perplexity Sonar para investigación HORECA profunda (2-3 min)...'
+          status: '🔍 Iniciando investigación profunda HORECA con Sonar Deep Research (hasta 5 minutos por ingrediente)...'
         });
       }
 
       try {
-        console.log('📡 Invocando función update-ingredient-prices con timeout extendido...');
+        console.log('📡 Invocando función update-ingredient-prices con timeout extendido a 10 minutos...');
         
-        // TIMEOUT EXTENDIDO PARA INVESTIGACIÓN PROFUNDA
+        // TIMEOUT EXTENDIDO PARA INVESTIGACIÓN PROFUNDA (10 MINUTOS TOTAL)
         const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('TIMEOUT: La operación tomó más de 6 minutos')), 360000); // 6 minutos
+          setTimeout(() => reject(new Error('TIMEOUT: La operación tomó más de 10 minutos')), 600000); // 10 minutos
         });
 
         const functionPromise = supabase.functions.invoke('update-ingredient-prices', {
@@ -70,7 +70,7 @@ export const useUpdateIngredientPrices = (
           
           // Mejorar el manejo de errores específicos
           if (error.message?.includes('timeout') || error.message?.includes('TIMEOUT')) {
-            throw new Error('TIMEOUT: La investigación profunda está tomando más tiempo del esperado. Sonar Deep Research necesita tiempo para consultar múltiples fuentes HORECA especializadas.');
+            throw new Error('TIMEOUT: La investigación profunda tomó más tiempo del esperado. Sonar Deep Research con fallback a modelo estándar requiere tiempo para consultar múltiples fuentes HORECA especializadas. Es posible que haya completado parcialmente.');
           }
           
           if (error.message?.includes('UNAUTHORIZED')) {
@@ -100,7 +100,7 @@ export const useUpdateIngredientPrices = (
         
         // Detectar si es un error de timeout del navegador
         if (functionError.name === 'AbortError' || functionError.message?.includes('AbortError')) {
-          throw new Error('BROWSER_TIMEOUT: La conexión se cortó por timeout del navegador. La investigación puede estar continuando en segundo plano.');
+          throw new Error('BROWSER_TIMEOUT: La conexión se cortó por timeout del navegador. La investigación puede estar continuando en segundo plano con sistema de fallback.');
         }
         
         throw functionError;
@@ -122,14 +122,14 @@ export const useUpdateIngredientPrices = (
       if (successful_updates > 0) {
         toast({
           title: "✅ Precios HORECA actualizados con investigación profunda",
-          description: `Se actualizaron ${successful_updates} ingrediente(s) con precios mayoristas reales usando Sonar Deep Research de fuentes HORECA especializadas`,
+          description: `Se actualizaron ${successful_updates} ingrediente(s) con precios mayoristas reales usando Sonar Deep Research + fallback estándar de fuentes HORECA especializadas`,
         });
       }
 
       if (failed_updates > 0) {
         toast({
           title: failed_updates > successful_updates ? "⚠️ Actualización con errores" : "⚠️ Actualización parcial",
-          description: `${successful_updates} exitosos, ${failed_updates} fallidos. Algunos ingredientes pueden requerir revisión manual.`,
+          description: `${successful_updates} exitosos, ${failed_updates} fallidos. Sistema de fallback aplicado cuando fue necesario.`,
           variant: failed_updates > successful_updates ? "destructive" : "default",
         });
       }
@@ -155,10 +155,10 @@ export const useUpdateIngredientPrices = (
           errorMessage = 'Error de configuración: falta la clave API de Perplexity';
         } else if (error.message.includes('TIMEOUT') || error.message.includes('timeout')) {
           errorTitle = "⏱️ Timeout en investigación profunda";
-          errorMessage = 'Sonar Deep Research necesita más tiempo para investigar fuentes HORECA especializadas. La investigación puede completarse en segundo plano. Espera 3-5 minutos antes de reintentar.';
+          errorMessage = 'Sonar Deep Research + fallback necesitó más tiempo para investigar fuentes HORECA especializadas. La investigación puede completarse en segundo plano. Sistema de fallback activado. Espera 3-5 minutos antes de reintentar.';
         } else if (error.message.includes('BROWSER_TIMEOUT')) {
           errorTitle = "🌐 Timeout del navegador";
-          errorMessage = 'La conexión se cortó, pero la investigación puede estar continuando. Revisa los resultados en unos minutos.';
+          errorMessage = 'La conexión se cortó, pero la investigación puede estar continuando con sistema de fallback. Revisa los resultados en unos minutos.';
         } else {
           errorMessage = error.message;
         }
@@ -170,7 +170,7 @@ export const useUpdateIngredientPrices = (
         variant: "destructive",
       });
     },
-    // Configuración optimizada para operaciones largas de investigación profunda
+    // Configuración optimizada para operaciones largas de investigación profunda con fallback
     retry: (failureCount, error: any) => {
       // No reintentar automáticamente en timeouts para evitar duplicados
       if (error?.message?.includes('TIMEOUT') || error?.message?.includes('timeout')) {
@@ -179,6 +179,6 @@ export const useUpdateIngredientPrices = (
       // Reintentar hasta 1 vez en otros errores (reducido para evitar sobrecarga)
       return failureCount < 1;
     },
-    retryDelay: (attemptIndex) => Math.min(2000 * 2 ** attemptIndex, 60000), // Backoff exponencial más conservador
+    retryDelay: (attemptIndex) => Math.min(3000 * 2 ** attemptIndex, 60000), // Backoff exponencial más conservador
   });
 };

@@ -1,5 +1,5 @@
 
-import { generatePrompt } from './prompts.ts';
+import { generateIngredientPrompt } from './prompts/ingredient-prompts.ts';
 import { PerplexityClient } from './perplexity-client.ts';
 import { GenerateContentParams } from './types.ts';
 import { checkForDuplicates } from './duplicate-detection.ts';
@@ -57,17 +57,24 @@ export async function processManualMode(
     }
     
     try {
+      // CREAR PARÁMETROS CORRECTOS PARA EL INGREDIENTE ESPECÍFICO
       const params: GenerateContentParams = {
         type: 'ingredient',
         count: 1,
         category,
         region: 'España',
-        ingredient: specificIngredient,
-        ingredientsList: [specificIngredient] // Activar modo manual específico
+        ingredient: specificIngredient, // ✅ INGREDIENTE ESPECÍFICO CORRECTAMENTE ASIGNADO
+        ingredientsList: [specificIngredient] // ✅ ACTIVAR MODO MANUAL ESPECÍFICO
       };
 
+      console.log(`🎯 === PARÁMETROS PARA SONAR PRO ===`);
+      console.log(`📋 Ingrediente específico: "${params.ingredient}"`);
+      console.log(`📋 Categoría: ${params.category || 'No especificada'}`);
+      console.log(`📋 Región: ${params.region}`);
+      console.log(`📋 Modo manual activado: ${params.ingredientsList ? 'SÍ' : 'NO'}`);
+
       console.log(`📋 Generating prompt for Sonar Pro: ${specificIngredient}`);
-      const prompt = generatePrompt(params, existingIngredientsData);
+      const prompt = generateIngredientPrompt(params, existingIngredientsData);
       
       console.log(`📡 Sending Sonar Pro request to Perplexity for: ${specificIngredient}`);
       console.log(`🎯 Prompt length: ${prompt.length} characters`);
@@ -138,6 +145,11 @@ export async function processManualMode(
       });
     }
   }
+  
+  console.log(`🎉 === MODO MANUAL COMPLETADO ===`);
+  console.log(`📊 Total ingredients processed: ${generatedIngredients.length}`);
+  console.log(`✅ Successful generations: ${generatedIngredients.filter(ing => !ing.error).length}`);
+  console.log(`⚠️ Errors or duplicates: ${generatedIngredients.filter(ing => ing.error).length}`);
   
   return generatedIngredients;
 }

@@ -2,12 +2,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { verifySuperAdminAccess } from './auth.ts';
 import { logAdminAction } from './logging.ts';
-import { PerplexityClient } from './perplexity-client.ts';
-import { generateIngredientPrompt } from './prompts/ingredient-prompts.ts';
-import { generateCategoryPrompt } from './prompts/category-prompts.ts';
-import { parseContent } from './content-parser.ts';
-import { validateSources } from './source-validator.ts';
-import { createFallbackData } from './fallback-data.ts';
+import { processManualMode } from './manual-mode-processor.ts';
+import { processAutomaticMode } from './automatic-mode-processor.ts';
 import { buildSuccessResponse, buildFallbackResponse, buildErrorResponse } from './response-builder.ts';
 import { getExistingIngredients } from './existing-ingredients.ts';
 
@@ -80,29 +76,41 @@ serve(async (req) => {
       console.log('⚠️ Error obteniendo ingredientes existentes:', existingError.message);
     }
 
+    // DETERMINAR EL MODO CORRECTO BASADO EN REQUEST BODY
+    const isManualMode = requestBody.ingredientsList && Array.isArray(requestBody.ingredientsList) && requestBody.ingredientsList.length > 0;
+    
+    console.log('🎯 === MODO DETECTADO ===');
+    console.log('📋 ingredientsList presente:', !!requestBody.ingredientsList);
+    console.log('📋 ingredientsList length:', requestBody.ingredientsList?.length || 0);
+    console.log('🔧 Modo determinado:', isManualMode ? 'MANUAL' : 'AUTOMATIC');
+
     // INTENTAR CON PERPLEXITY PRIMERO
     if (perplexityApiKey) {
       console.log('🌐 === INTENTANDO GENERACIÓN CON PERPLEXITY ===');
       
       try {
-        const perplexityClient = new PerplexityClient();
-        
-        // USAR EL PROMPT COMPLETO DESARROLLADO
-        let prompt;
-        if (requestBody.type === 'ingredient') {
-          prompt = generateIngredientPrompt(requestBody, existingIngredients);
-          console.log('📝 Usando prompt completo de ingredientes desarrollado');
-        } else if (requestBody.type === 'category') {
-          prompt = generateCategoryPrompt(requestBody.count || 1);
-          console.log('📝 Usando prompt de categorías');
+        let perplexityData;
+
+        if (isManualMode) {
+          // MODO MANUAL: Procesar lista específica de ingredientes
+          console.log('🎯 === USANDO MODO MANUAL CON SONAR PRO ===');
+          console.log('📝 Lista de ingredientes:', requestBody.ingredientsList);
+          
+          perplexityData = await processManualMode(
+            requestBody.ingredientsList,
+            requestBody.category,
+            existingIngredients
+          );
         } else {
-          throw new Error('Tipo de contenido no soportado');
+          // MODO AUTOMÁTICO: Perplexity decide
+          console.log('🤖 === USANDO MODO AUTOMÁTICO CON SONAR PRO ===');
+          
+          perplexityData = await processAutomaticMode(
+            requestBody.count || 1,
+            requestBody.category,
+            existingIngredients
+          );
         }
-        
-        console.log('🔍 Enviando solicitud a Perplexity con prompt completo...');
-        console.log('📄 Longitud del prompt:', prompt.length, 'caracteres');
-        
-        const perplexityData = await perplexityClient.generateContent(prompt);
         
         if (perplexityData && perplexityData.length > 0) {
           console.log('✅ Perplexity respondió exitosamente:', perplexityData.length, 'elementos');
@@ -113,16 +121,17 @@ serve(async (req) => {
             category: requestBody.category,
             region: requestBody.region,
             generated_count: perplexityData.length,
-            ai_provider: 'perplexity_sonar_deep_research',
-            generation_mode: requestBody.ingredientsList ? 'manual' : 'automatic',
-            perplexity_success: true
+            ai_provider: 'perplexity_sonar_pro',
+            generation_mode: isManualMode ? 'manual' : 'automatic',
+            perplexity_success: true,
+            ingredients_list: isManualMode ? requestBody.ingredientsList : undefined
           });
 
           const response = buildSuccessResponse(
             perplexityData,
-            'perplexity_sonar_deep_research',
-            requestBody.ingredientsList ? 'manual' : 'automatic',
-            'Contenido generado exitosamente con investigación web real de Perplexity'
+            'perplexity_sonar_pro',
+            isManualMode ? 'manual' : 'automatic',
+            'Contenido generado exitosamente con investigación web real de Perplexity Sonar Pro'
           );
 
           console.log('📤 Sending successful Perplexity response');
@@ -142,6 +151,7 @@ serve(async (req) => {
     console.log('🔧 === USANDO DATOS FALLBACK ===');
     
     try {
+      const { createFallbackData } = await import('./fallback-data.ts');
       const fallbackData = createFallbackData(requestBody);
       console.log('✅ Datos fallback generados:', fallbackData.length, 'elementos');
 
@@ -152,14 +162,14 @@ serve(async (req) => {
         region: requestBody.region,
         generated_count: fallbackData.length,
         ai_provider: 'fallback_after_perplexity_error',
-        generation_mode: requestBody.ingredientsList ? 'manual' : 'automatic',
+        generation_mode: isManualMode ? 'manual' : 'automatic',
         perplexity_available: !!perplexityApiKey,
         perplexity_success: false
       });
 
       const response = buildFallbackResponse(
         fallbackData,
-        requestBody.ingredientsList ? 'manual' : 'automatic',
+        isManualMode ? 'manual' : 'automatic',
         perplexityApiKey ? 'Error temporal con Perplexity API - usando datos de prueba' : 'Perplexity API Key no configurada - usando datos de prueba'
       );
 

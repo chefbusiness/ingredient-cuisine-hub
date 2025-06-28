@@ -1,5 +1,4 @@
 
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -21,7 +20,7 @@ export interface Ingredient {
   origen?: string;
   merma: number;
   rendimiento: number;
-  slug: string; // Nuevo campo para URLs amigables
+  slug: string;
   created_at: string;
   updated_at: string;
   categories?: {
@@ -29,11 +28,11 @@ export interface Ingredient {
     name_en: string;
   };
   ingredient_prices?: Array<{
-    id: string; // ID del precio
+    id: string;
     price: number;
     unit: string;
     season_variation?: string;
-    country_id: string; // ID del país
+    country_id: string;
     countries?: {
       name: string;
       currency_symbol: string;
@@ -115,7 +114,7 @@ export const useIngredients = (searchQuery?: string, categoryFilter?: string, so
 
       console.log(`✅ Encontrados ${data?.length || 0} ingredientes`);
       
-      // Filtrar precios de España como preferencia, pero mostrar todos los ingredientes
+      // Para la vista general, filtrar precios de España como preferencia
       const processedData = data?.map(ingredient => {
         if (ingredient.ingredient_prices && ingredient.ingredient_prices.length > 0) {
           // Buscar precios de España primero
@@ -172,9 +171,11 @@ export const useIngredientById = (id: string) => {
         throw error;
       }
 
-      console.log('✅ Ingredient data loaded:', data);
-      console.log('📊 Prices data:', data.ingredient_prices);
+      console.log('✅ Ingredient data loaded (ALL PRICES):', data);
+      console.log('📊 All prices data:', data.ingredient_prices);
 
+      // IMPORTANTE: Para el editor, devolver TODOS los precios sin filtrar
+      // Esto permite editar precios de todos los países
       return data;
     },
     enabled: !!id,
@@ -212,9 +213,10 @@ export const useIngredientBySlug = (slug: string) => {
         throw error;
       }
 
+      // Para las páginas de detalle públicas, también devolver todos los precios
+      // pero se pueden filtrar en el componente si es necesario
       return data;
     },
     enabled: !!slug,
   });
 };
-

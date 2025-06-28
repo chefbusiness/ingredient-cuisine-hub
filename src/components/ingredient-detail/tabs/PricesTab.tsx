@@ -2,6 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Ingredient } from "@/hooks/useIngredients";
+import { formatUnitForDisplay, getUnitSymbol, formatSeasonVariation } from "@/utils/unitFormatting";
 
 interface PricesTabProps {
   ingredient: Ingredient;
@@ -33,8 +34,8 @@ const PricesTab = ({ ingredient }: PricesTabProps) => {
 
   // Función para determinar el color del badge según el tipo de unidad
   const getUnitBadgeColor = (unit: string) => {
-    if (unit === 'litro' || unit === 'l') return 'bg-blue-100 text-blue-800';
-    if (unit === 'g') return 'bg-orange-100 text-orange-800';
+    if (unit === 'l') return 'bg-blue-100 text-blue-800';
+    if (unit === 'g' || unit === 'ml') return 'bg-orange-100 text-orange-800';
     return 'bg-green-100 text-green-800'; // kg por defecto
   };
 
@@ -57,6 +58,8 @@ const PricesTab = ({ ingredient }: PricesTabProps) => {
               const countryName = priceData.countries?.name || 'País no especificado';
               const currencySymbol = priceData.countries?.currency_symbol || currencySymbols[countryName] || '€';
               const isSpain = countryName === 'España';
+              const formattedUnit = formatUnitForDisplay(priceData.unit);
+              const unitSymbol = getUnitSymbol(priceData.unit);
               
               return (
                 <div 
@@ -81,7 +84,7 @@ const PricesTab = ({ ingredient }: PricesTabProps) => {
                     <Badge 
                       className={`text-xs ${getUnitBadgeColor(priceData.unit)}`}
                     >
-                      por {priceData.unit}
+                      por {unitSymbol}
                     </Badge>
                   </div>
                   
@@ -91,13 +94,13 @@ const PricesTab = ({ ingredient }: PricesTabProps) => {
                     }`}>
                       {currencySymbol}{priceData.price.toFixed(2)}
                       <span className="text-sm font-normal text-gray-500">
-                        /{priceData.unit}
+                        /{formattedUnit}
                       </span>
                     </p>
                     
                     {priceData.season_variation && (
-                      <p className="text-xs text-gray-600 capitalize">
-                        {priceData.season_variation}
+                      <p className="text-xs text-gray-600">
+                        {formatSeasonVariation(priceData.season_variation)}
                       </p>
                     )}
                     

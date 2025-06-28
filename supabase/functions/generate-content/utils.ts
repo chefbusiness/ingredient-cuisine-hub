@@ -1,9 +1,7 @@
 
 import { generatePrompt } from './prompts.ts';
+import { PerplexityClient } from './perplexity-client.ts';
 import { GenerateContentParams } from './types.ts';
-import { processManualMode } from './manual-mode-processor.ts';
-import { processAutomaticMode } from './automatic-mode-processor.ts';
-import { processResults, logResults } from './results-processor.ts';
 
 export async function generateIngredientData(
   count: number, 
@@ -11,7 +9,7 @@ export async function generateIngredientData(
   additionalPrompt?: string,
   ingredientsList?: string[]
 ): Promise<any[]> {
-  console.log('🔄 === STARTING SONAR DEEP RESEARCH INGREDIENT GENERATION ===');
+  console.log('🔄 === STARTING ENHANCED INGREDIENT DATA GENERATION ===');
   console.log('📋 Input parameters:', { 
     count, 
     category, 
@@ -19,8 +17,10 @@ export async function generateIngredientData(
     hasIngredientsList: !!ingredientsList && ingredientsList.length > 0
   });
   
+  const perplexity = new PerplexityClient();
+  
   try {
-    // Fetch existing ingredients to avoid duplicates with improved detection
+    // Fetch existing ingredients to avoid duplicates
     console.log('📋 Fetching existing ingredients for enhanced duplicate detection...');
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.7.1');
     const supabase = createClient(
@@ -45,34 +45,201 @@ export async function generateIngredientData(
     let generatedIngredients: any[] = [];
 
     if (ingredientsList && ingredientsList.length > 0) {
-      // Manual mode processing
-      generatedIngredients = await processManualMode(ingredientsList, category, existingIngredientsData);
+      // MODO MANUAL MEJORADO: Procesamiento individual y verificación estricta
+      console.log('🎯 === MODO MANUAL MEJORADO - PROCESAMIENTO INDIVIDUAL ===');
+      console.log('📝 Ingredients to process:', ingredientsList);
+      console.log('📊 Total ingredients to process:', ingredientsList.length);
+      
+      // Limit to prevent timeouts and ensure proper processing
+      const maxIngredients = Math.min(ingredientsList.length, 8); // Incremento el límite a 8
+      console.log('⚡ Processing limit set to:', maxIngredients, 'to prevent timeouts');
+      
+      const validIngredients = ingredientsList
+        .filter(ing => ing && ing.trim().length > 0)
+        .slice(0, maxIngredients);
+      
+      console.log('✅ Valid ingredients after filtering and limiting:', validIngredients.length);
+      
+      if (validIngredients.length === 0) {
+        console.log('❌ No valid ingredients found in the list');
+        throw new Error('No se encontraron ingredientes válidos en la lista proporcionada');
+      }
+      
+      for (let i = 0; i < validIngredients.length; i++) {
+        const specificIngredient = validIngredients[i].trim();
+        
+        console.log(`\n🔍 === PROCESSING INGREDIENT ${i + 1}/${validIngredients.length} ===`);
+        console.log(`📝 Current ingredient: "${specificIngredient}"`);
+        console.log(`📊 Progress: ${Math.round((i / validIngredients.length) * 100)}%`);
+        
+        // Pre-check for duplicates before API call to save tokens
+        const isDuplicate = existingIngredientsData.some(existing => {
+          const allExistingNames = [
+            existing.name?.toLowerCase(),
+            existing.name_en?.toLowerCase(),
+            existing.name_fr?.toLowerCase(),
+            existing.name_it?.toLowerCase(),
+            existing.name_pt?.toLowerCase(),
+            existing.name_la?.toLowerCase()
+          ].filter(Boolean);
+          
+          const searchName = specificIngredient.toLowerCase();
+          return allExistingNames.some(existingName => 
+            existingName.includes(searchName) || searchName.includes(existingName)
+          );
+        });
+        
+        if (isDuplicate) {
+          console.log(`⚠️ DUPLICATE DETECTED BEFORE API CALL: "${specificIngredient}" - Skipping to save tokens`);
+          generatedIngredients.push({
+            name: specificIngredient,
+            error: 'DUPLICADO_DETECTADO',
+            reason: 'Ya existe en la base de datos',
+            requested_ingredient: specificIngredient,
+            generated: false,
+            skipped_to_save_tokens: true
+          });
+          continue;
+        }
+        
+        try {
+          const params: GenerateContentParams = {
+            type: 'ingredient',
+            count: 1,
+            category,
+            region: 'España',
+            ingredient: specificIngredient,
+            ingredientsList: [specificIngredient] // Pasar como lista para activar modo manual
+          };
+
+          console.log(`📋 Generating prompt for: ${specificIngredient}`);
+          const prompt = generatePrompt(params, existingIngredientsData);
+          
+          console.log(`📡 Sending request to Perplexity for: ${specificIngredient}`);
+          console.log(`🎯 Prompt length: ${prompt.length} characters`);
+          
+          const response = await perplexity.generateContent(prompt);
+          console.log(`📦 Perplexity response for ${specificIngredient}:`, {
+            success: !!response,
+            length: response?.length || 0,
+            hasData: response && response.length > 0
+          });
+          
+          if (response && response.length > 0) {
+            const generatedIngredient = response[0];
+            
+            // Validate that the generated ingredient matches the requested one
+            if (generatedIngredient.error === 'DUPLICADO_DETECTADO') {
+              console.log(`⚠️ Perplexity detected duplicate for: ${specificIngredient}`);
+              generatedIngredients.push({
+                name: specificIngredient,
+                error: 'DUPLICADO_DETECTADO',
+                reason: 'Detectado por Perplexity como duplicado',
+                requested_ingredient: specificIngredient,
+                generated: false
+              });
+            } else {
+              generatedIngredient.requested_ingredient = specificIngredient;
+              generatedIngredient.manual_mode = true;
+              generatedIngredients.push(generatedIngredient);
+              console.log(`✅ Successfully generated data for: ${specificIngredient}`);
+              console.log(`📊 Generated ingredient name: ${generatedIngredient.name || 'No name'}`);
+            }
+          } else {
+            console.log(`⚠️ No data generated for: ${specificIngredient}`);
+            generatedIngredients.push({
+              name: specificIngredient,
+              error: 'No se pudo generar información para este ingrediente',
+              requested_ingredient: specificIngredient,
+              generated: false
+            });
+          }
+          
+          // Optimized delay for better rate limit handling
+          if (i < validIngredients.length - 1) {
+            const delay = i > 2 ? 3000 : 2000; // Longer delay after 3rd ingredient
+            console.log(`⏸️ Waiting ${delay/1000} seconds before next ingredient...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+          
+        } catch (error) {
+          console.error(`❌ Error generating data for "${specificIngredient}":`, error);
+          
+          generatedIngredients.push({
+            name: specificIngredient,
+            error: `Error: ${error.message}`,
+            requested_ingredient: specificIngredient,
+            generated: false
+          });
+        }
+      }
+      
+      // Filter results
+      const successfulIngredients = generatedIngredients.filter(ing => ing.generated !== false);
+      const duplicateIngredients = generatedIngredients.filter(ing => ing.error === 'DUPLICADO_DETECTADO');
+      const failedIngredients = generatedIngredients.filter(ing => ing.generated === false && ing.error !== 'DUPLICADO_DETECTADO');
+      
+      console.log(`🎯 Manual mode completed:`);
+      console.log(`  ✅ Successful: ${successfulIngredients.length}/${validIngredients.length}`);
+      console.log(`  ⚠️ Duplicates (tokens saved): ${duplicateIngredients.length}/${validIngredients.length}`);
+      console.log(`  ❌ Failed: ${failedIngredients.length}/${validIngredients.length}`);
+      
+      if (duplicateIngredients.length > 0) {
+        console.log(`⚠️ Duplicate ingredients:`, duplicateIngredients.map(ing => ing.name));
+      }
+      
+      if (failedIngredients.length > 0) {
+        console.log(`❌ Failed ingredients:`, failedIngredients.map(ing => ing.name));
+      }
+      
+      // Return only successful ingredients
+      generatedIngredients = successfulIngredients;
+      
     } else {
-      // Automatic mode processing
-      generatedIngredients = await processAutomaticMode(count, category, existingIngredientsData);
+      // AUTOMATIC MODE: Let Perplexity decide ingredients
+      console.log('🤖 === AUTOMATIC MODE: PERPLEXITY DECIDES INGREDIENTS ===');
+      
+      const params: GenerateContentParams = {
+        type: 'ingredient',
+        count,
+        category,
+        region: 'España'
+      };
+
+      const prompt = generatePrompt(params, existingIngredientsData);
+      
+      console.log(`📡 Sending request to Perplexity for ${count} random ingredients`);
+      const response = await perplexity.generateContent(prompt);
+      
+      if (response && response.length > 0) {
+        generatedIngredients = response;
+        console.log(`✅ Successfully generated ${response.length} random ingredients`);
+      } else {
+        console.log('⚠️ No ingredients generated in automatic mode');
+      }
     }
 
-    // Process and log results
-    const results = processResults(generatedIngredients);
-    const mode = ingredientsList && ingredientsList.length > 0 ? 'manual' : 'automatic';
-    const totalRequested = ingredientsList?.length || count;
+    console.log(`🎉 === GENERATION COMPLETED ===`);
+    console.log(`📊 Total ingredients generated: ${generatedIngredients.length}`);
+    console.log(`🔧 Mode: ${ingredientsList && ingredientsList.length > 0 ? 'Manual (Specific List)' : 'Automatic (Perplexity Choice)'}`);
     
-    logResults(results, totalRequested, mode);
+    // Log generated ingredient names for verification
+    if (generatedIngredients.length > 0) {
+      console.log(`📝 Generated ingredient names:`);
+      generatedIngredients.forEach((ing, idx) => {
+        console.log(`  ${idx + 1}. ${ing.name || 'No name'} (requested: ${ing.requested_ingredient || 'N/A'})`);
+      });
+    }
     
-    console.log(`🎉 === SONAR DEEP RESEARCH GENERATION COMPLETED ===`);
-    console.log(`📊 Total ingredients generated: ${results.successful.length}`);
-    console.log(`🔧 Mode: ${mode === 'manual' ? 'Manual (Specific List with Deep Research)' : 'Automatic (Deep Research Choice)'}`);
-    
-    // Return only successful ingredients
-    return results.successful;
+    return generatedIngredients;
 
   } catch (error) {
-    console.error('❌ Critical error in Sonar Deep Research generateIngredientData:', error);
+    console.error('❌ Critical error in generateIngredientData:', error);
     console.error('📊 Error details:', {
       name: error.name,
       message: error.message,
       stack: error.stack?.substring(0, 500)
     });
-    throw new Error(`Error generating ingredient data with Sonar Deep Research: ${error.message}`);
+    throw new Error(`Error generating ingredient data: ${error.message}`);
   }
 }

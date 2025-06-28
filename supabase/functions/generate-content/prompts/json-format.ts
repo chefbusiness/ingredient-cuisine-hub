@@ -5,21 +5,16 @@ export const getJsonFormat = (isSpecificIngredient: boolean, ingredient?: string
     : `"category": "determina la categoría apropiada basada en el ingrediente",`;
 
   const nameField = isSpecificIngredient && ingredient
-    ? `"name": "${ingredient}",`
-    : `"name": "nombre exacto del ingrediente en español (España) - NO un plato o receta",`;
-
-  const nameFieldInstruction = isSpecificIngredient && ingredient
-    ? `// CRÍTICO: El "name" debe ser exactamente "${ingredient}" (el ingrediente), NO un plato que lo contenga`
-    : `// CRÍTICO: El "name" debe ser el ingrediente en sí mismo, NO un plato o receta que lo use`;
+    ? `"name": "${ingredient} (nombre en español España)",`
+    : `"name": "nombre en español (España)",`;
 
   return `{
-    ${nameFieldInstruction}
     ${nameField}
-    "name_en": "nombre exacto del ingrediente en inglés",
-    "name_fr": "nombre exacto del ingrediente en francés",
-    "name_it": "nombre exacto del ingrediente en italiano", 
-    "name_pt": "nombre exacto del ingrediente en portugués",
-    "name_zh": "nombre exacto del ingrediente en chino (caracteres chinos)",
+    "name_en": "nombre en inglés",
+    "name_fr": "nombre en francés",
+    "name_it": "nombre en italiano", 
+    "name_pt": "nombre en portugués",
+    "name_zh": "nombre en chino (caracteres chinos)",
     "name_la": "sinónimos en español de Latinoamérica (ej: papa en lugar de patata, tomate en lugar de jitomate, etc.)",
     ${categoryResponse}
     "description": "descripción científica y técnica detallada basada en investigación real de fuentes especializadas (400-500 palabras) - DEBE SER UNA CADENA CONTINUA SIN SALTOS DE LÍNEA - Seguir estructura de 5 secciones especializadas del Experto Culinario en Léxico Científico usando marcadores ###SECCION1###, ###SECCION2###, ###SECCION3###, ###SECCION4###, ###SECCION5### para delimitar cada sección - COMPLETAR TODAS LAS 5 SECCIONES SIN CORTAR ABRUPTAMENTE - ALCANZAR 400-500 PALABRAS TOTALES - VERIFICAR ORIGEN HISTÓRICO REAL",
@@ -38,44 +33,43 @@ export const getJsonFormat = (isSpecificIngredient: boolean, ingredient?: string
     },
     "uses": ["uso culinario profesional 1", "uso culinario profesional 2", "uso culinario profesional 3"],
     "recipes": [
-      // NOTA: Estas son recetas que USAN el ingrediente como componente, NO el ingrediente mismo
       {
-        "name": "nombre de receta REAL investigada que USE este ingrediente",
+        "name": "nombre de receta REAL investigada",
         "type": "entrante",
         "difficulty": "fácil/medio/difícil",
         "time": "tiempo estimado real",
         "source": "fuente de la receta (chef, libro, restaurante)"
       },
       {
-        "name": "nombre de receta REAL investigada que USE este ingrediente",
+        "name": "nombre de receta REAL investigada",
         "type": "principal",
         "difficulty": "fácil/medio/difícil",
         "time": "tiempo estimado real",
         "source": "fuente de la receta"
       },
       {
-        "name": "nombre de receta REAL investigada que USE este ingrediente",
+        "name": "nombre de receta REAL investigada",
         "type": "guarnición",
         "difficulty": "fácil/medio/difícil",
         "time": "tiempo estimado real",
         "source": "fuente de la receta"
       },
       {
-        "name": "nombre de receta REAL investigada que USE este ingrediente",
+        "name": "nombre de receta REAL investigada",
         "type": "postre",
         "difficulty": "fácil/medio/difícil",
         "time": "tiempo estimado real",
         "source": "fuente de la receta"
       },
       {
-        "name": "nombre de receta REAL investigada que USE este ingrediente",
+        "name": "nombre de receta REAL investigada",
         "type": "salsa",
         "difficulty": "fácil/medio/difícil",
         "time": "tiempo estimado real",
         "source": "fuente de la receta"
       },
       {
-        "name": "nombre de receta REAL especialidad regional investigada que USE este ingrediente",
+        "name": "nombre de receta REAL especialidad regional investigada",
         "type": "especialidad",
         "difficulty": "fácil/medio/difícil",
         "time": "tiempo estimado real",

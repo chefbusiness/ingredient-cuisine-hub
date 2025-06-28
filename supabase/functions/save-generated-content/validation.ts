@@ -14,7 +14,7 @@ export function validateIngredientData(ingredient: any): boolean {
          typeof ingredient.name_en === 'string';
 }
 
-// Función mejorada para verificar si un ingrediente es duplicado con detección avanzada
+// Función mejorada para verificar duplicados con lógica más precisa
 export const isDuplicate = (newIngredient: any, existingIngredients: any[]): boolean => {
   const normalizeText = (text: string) => {
     if (!text) return '';
@@ -41,7 +41,7 @@ export const isDuplicate = (newIngredient: any, existingIngredients: any[]): boo
     normalizeText(newIngredient.name_la)
   ].filter(Boolean);
   
-  // Check against all existing ingredients
+  // Check against all existing ingredients with improved logic
   return existingIngredients.some(existing => {
     const existingNames = [
       normalizeText(existing.name),
@@ -53,7 +53,7 @@ export const isDuplicate = (newIngredient: any, existingIngredients: any[]): boo
       normalizeText(existing.name_la)
     ].filter(Boolean);
     
-    // Check for exact matches or partial matches for compound names
+    // Check for exact matches or very specific matches
     return existingNames.some(existingName => {
       if (!existingName || existingName.length < 3) return false;
       
@@ -63,9 +63,18 @@ export const isDuplicate = (newIngredient: any, existingIngredients: any[]): boo
         // Exact match
         if (existingName === newName) return true;
         
-        // Partial match for compound names (only if both are > 5 chars)
-        if (existingName.length > 5 && newName.length > 5) {
-          return existingName.includes(newName) || newName.includes(existingName);
+        // Para ingredientes compuestos, verificar coincidencia de palabras clave
+        const existingWords = existingName.split(/[^a-z0-9]/);
+        const newWords = newName.split(/[^a-z0-9]/);
+        
+        // Solo considerar duplicado si hay coincidencia significativa de palabras clave
+        if (existingWords.length > 1 && newWords.length > 1) {
+          const significantWords = existingWords.filter(w => w.length > 3);
+          const newSignificantWords = newWords.filter(w => w.length > 3);
+          
+          // Duplicado solo si todas las palabras significativas coinciden
+          return significantWords.length > 0 && newSignificantWords.length > 0 &&
+                 significantWords.every(word => newSignificantWords.includes(word));
         }
         
         return false;
@@ -74,7 +83,7 @@ export const isDuplicate = (newIngredient: any, existingIngredients: any[]): boo
   });
 };
 
-// Nueva función para verificar duplicados específicos en modo manual
+// Función específica para validación manual con lógica estricta
 export const isSpecificDuplicate = (requestedName: string, existingIngredients: any[]): boolean => {
   const normalizeText = (text: string) => {
     if (!text) return '';
@@ -106,16 +115,46 @@ export const isSpecificDuplicate = (requestedName: string, existingIngredients: 
     return existingNames.some(existingName => {
       const normalizedExisting = normalizeText(existingName);
       
-      // Exact match or very close match
+      // Exact match
       if (normalizedExisting === normalizedRequested) return true;
       
-      // Check if one contains the other (for variations like "Queso Cabrales" vs "Cabrales")
-      if (normalizedExisting.length > 4 && normalizedRequested.length > 4) {
-        return normalizedExisting.includes(normalizedRequested) || 
-               normalizedRequested.includes(normalizedExisting);
-      }
+      // Para quesos específicos, verificar nombres únicos
+      const requestedWords = normalizedRequested.split(/[^a-z0-9]/);
+      const existingWords = normalizedExisting.split(/[^a-z0-9]/);
       
-      return false;
+      // Verificar si el nombre específico (como "cabrales") ya existe
+      const significantRequestedWords = requestedWords.filter(w => w.length > 4);
+      const significantExistingWords = existingWords.filter(w => w.length > 4);
+      
+      // Solo duplicado si coinciden palabras específicas significativas
+      return significantRequestedWords.length > 0 && 
+             significantExistingWords.length > 0 &&
+             significantRequestedWords.some(word => significantExistingWords.includes(word));
     });
+  });
+};
+
+// Nueva función para validar que el ingrediente generado coincida con el solicitado
+export const validateGeneratedIngredient = (requested: string, generated: any): boolean => {
+  if (!generated || !generated.name) return false;
+  
+  const normalizeText = (text: string) => {
+    if (!text) return '';
+    return text.toLowerCase().trim();
+  };
+  
+  const requestedName = normalizeText(requested);
+  const generatedName = normalizeText(generated.name);
+  
+  // Verificar que el ingrediente generado contenga elementos del solicitado
+  const requestedWords = requestedName.split(/\s+/);
+  const generatedWords = generatedName.split(/\s+/);
+  
+  // Al menos una palabra significativa debe coincidir
+  return requestedWords.some(reqWord => {
+    if (reqWord.length < 4) return false; // Ignorar palabras muy cortas
+    return generatedWords.some(genWord => 
+      genWord.includes(reqWord) || reqWord.includes(genWord)
+    );
   });
 };

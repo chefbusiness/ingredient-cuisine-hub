@@ -4,7 +4,7 @@ import { Control } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, AlertTriangle } from "lucide-react";
+import { Plus, AlertTriangle, Info } from "lucide-react";
 import { useCountries } from "@/hooks/useCountries";
 import { useUpdateIngredientPrice, useDeleteIngredientPrice } from "@/hooks/useUpdateIngredientPrice";
 import { Ingredient } from "@/hooks/useIngredients";
@@ -28,10 +28,10 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
   const [isAddingNew, setIsAddingNew] = useState(false);
 
   console.log('🔍 IngredientPricesTab - Ingredient data:', ingredient);
-  console.log('🔍 IngredientPricesTab - Raw prices:', ingredient?.ingredient_prices);
+  console.log('🔍 IngredientPricesTab - ALL prices (unfiltered):', ingredient?.ingredient_prices);
 
-  // Obtener precios actuales del ingrediente con validaciones de seguridad
-  const currentPrices = (ingredient?.ingredient_prices || []).filter(priceItem => {
+  // Obtener TODOS los precios del ingrediente (sin filtrar)
+  const allPrices = (ingredient?.ingredient_prices || []).filter(priceItem => {
     const isValid = priceItem && 
       priceItem.id &&
       typeof priceItem.price === 'number' && 
@@ -45,7 +45,16 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
     return isValid;
   });
 
-  console.log('✅ Valid current prices:', currentPrices);
+  // Separar precios de España y otros países para mejor visualización
+  const spanishPrices = allPrices.filter(price => 
+    price.countries?.code === 'ES' || price.countries?.name === 'España'
+  );
+  const otherPrices = allPrices.filter(price => 
+    price.countries?.code !== 'ES' && price.countries?.name !== 'España'
+  );
+
+  console.log('✅ Spanish prices:', spanishPrices);
+  console.log('✅ Other country prices:', otherPrices);
   console.log('🌍 Countries data:', countries);
 
   const getCountryName = (countryId: string) => {
@@ -62,7 +71,7 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
       return;
     }
 
-    const countryName = getCountryName(priceData.country_id);
+    const countryName = priceData.countries?.name || getCountryName(priceData.country_id);
     
     setEditingPrice({
       priceId: priceData.id,
@@ -148,7 +157,7 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
   };
 
   const availableCountries = countries.filter(country => 
-    !currentPrices.some(price => price.country_id === country.id)
+    !allPrices.some(price => price.country_id === country.id)
   );
 
   // Mostrar estado de error si no se pueden cargar los datos básicos
@@ -167,7 +176,21 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
-          Gestión de Precios por País
+          <div className="flex items-center gap-2">
+            Gestión de Precios por País
+            {allPrices.length > 0 && (
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground">
+                  ({allPrices.length} país{allPrices.length !== 1 ? 'es' : ''})
+                </span>
+                {spanishPrices.length > 0 && (
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                    España: Precio principal
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
           <Button 
             onClick={handleAddNew} 
             disabled={isAddingNew || availableCountries.length === 0}
@@ -179,66 +202,108 @@ const IngredientPricesTab = ({ control, ingredient }: IngredientPricesTabProps) 
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {currentPrices.length === 0 && !isAddingNew ? (
+        {allPrices.length === 0 && !isAddingNew ? (
           <div className="text-center py-8 text-gray-500">
             <div className="text-4xl mb-2">💰</div>
             <p>No hay precios configurados para este ingrediente</p>
             <p className="text-sm mt-1">Añade precios por país para completar la información</p>
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>País</TableHead>
-                <TableHead>Precio</TableHead>
-                <TableHead>Unidad</TableHead>
-                <TableHead>Variación Estacional</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead>Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {currentPrices.map((priceData) => {
-                const isEditing = editingPrice?.priceId === priceData.id;
-                const countryName = priceData.countries?.name || getCountryName(priceData.country_id);
-                
-                return isEditing && editingPrice ? (
+          <>
+            {/* Información sobre edición completa */}
+            <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="flex items-start gap-2">
+                <Info className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-blue-700">
+                  <p className="font-medium mb-1">Edición completa de precios</p>
+                  <p>Ahora puedes editar todos los precios existentes de cualquier país. Los precios de España aparecen destacados como referencia principal.</p>
+                </div>
+              </div>
+            </div>
+
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>País</TableHead>
+                  <TableHead>Precio</TableHead>
+                  <TableHead>Unidad</TableHead>
+                  <TableHead>Variación Estacional</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {/* Mostrar precios de España primero */}
+                {spanishPrices.map((priceData) => {
+                  const isEditing = editingPrice?.priceId === priceData.id;
+                  const countryName = priceData.countries?.name || getCountryName(priceData.country_id);
+                  
+                  return isEditing && editingPrice ? (
+                    <PriceEditRow
+                      key={priceData.id}
+                      editingPrice={editingPrice}
+                      isAddingNew={false}
+                      isUpdating={isUpdating}
+                      availableCountries={countries}
+                      onUpdateEditingPrice={handleUpdateEditingPrice}
+                      onSave={handleSavePrice}
+                      onCancel={handleCancelEdit}
+                    />
+                  ) : (
+                    <PriceTableRow
+                      key={priceData.id}
+                      priceData={priceData}
+                      countryName={countryName}
+                      onEdit={handleEditPrice}
+                      onDelete={handleDeletePrice}
+                      isDeleting={isDeleting}
+                    />
+                  );
+                })}
+
+                {/* Mostrar precios de otros países */}
+                {otherPrices.map((priceData) => {
+                  const isEditing = editingPrice?.priceId === priceData.id;
+                  const countryName = priceData.countries?.name || getCountryName(priceData.country_id);
+                  
+                  return isEditing && editingPrice ? (
+                    <PriceEditRow
+                      key={priceData.id}
+                      editingPrice={editingPrice}
+                      isAddingNew={false}
+                      isUpdating={isUpdating}
+                      availableCountries={countries}
+                      onUpdateEditingPrice={handleUpdateEditingPrice}
+                      onSave={handleSavePrice}
+                      onCancel={handleCancelEdit}
+                    />
+                  ) : (
+                    <PriceTableRow
+                      key={priceData.id}
+                      priceData={priceData}
+                      countryName={countryName}
+                      onEdit={handleEditPrice}
+                      onDelete={handleDeletePrice}
+                      isDeleting={isDeleting}
+                    />
+                  );
+                })}
+
+                {/* Fila para añadir nuevo precio */}
+                {isAddingNew && editingPrice && (
                   <PriceEditRow
-                    key={priceData.id}
                     editingPrice={editingPrice}
-                    isAddingNew={false}
+                    isAddingNew={true}
                     isUpdating={isUpdating}
-                    availableCountries={countries}
+                    availableCountries={availableCountries}
                     onUpdateEditingPrice={handleUpdateEditingPrice}
                     onSave={handleSavePrice}
                     onCancel={handleCancelEdit}
                   />
-                ) : (
-                  <PriceTableRow
-                    key={priceData.id}
-                    priceData={priceData}
-                    countryName={countryName}
-                    onEdit={handleEditPrice}
-                    onDelete={handleDeletePrice}
-                    isDeleting={isDeleting}
-                  />
-                );
-              })}
-
-              {/* Fila para añadir nuevo precio */}
-              {isAddingNew && editingPrice && (
-                <PriceEditRow
-                  editingPrice={editingPrice}
-                  isAddingNew={true}
-                  isUpdating={isUpdating}
-                  availableCountries={availableCountries}
-                  onUpdateEditingPrice={handleUpdateEditingPrice}
-                  onSave={handleSavePrice}
-                  onCancel={handleCancelEdit}
-                />
-              )}
-            </TableBody>
-          </Table>
+                )}
+              </TableBody>
+            </Table>
+          </>
         )}
 
         <PriceInfoCard />

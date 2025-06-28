@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Save, X } from "lucide-react";
 import { PriceEditData } from "./PriceValidation";
+import { unitOptions } from "@/utils/unitFormatting";
 
 interface PriceEditRowProps {
   editingPrice: PriceEditData;
@@ -73,13 +74,15 @@ const PriceEditRow = ({
           value={editingPrice.unit} 
           onValueChange={(value) => onUpdateEditingPrice({ unit: value })}
         >
-          <SelectTrigger className="w-20" onClick={(e) => e.stopPropagation()}>
+          <SelectTrigger className="w-32" onClick={(e) => e.stopPropagation()}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="kg">kg</SelectItem>
-            <SelectItem value="l">l</SelectItem>
-            <SelectItem value="g">g</SelectItem>
+            {unitOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </TableCell>

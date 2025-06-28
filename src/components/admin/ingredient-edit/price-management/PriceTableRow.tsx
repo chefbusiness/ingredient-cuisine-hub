@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2 } from "lucide-react";
 import { isPriceErroneous } from "./PriceValidation";
+import { getUnitSymbol } from "@/utils/unitFormatting";
 
 interface PriceTableRowProps {
   priceData: any;
@@ -36,7 +37,7 @@ const PriceTableRow = ({ priceData, countryName, onEdit, onDelete, isDeleting }:
       </TableCell>
       <TableCell>
         <Badge variant="outline" className="text-xs">
-          {priceData.unit}
+          {getUnitSymbol(priceData.unit)}
         </Badge>
       </TableCell>
       <TableCell className="text-sm text-gray-600">

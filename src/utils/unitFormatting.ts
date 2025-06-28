@@ -40,3 +40,25 @@ export const getUnitSymbol = (unit: string): string => {
   
   return symbolMap[unit] || unit;
 };
+
+// Función para formatear valores de variación estacional/tipo de precio
+export const formatSeasonVariation = (variation: string | null | undefined): string => {
+  if (!variation) return '-';
+  
+  // Mapeo de valores técnicos a texto legible
+  const variationMap: { [key: string]: string } = {
+    'REVISAR_PRECIO_mayorista': 'Mayorista (revisar)',
+    'REVISAR_PRECIO_minorista': 'Minorista (revisar)',
+    'general': 'General',
+    'mayorista': 'Mayorista',
+    'minorista': 'Minorista',
+  };
+  
+  // Si existe un mapeo específico, usarlo
+  if (variationMap[variation]) {
+    return variationMap[variation];
+  }
+  
+  // Si no, devolver el valor original (para valores como "Más caro en invierno")
+  return variation;
+};

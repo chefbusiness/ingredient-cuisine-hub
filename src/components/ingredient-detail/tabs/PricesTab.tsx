@@ -2,7 +2,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Ingredient } from "@/hooks/useIngredients";
-import { formatUnitForDisplay, getUnitSymbol } from "@/utils/unitFormatting";
+import { formatUnitForDisplay, getUnitSymbol, formatSeasonVariation } from "@/utils/unitFormatting";
 
 interface PricesTabProps {
   ingredient: Ingredient;
@@ -99,8 +99,8 @@ const PricesTab = ({ ingredient }: PricesTabProps) => {
                     </p>
                     
                     {priceData.season_variation && (
-                      <p className="text-xs text-gray-600 capitalize">
-                        {priceData.season_variation}
+                      <p className="text-xs text-gray-600">
+                        {formatSeasonVariation(priceData.season_variation)}
                       </p>
                     )}
                     

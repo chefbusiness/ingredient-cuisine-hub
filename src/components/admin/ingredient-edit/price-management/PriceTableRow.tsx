@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2 } from "lucide-react";
 import { isPriceErroneous } from "./PriceValidation";
-import { getUnitSymbol } from "@/utils/unitFormatting";
+import { getUnitSymbol, formatSeasonVariation } from "@/utils/unitFormatting";
 
 interface PriceTableRowProps {
   priceData: any;
@@ -41,7 +41,7 @@ const PriceTableRow = ({ priceData, countryName, onEdit, onDelete, isDeleting }:
         </Badge>
       </TableCell>
       <TableCell className="text-sm text-gray-600">
-        {priceData.season_variation || '-'}
+        {formatSeasonVariation(priceData.season_variation)}
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-1">

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { Ingredient } from "@/hooks/useIngredients";
+import { Ingredient, useIngredientById } from "@/hooks/useIngredients";
 import { useUpdateIngredient } from "@/hooks/mutations";
 import { useCategories } from "@/hooks/useCategories";
 import IngredientQualityBadge from "./ingredient-edit/IngredientQualityBadge";
@@ -30,6 +30,11 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
   const { mutate: updateIngredient, isPending } = useUpdateIngredient();
   const { data: categories = [] } = useCategories();
   const queryClient = useQueryClient();
+  
+  // Usar useIngredientById para cargar TODOS los datos del ingrediente sin filtros
+  const { data: fullIngredientData, isLoading: isLoadingFullData } = useIngredientById(
+    ingredient?.id || ""
+  );
   
   const form = useForm<IngredientFormData>({
     defaultValues: {
@@ -53,8 +58,9 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
   });
 
   const resetFormWithIngredient = (ingredient: Ingredient) => {
-    console.log('🔄 === RESETTING FORM WITH INGREDIENT DATA ===');
+    console.log('🔄 === RESETTING FORM WITH FULL INGREDIENT DATA ===');
     console.log('📋 Ingredient:', ingredient.name);
+    console.log('💰 ALL PRICES AVAILABLE:', ingredient.ingredient_prices?.length || 0);
     
     const formData = {
       name: ingredient.name || "",
@@ -78,11 +84,12 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
     form.reset(formData);
   };
 
+  // Usar los datos completos del ingrediente cuando estén disponibles
   useEffect(() => {
-    if (ingredient) {
-      resetFormWithIngredient(ingredient);
+    if (fullIngredientData) {
+      resetFormWithIngredient(fullIngredientData);
     }
-  }, [ingredient, form]);
+  }, [fullIngredientData, form]);
 
   const handleIngredientUpdated = () => {
     console.log('🔄 === INGREDIENT UPDATED CALLBACK ===');
@@ -104,18 +111,18 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
   };
 
   const onSubmit = async (data: IngredientFormData) => {
-    if (!ingredient) {
-      console.error('❌ No ingredient found for update');
+    if (!fullIngredientData) {
+      console.error('❌ No full ingredient data found for update');
       return;
     }
     
     console.log('🚀 === FORM SUBMIT INITIATED ===');
-    console.log('📋 Ingredient ID:', ingredient.id);
+    console.log('📋 Ingredient ID:', fullIngredientData.id);
     
     // Verificar si hay cambios reales comparando con los datos originales
     const hasRealChanges = Object.keys(data).some(key => {
       const formValue = data[key as keyof IngredientFormData];
-      const originalValue = ingredient[key as keyof Ingredient];
+      const originalValue = fullIngredientData[key as keyof Ingredient];
       
       // Manejar valores null/undefined
       const normalizedFormValue = formValue === null || formValue === undefined ? "" : String(formValue);
@@ -140,7 +147,7 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
     console.log('💾 Updating ingredient with form data...');
     
     updateIngredient({
-      id: ingredient.id,
+      id: fullIngredientData.id,
       updates: updateData,
     }, {
       onSuccess: (result) => {
@@ -154,28 +161,44 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
     });
   };
 
+  // Mostrar loading si estamos cargando los datos completos
+  if (isLoadingFullData && ingredient) {
+    return (
+      <Dialog open={open} onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Cargando datos del ingrediente...</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[900px] max-h-[90vh] overflow-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Editar Ingrediente
-            <IngredientQualityBadge ingredient={ingredient} />
+            <IngredientQualityBadge ingredient={fullIngredientData || ingredient} />
           </DialogTitle>
           <DialogDescription>
-            Modifica los campos del ingrediente. En la pestaña "Imágenes" puedes gestionar la galería de imágenes reales.
+            Modifica los campos del ingrediente. En la pestaña "Precios" puedes gestionar precios de todos los países disponibles.
           </DialogDescription>
         </DialogHeader>
 
         <IngredientActionButtons 
-          ingredient={ingredient} 
+          ingredient={fullIngredientData || ingredient} 
           onIngredientUpdated={handleIngredientUpdated}
         />
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <IngredientEditForm
-              ingredient={ingredient}
+              ingredient={fullIngredientData || ingredient}
               categories={categories}
               control={form.control}
               watch={form.watch}
@@ -188,7 +211,7 @@ const IngredientEditDialog = ({ ingredient, open, onClose }: IngredientEditDialo
               </Button>
               <Button 
                 type="submit" 
-                disabled={isPending}
+                disabled={isPending || !fullIngredientData}
               >
                 {isPending ? "Guardando..." : "Guardar Cambios"}
               </Button>

@@ -1,62 +1,20 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
-import { generateIngredientData } from './utils.ts';
+import { verifySuperAdminAccess } from './auth.ts';
+import { logAdminAction } from './logging.ts';
+import { PerplexityClient } from './perplexity-client.ts';
+import { generateIngredientPrompt } from './prompts/ingredient-prompts.ts';
+import { generateCategoryPrompt } from './prompts/category-prompts.ts';
+import { parseContent } from './content-parser.ts';
+import { validateSources } from './source-validator.ts';
+import { createFallbackData } from './fallback-data.ts';
+import { buildSuccessResponse, buildFallbackResponse, buildErrorResponse } from './response-builder.ts';
+import { getExistingIngredients } from './existing-ingredients.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-const supabase = createClient(
-  Deno.env.get('SUPABASE_URL') ?? '',
-  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-);
-
-// Security function to verify super admin access
-async function verifySuperAdminAccess(authHeader: string | null): Promise<{ authorized: boolean, userEmail?: string }> {
-  if (!authHeader) {
-    console.log('❌ No authorization header provided');
-    return { authorized: false };
-  }
-
-  try {
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-    
-    if (userError || !user) {
-      console.log('❌ Invalid or expired token:', userError?.message);
-      return { authorized: false };
-    }
-
-    console.log('✅ User authenticated:', user.email);
-
-    // Check super admin status from profiles table
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('role, email')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError) {
-      console.log('❌ Error fetching user profile:', profileError.message);
-      return { authorized: false, userEmail: user.email };
-    }
-
-    console.log('📋 User profile:', { email: profile.email, role: profile.role });
-
-    if (profile.role !== 'super_admin') {
-      console.log('❌ User is not a super admin:', profile.email, 'Current role:', profile.role);
-      return { authorized: false, userEmail: profile.email };
-    }
-
-    console.log('✅ Super admin access verified for:', profile.email);
-    return { authorized: true, userEmail: profile.email };
-  } catch (error) {
-    console.log('❌ Error verifying admin access:', error);
-    return { authorized: false };
-  }
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -64,12 +22,14 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔄 === GENERACIÓN DE CONTENIDO CON PERPLEXITY ===');
+    console.log('🔄 === GENERATE-CONTENT FUNCTION INICIANDO ===');
     console.log('📊 Request method:', req.method);
-    console.log('📊 Request headers:', Object.fromEntries(req.headers));
+    console.log('📊 Timestamp:', new Date().toISOString());
     
     // Security check: Verify super admin access
     const authHeader = req.headers.get('authorization');
+    console.log('🔐 Verificando autenticación...');
+    
     const authResult = await verifySuperAdminAccess(authHeader);
     
     if (!authResult.authorized) {
@@ -91,128 +51,140 @@ serve(async (req) => {
     console.log('✅ Authorization successful, processing request...');
 
     // Parse request body
-    const requestBody = await req.json();
-    console.log('📥 Request body received:', {
-      type: requestBody.type,
-      count: requestBody.count,
-      category: requestBody.category,
-      hasIngredientsList: !!requestBody.ingredientsList,
-      ingredientsListLength: requestBody.ingredientsList?.length || 0
-    });
-
-    const { type, count, category, additionalPrompt, ingredientsList } = requestBody;
-
-    // Input validation and sanitization
-    if (!type || !['ingredient', 'category'].includes(type)) {
-      console.log('❌ Invalid type parameter:', type);
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      console.log('📥 Request body received:', requestBody);
+    } catch (parseError) {
+      console.error('❌ Error parsing request body:', parseError);
       return new Response(JSON.stringify({ 
-        error: 'Invalid type parameter. Must be "ingredient" or "category"',
-        code: 'INVALID_TYPE'
+        error: 'Invalid JSON in request body',
+        code: 'INVALID_REQUEST_BODY'
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Validate count parameter
-    const validatedCount = Math.min(Math.max(parseInt(count) || 1, 1), 50); // Limit to prevent abuse
-    
-    // Sanitize category input
-    const sanitizedCategory = category ? category.toString().trim().slice(0, 100) : '';
-    
-    // Sanitize additional prompt
-    const sanitizedPrompt = additionalPrompt ? additionalPrompt.toString().trim().slice(0, 500) : '';
+    // Verificar si Perplexity API Key está disponible
+    const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
+    console.log('🔑 Perplexity API Key status:', perplexityApiKey ? `Presente (${perplexityApiKey.length} chars)` : 'NO ENCONTRADA');
 
-    // Validate and sanitize ingredients list if provided
-    let sanitizedIngredientsList: string[] | undefined;
-    if (ingredientsList && Array.isArray(ingredientsList)) {
-      sanitizedIngredientsList = ingredientsList
-        .map(ingredient => ingredient.toString().trim())
-        .filter(ingredient => ingredient.length > 0 && ingredient.length <= 100)
-        .slice(0, 20); // Limit to 20 ingredients maximum
-      
-      console.log(`📝 Manual ingredient list provided: ${sanitizedIngredientsList.length} ingredients`);
-      sanitizedIngredientsList.forEach((ingredient, idx) => {
-        console.log(`   ${idx + 1}. "${ingredient}" (length: ${ingredient.length})`);
-      });
-    }
-
-    if (sanitizedIngredientsList && sanitizedIngredientsList.length > 0) {
-      console.log(`🎯 MODO MANUAL: Generando datos específicos para ${sanitizedIngredientsList.length} ingredientes`);
-    } else {
-      console.log(`🔄 MODO AUTOMÁTICO: Generando ${validatedCount} ${type}(s) para categoría: ${sanitizedCategory} usando PERPLEXITY SONAR`);
-    }
-
-    let generatedData;
-    if (type === 'ingredient') {
-      console.log('🚀 Starting ingredient data generation...');
-      generatedData = await generateIngredientData(
-        validatedCount, 
-        sanitizedCategory, 
-        sanitizedPrompt,
-        sanitizedIngredientsList
-      );
-      console.log('🏁 Ingredient data generation completed, results:', generatedData.length);
-    } else {
-      // Category generation logic would go here
-      console.log('📂 Category generation not implemented yet');
-      generatedData = [];
-    }
-
-    const generationMode = sanitizedIngredientsList && sanitizedIngredientsList.length > 0 ? 'manual' : 'automatic';
-    console.log(`✅ Successfully generated ${generatedData.length} items with Perplexity research (${generationMode} mode)`);
-
-    // Log the admin action
+    // Get existing ingredients to avoid duplicates
+    console.log('📋 Obteniendo ingredientes existentes...');
+    let existingIngredients = [];
     try {
-      await supabase.rpc('log_admin_action', {
-        action_type: 'generate_content_perplexity',
-        resource_type: type,
-        action_details: {
-          count: validatedCount,
-          category: sanitizedCategory,
-          generated_count: generatedData.length,
-          ai_provider: 'perplexity_sonar',
-          generation_mode: generationMode,
-          manual_ingredients: sanitizedIngredientsList || []
-        }
-      });
-    } catch (logError) {
-      console.log('⚠️ Failed to log admin action:', logError);
-      // Don't fail the request if logging fails
+      existingIngredients = await getExistingIngredients();
+      console.log('📊 Ingredientes existentes cargados:', existingIngredients.length);
+    } catch (existingError) {
+      console.log('⚠️ Error obteniendo ingredientes existentes:', existingError.message);
     }
 
-    const response = { 
-      success: true,
-      data: generatedData,
-      generated_count: generatedData.length,
-      ai_provider: 'perplexity_sonar',
-      research_quality: 'high',
-      generation_mode: generationMode
-    };
+    // INTENTAR CON PERPLEXITY PRIMERO
+    if (perplexityApiKey) {
+      console.log('🌐 === INTENTANDO GENERACIÓN CON PERPLEXITY ===');
+      
+      try {
+        const perplexityClient = new PerplexityClient();
+        
+        // USAR EL PROMPT COMPLETO DESARROLLADO
+        let prompt;
+        if (requestBody.type === 'ingredient') {
+          prompt = generateIngredientPrompt(requestBody, existingIngredients);
+          console.log('📝 Usando prompt completo de ingredientes desarrollado');
+        } else if (requestBody.type === 'category') {
+          prompt = generateCategoryPrompt(requestBody.count || 1);
+          console.log('📝 Usando prompt de categorías');
+        } else {
+          throw new Error('Tipo de contenido no soportado');
+        }
+        
+        console.log('🔍 Enviando solicitud a Perplexity con prompt completo...');
+        console.log('📄 Longitud del prompt:', prompt.length, 'caracteres');
+        
+        const perplexityData = await perplexityClient.generateContent(prompt);
+        
+        if (perplexityData && perplexityData.length > 0) {
+          console.log('✅ Perplexity respondió exitosamente:', perplexityData.length, 'elementos');
+          
+          // Log successful generation
+          await logAdminAction('generate_content_perplexity', requestBody.type || 'ingredient', {
+            count: perplexityData.length,
+            category: requestBody.category,
+            region: requestBody.region,
+            generated_count: perplexityData.length,
+            ai_provider: 'perplexity_sonar_deep_research',
+            generation_mode: requestBody.ingredientsList ? 'manual' : 'automatic',
+            perplexity_success: true
+          });
 
-    console.log('📤 Sending response:', {
-      success: response.success,
-      generated_count: response.generated_count,
-      generation_mode: response.generation_mode
-    });
+          const response = buildSuccessResponse(
+            perplexityData,
+            'perplexity_sonar_deep_research',
+            requestBody.ingredientsList ? 'manual' : 'automatic',
+            'Contenido generado exitosamente con investigación web real de Perplexity'
+          );
 
-    return new Response(JSON.stringify(response), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+          console.log('📤 Sending successful Perplexity response');
+
+          return new Response(JSON.stringify(response), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      } catch (perplexityError) {
+        console.error('❌ Error con Perplexity, pasando a fallback:', perplexityError.message);
+      }
+    } else {
+      console.log('⚠️ Perplexity API Key no disponible, usando fallback');
+    }
+
+    // FALLBACK: Usar datos de prueba si Perplexity falla
+    console.log('🔧 === USANDO DATOS FALLBACK ===');
+    
+    try {
+      const fallbackData = createFallbackData(requestBody);
+      console.log('✅ Datos fallback generados:', fallbackData.length, 'elementos');
+
+      // Log fallback generation
+      await logAdminAction('generate_content_fallback', requestBody.type || 'ingredient', {
+        count: fallbackData.length,
+        category: requestBody.category,
+        region: requestBody.region,
+        generated_count: fallbackData.length,
+        ai_provider: 'fallback_after_perplexity_error',
+        generation_mode: requestBody.ingredientsList ? 'manual' : 'automatic',
+        perplexity_available: !!perplexityApiKey,
+        perplexity_success: false
+      });
+
+      const response = buildFallbackResponse(
+        fallbackData,
+        requestBody.ingredientsList ? 'manual' : 'automatic',
+        perplexityApiKey ? 'Error temporal con Perplexity API - usando datos de prueba' : 'Perplexity API Key no configurada - usando datos de prueba'
+      );
+
+      console.log('📤 Sending fallback response');
+
+      return new Response(JSON.stringify(response), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+
+    } catch (fallbackError) {
+      console.error('❌ Error en datos fallback:', fallbackError);
+      throw fallbackError;
+    }
 
   } catch (error) {
-    console.error('❌ Error in generate-content with Perplexity:', error);
+    console.error('❌ Error general en generate-content:', error);
     console.error('📊 Error details:', {
       name: error.name,
       message: error.message,
       stack: error.stack?.substring(0, 500)
     });
     
-    return new Response(JSON.stringify({ 
-      error: error.message || 'Internal server error',
-      code: 'INTERNAL_ERROR',
-      ai_provider: 'perplexity_sonar'
-    }), {
+    const response = buildErrorResponse(error, 'INTERNAL_ERROR');
+    
+    return new Response(JSON.stringify(response), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

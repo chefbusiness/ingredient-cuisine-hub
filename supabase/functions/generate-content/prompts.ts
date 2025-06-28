@@ -1,41 +1,17 @@
 
+import { generateIngredientPrompt } from './ingredient-prompts.ts';
+import { generateCategoryPrompt } from './category-prompts.ts';
 import { GenerateContentParams } from './types.ts';
-import { generateIngredientPrompt } from './prompts/ingredient-prompts.ts';
-import { generateCategoryPrompt } from './prompts/category-prompts.ts';
-import { 
-  generateMarketResearchPrompt,
-  generateWeatherImpactPrompt,
-  generateCulturalVariantsPrompt,
-  generateTrendAnalysisPrompt,
-  generateSupplyChainPrompt
-} from './prompts/research-prompts.ts';
 
+// Este archivo mantiene compatibilidad pero redirige al sistema completo de prompts
 export const generatePrompt = (params: GenerateContentParams, existingIngredients: any[] = []): string => {
-  const { type, category, region = 'España', count = 1, ingredient } = params;
+  console.log('⚠️ DEPRECATED: Usando generatePrompt legacy, redirigiendo al sistema completo');
   
-  switch (type) {
-    case 'ingredient':
-      return generateIngredientPrompt(params, existingIngredients);
-      
-    case 'category':
-      return generateCategoryPrompt(count);
-      
-    case 'market_research':
-      return generateMarketResearchPrompt({ ingredient, category, region });
-      
-    case 'weather_impact':
-      return generateWeatherImpactPrompt({ ingredient, category, region });
-      
-    case 'cultural_variants':
-      return generateCulturalVariantsPrompt({ ingredient, category });
-      
-    case 'trend_analysis':
-      return generateTrendAnalysisPrompt({ ingredient, category, region });
-      
-    case 'supply_chain':
-      return generateSupplyChainPrompt({ ingredient, category, region });
-      
-    default:
-      throw new Error(`Tipo de contenido no soportado: ${type}`);
+  if (params.type === 'ingredient') {
+    return generateIngredientPrompt(params, existingIngredients);
+  } else if (params.type === 'category') {
+    return generateCategoryPrompt(params.count || 1);
   }
+  
+  throw new Error(`Tipo de contenido no soportado: ${params.type}`);
 };

@@ -49,7 +49,7 @@ export async function searchImagesWithPerplexity(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'llama-3.1-sonar-large-128k-online',
+      model: 'sonar-deep-research',
       messages: [
         {
           role: 'system',
@@ -82,19 +82,19 @@ export async function searchImagesWithPerplexity(
   });
 
   if (!response.ok) {
-    console.error(`❌ Perplexity API error: ${response.status}`);
-    throw new Error(`Perplexity API error: ${response.status} - ${await response.text()}`);
+    console.error(`❌ Sonar Deep Research error: ${response.status}`);
+    throw new Error(`Sonar Deep Research error: ${response.status} - ${await response.text()}`);
   }
 
   const data: PerplexityResponse = await response.json();
   const content = data.choices[0]?.message?.content;
 
   if (!content) {
-    console.error('❌ No content received from Perplexity');
-    throw new Error('No content received from Perplexity');
+    console.error('❌ No content received from Sonar Deep Research');
+    throw new Error('No content received from Sonar Deep Research');
   }
 
-  console.log('🔍 Perplexity raw response:', content.substring(0, 500));
+  console.log('🔍 Sonar Deep Research raw response:', content.substring(0, 500));
 
   // Enhanced JSON parsing with multiple strategies
   let imagesData: { images: ImageResult[] };
@@ -128,7 +128,7 @@ export async function searchImagesWithPerplexity(
     } catch (secondError) {
       console.error('❌ All parsing strategies failed');
       console.error('Response content:', content);
-      throw new Error('Unable to parse JSON from Perplexity response');
+      throw new Error('Unable to parse JSON from Sonar Deep Research response');
     }
   }
 

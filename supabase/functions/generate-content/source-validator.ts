@@ -1,49 +1,30 @@
 
-import { HORECA_KEYWORDS, RETAIL_KEYWORDS } from './perplexity-config.ts';
-
-export function isHorecaSource(citation: string): boolean {
-  const citationLower = citation.toLowerCase();
-  
-  // Si contiene palabras de retail, no es HORECA
-  if (RETAIL_KEYWORDS.some(keyword => citationLower.includes(keyword))) {
-    return false;
-  }
-  
-  // Frutas Eloy es fuente HORECA prioritaria
-  if (citationLower.includes('frutaseloy') || citationLower.includes('frutas eloy')) {
-    return true;
-  }
-  
-  // Si contiene palabras de HORECA, sí es válido
-  return HORECA_KEYWORDS.some(keyword => citationLower.includes(keyword));
-}
-
 export function validateSources(citations: string[]): void {
+  console.log('📚 === VALIDANDO FUENTES DE PERPLEXITY ===');
+  
   if (citations && citations.length > 0) {
-    console.log('📚 Fuentes consultadas:', citations.length);
-    console.log('🏢 === VERIFICACIÓN DE FUENTES HORECA ===');
+    console.log('📊 Fuentes encontradas:', citations.length);
     
-    let frutasEloyFound = false;
+    const validSources = [];
+    const invalidSources = [];
     
     citations.forEach((citation, index) => {
-      const isHoreca = isHorecaSource(citation);
-      const isFrutasEloy = citation.toLowerCase().includes('frutaseloy') || 
-                          citation.toLowerCase().includes('frutas eloy');
+      console.log(`  ${index + 1}. ${citation}`);
       
-      if (isFrutasEloy) {
-        frutasEloyFound = true;
-        console.log(`  ${index + 1}. ${citation} 🥇 FRUTAS ELOY (PRIORITARIO)`);
+      // Validar que las fuentes sean legítimas
+      if (citation && citation.includes('http') && citation.length > 10) {
+        validSources.push(citation);
       } else {
-        console.log(`  ${index + 1}. ${citation} ${isHoreca ? '✅ HORECA' : '⚠️  NO-HORECA'}`);
+        invalidSources.push(citation);
       }
     });
     
-    // Verificar si se consultó Frutas Eloy para ingredientes españoles
-    if (!frutasEloyFound) {
-      console.log('⚠️  ADVERTENCIA: No se encontró Frutas Eloy en las fuentes consultadas');
-      console.log('🎯 Para ingredientes españoles, Frutas Eloy debería ser la fuente prioritaria');
-    } else {
-      console.log('🥇 EXCELENTE: Frutas Eloy consultado como fuente prioritaria');
+    console.log('✅ Fuentes válidas:', validSources.length);
+    if (invalidSources.length > 0) {
+      console.log('⚠️ Fuentes inválidas:', invalidSources.length);
     }
+    
+  } else {
+    console.log('⚠️ No se encontraron fuentes para validar');
   }
 }

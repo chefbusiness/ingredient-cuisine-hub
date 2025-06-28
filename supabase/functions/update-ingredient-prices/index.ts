@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 import { PerplexityClient } from './perplexity-client.ts';
@@ -94,6 +93,7 @@ serve(async (req) => {
       try {
         console.log(`📊 === ACTUALIZANDO: ${ingredient.name} (${processedCount + 1}/${targetIngredients.length}) ===`);
         
+        // PROMPT OPTIMIZADO PARA REDUCIR PAÍSES (DE 6 A 4)
         const priceUpdatePrompt = `
           Investiga precios HORECA mayoristas para "${ingredient.name}" (${ingredient.name_en || ''}).
           
@@ -127,26 +127,10 @@ serve(async (req) => {
                 "market_type": "mayorista_horeca"
               },
               {
-                "country": "Italia", 
-                "country_code": "IT", 
-                "price": 17.60, 
-                "currency": "EUR", 
-                "unit": "kg",
-                "market_type": "mayorista_horeca"
-              },
-              {
                 "country": "México", 
                 "country_code": "MX", 
                 "price": 380.00, 
                 "currency": "MXN", 
-                "unit": "kg",
-                "market_type": "mayorista_horeca"
-              },
-              {
-                "country": "Argentina", 
-                "country_code": "AR", 
-                "price": 4200.00, 
-                "currency": "ARS", 
                 "unit": "kg",
                 "market_type": "mayorista_horeca"
               }
@@ -201,8 +185,8 @@ serve(async (req) => {
       processedCount++;
       
       if (processedCount < targetIngredients.length) {
-        console.log('⏸️ Pausa optimizada (1 segundo)...');
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.log('⏸️ Pausa optimizada (2 segundos)...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
 

@@ -1,3 +1,5 @@
+
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -27,12 +29,15 @@ export interface Ingredient {
     name_en: string;
   };
   ingredient_prices?: Array<{
+    id: string; // ID del precio
     price: number;
     unit: string;
     season_variation?: string;
+    country_id: string; // ID del país
     countries?: {
       name: string;
       currency_symbol: string;
+      code: string;
     };
   }>;
   ingredient_uses?: Array<{
@@ -70,8 +75,11 @@ export const useIngredients = (searchQuery?: string, categoryFilter?: string, so
           *,
           categories!inner(name, name_en),
           ingredient_prices!left(
+            id,
             price,
             unit,
+            season_variation,
+            country_id,
             countries!left(name, currency_symbol, code)
           )
         `);
@@ -136,14 +144,19 @@ export const useIngredientById = (id: string) => {
   return useQuery({
     queryKey: ['ingredient', id],
     queryFn: async () => {
+      console.log('🔍 Fetching ingredient by ID:', id);
+      
       const { data, error } = await supabase
         .from('ingredients')
         .select(`
           *,
           categories(name, name_en),
           ingredient_prices(
+            id,
             price,
             unit,
+            season_variation,
+            country_id,
             countries(name, currency_symbol, code)
           ),
           nutritional_info(*),
@@ -155,9 +168,12 @@ export const useIngredientById = (id: string) => {
         .single();
 
       if (error) {
-        console.error('Error fetching ingredient:', error);
+        console.error('❌ Error fetching ingredient:', error);
         throw error;
       }
+
+      console.log('✅ Ingredient data loaded:', data);
+      console.log('📊 Prices data:', data.ingredient_prices);
 
       return data;
     },
@@ -176,8 +192,11 @@ export const useIngredientBySlug = (slug: string) => {
           *,
           categories(name, name_en),
           ingredient_prices(
+            id,
             price,
             unit,
+            season_variation,
+            country_id,
             countries(name, currency_symbol, code)
           ),
           nutritional_info(*),
@@ -198,3 +217,4 @@ export const useIngredientBySlug = (slug: string) => {
     enabled: !!slug,
   });
 };
+

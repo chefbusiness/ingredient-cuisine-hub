@@ -48,10 +48,9 @@ export async function generateIngredientData(
       // MODO MANUAL MEJORADO: Procesamiento individual y verificación estricta
       console.log('🎯 === MODO MANUAL MEJORADO - PROCESAMIENTO INDIVIDUAL ===');
       console.log('📝 Ingredients to process:', ingredientsList);
-      console.log('📊 Total ingredients to process:', ingredientsList.length);
       
       // Limit to prevent timeouts and ensure proper processing
-      const maxIngredients = Math.min(ingredientsList.length, 8); // Incremento el límite a 8
+      const maxIngredients = Math.min(ingredientsList.length, 8);
       console.log('⚡ Processing limit set to:', maxIngredients, 'to prevent timeouts');
       
       const validIngredients = ingredientsList
@@ -70,24 +69,10 @@ export async function generateIngredientData(
         
         console.log(`\n🔍 === PROCESSING INGREDIENT ${i + 1}/${validIngredients.length} ===`);
         console.log(`📝 Current ingredient: "${specificIngredient}"`);
-        console.log(`📊 Progress: ${Math.round((i / validIngredients.length) * 100)}%`);
         
-        // Pre-check for duplicates before API call to save tokens
-        const isDuplicate = existingIngredientsData.some(existing => {
-          const allExistingNames = [
-            existing.name?.toLowerCase(),
-            existing.name_en?.toLowerCase(),
-            existing.name_fr?.toLowerCase(),
-            existing.name_it?.toLowerCase(),
-            existing.name_pt?.toLowerCase(),
-            existing.name_la?.toLowerCase()
-          ].filter(Boolean);
-          
-          const searchName = specificIngredient.toLowerCase();
-          return allExistingNames.some(existingName => 
-            existingName.includes(searchName) || searchName.includes(existingName)
-          );
-        });
+        // CORREGIDO: Pre-check for duplicates con algoritmo mejorado
+        const { isSpecificDuplicate } = await import('../save-generated-content/validation.ts');
+        const isDuplicate = isSpecificDuplicate(specificIngredient, existingIngredientsData);
         
         if (isDuplicate) {
           console.log(`⚠️ DUPLICATE DETECTED BEFORE API CALL: "${specificIngredient}" - Skipping to save tokens`);
@@ -115,8 +100,11 @@ export async function generateIngredientData(
           console.log(`📋 Generating prompt for: ${specificIngredient}`);
           const prompt = generatePrompt(params, existingIngredientsData);
           
+          // AÑADIDO: Log del prompt para debugging
+          console.log(`📄 PROMPT ENVIADO A PERPLEXITY (primeros 300 chars):`);
+          console.log(prompt.substring(0, 300) + '...');
+          
           console.log(`📡 Sending request to Perplexity for: ${specificIngredient}`);
-          console.log(`🎯 Prompt length: ${prompt.length} characters`);
           
           const response = await perplexity.generateContent(prompt);
           console.log(`📦 Perplexity response for ${specificIngredient}:`, {
@@ -127,6 +115,14 @@ export async function generateIngredientData(
           
           if (response && response.length > 0) {
             const generatedIngredient = response[0];
+            
+            // AÑADIDO: Log del contenido generado
+            console.log(`📋 Generated ingredient data:`, {
+              name: generatedIngredient.name,
+              name_en: generatedIngredient.name_en,
+              requested: specificIngredient,
+              matches: generatedIngredient.name?.toLowerCase().includes(specificIngredient.toLowerCase())
+            });
             
             // Validate that the generated ingredient matches the requested one
             if (generatedIngredient.error === 'DUPLICADO_DETECTADO') {
@@ -143,7 +139,6 @@ export async function generateIngredientData(
               generatedIngredient.manual_mode = true;
               generatedIngredients.push(generatedIngredient);
               console.log(`✅ Successfully generated data for: ${specificIngredient}`);
-              console.log(`📊 Generated ingredient name: ${generatedIngredient.name || 'No name'}`);
             }
           } else {
             console.log(`⚠️ No data generated for: ${specificIngredient}`);
@@ -157,7 +152,7 @@ export async function generateIngredientData(
           
           // Optimized delay for better rate limit handling
           if (i < validIngredients.length - 1) {
-            const delay = i > 2 ? 3000 : 2000; // Longer delay after 3rd ingredient
+            const delay = i > 2 ? 3000 : 2000;
             console.log(`⏸️ Waiting ${delay/1000} seconds before next ingredient...`);
             await new Promise(resolve => setTimeout(resolve, delay));
           }
@@ -183,14 +178,6 @@ export async function generateIngredientData(
       console.log(`  ✅ Successful: ${successfulIngredients.length}/${validIngredients.length}`);
       console.log(`  ⚠️ Duplicates (tokens saved): ${duplicateIngredients.length}/${validIngredients.length}`);
       console.log(`  ❌ Failed: ${failedIngredients.length}/${validIngredients.length}`);
-      
-      if (duplicateIngredients.length > 0) {
-        console.log(`⚠️ Duplicate ingredients:`, duplicateIngredients.map(ing => ing.name));
-      }
-      
-      if (failedIngredients.length > 0) {
-        console.log(`❌ Failed ingredients:`, failedIngredients.map(ing => ing.name));
-      }
       
       // Return only successful ingredients
       generatedIngredients = successfulIngredients;

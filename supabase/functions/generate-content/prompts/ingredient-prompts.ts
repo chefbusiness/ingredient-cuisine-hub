@@ -16,30 +16,34 @@ export const generateIngredientPrompt = (params: GenerateContentParams, existing
   let categoryInstruction: string;
   
   if (isManualMode && isSpecificIngredient) {
-    // MODO MANUAL: Generar FICHA TÉCNICA del ingrediente ESPECÍFICO
-    categoryInstruction = `🎯 MODO MANUAL - FICHA TÉCNICA DE INGREDIENTE ESPECÍFICO:
+    // MODO MANUAL: Instrucciones ultra-claras y directas
+    categoryInstruction = `🎯 INSTRUCCIÓN PRINCIPAL - LEE CUIDADOSAMENTE:
 
-IMPORTANTE: Debes generar una FICHA TÉCNICA COMPLETA del ingrediente "${ingredient}" de ${region}.
-- NO generes recetas QUE CONTENGAN este ingrediente
-- NO generes platos QUE USEN este ingrediente  
-- GENERA información TÉCNICA Y CIENTÍFICA DEL PROPIO INGREDIENTE "${ingredient}"
-- El "name" debe ser exactamente "${ingredient}" (el ingrediente en sí mismo)
-- Las recetas son ejemplos de CÓMO SE USA este ingrediente en cocina profesional
+Debes generar una ficha técnica COMPLETA del ingrediente específico: "${ingredient}"
+
+CRÍTICO - QUÉ GENERAR:
+✅ Información técnica DEL ingrediente "${ingredient}"
+✅ Propiedades, características y datos científicos DE "${ingredient}"
+✅ Cómo se USA "${ingredient}" en cocina profesional
+
+CRÍTICO - QUÉ NO GENERAR:
+❌ NO generes recetas QUE CONTENGAN "${ingredient}"
+❌ NO generes platos QUE LLEVEN "${ingredient}" como componente
+❌ NO cambies el nombre del ingrediente solicitado
 
 EJEMPLO CORRECTO:
-- name: "Queso de Cabrales" ✅
-- name: "Ensalada de Queso de Cabrales" ❌
+- Si solicito "Queso de Cabrales" → Generas información DEL "Queso de Cabrales"
+- Si solicito "Harina de maíz precocida" → Generas información DE LA "Harina de maíz precocida"
 
-Este ingrediente fue seleccionado de una lista específica proporcionada por el usuario.
-Si "${ingredient}" ya existe en la base de datos, RECHAZA completamente la generación y responde con error de duplicado.`;
+IMPORTANTE: El campo name debe ser exactamente "${ingredient}"`;
   } else if (isSpecificIngredient) {
     // MODO ESPECÍFICO INDIVIDUAL
-    categoryInstruction = `Investiga y genera una ficha técnica detallada específicamente para el ingrediente "${ingredient}" típico de ${region}.`;
+    categoryInstruction = `Genera una ficha técnica específica para el ingrediente "${ingredient}" de ${region}.`;
   } else {
     // MODO AUTOMÁTICO: Perplexity decide
     categoryInstruction = category 
-      ? `Investiga y genera ${count} ficha(s) técnica(s) de ingrediente(s) específicamente de la categoría "${category}" típico(s) de ${region}.`
-      : `Investiga y genera ${count} ficha(s) técnica(s) de ingrediente(s) típico(s) de ${region}.`;
+      ? `Genera ${count} ficha(s) técnica(s) de ingrediente(s) de la categoría "${category}" de ${region}.`
+      : `Genera ${count} ficha(s) técnica(s) de ingrediente(s) de ${region}.`;
   }
 
   // Get merma instructions by category
@@ -53,8 +57,14 @@ Si "${ingredient}" ya existe en la base de datos, RECHAZA completamente la gener
     region
   );
   
-  // Get mode-specific instructions
-  const modeSpecificInstructions = getModeInstructions(isSpecificIngredient || isManualMode, ingredient, region);
+  // Get mode-specific instructions (simplified for manual mode)
+  const modeSpecificInstructions = isManualMode && isSpecificIngredient ? 
+    `🔍 INVESTIGACIÓN REQUERIDA:
+- Usa tu acceso a internet para investigar "${ingredient}"
+- Busca precios HORECA/mayoristas actuales
+- Verifica denominaciones de origen si aplica
+- Confirma datos nutricionales oficiales` : 
+    getModeInstructions(isSpecificIngredient || isManualMode, ingredient, region);
   
   // Get research instructions
   const researchInstructions = getResearchInstructions(region);
@@ -66,46 +76,29 @@ Si "${ingredient}" ya existe en la base de datos, RECHAZA completamente la gener
   // Get description instructions
   const descriptionInstructions = getDescriptionInstructions();
   
-  // Get quality criteria
-  const qualityCriteria = getQualityCriteria(isSpecificIngredient || isManualMode, ingredient, count);
-  
-  // INSTRUCCIONES ESPECÍFICAS PARA MODO MANUAL
-  const manualModeWarnings = isManualMode ? `
-🚨 MODO MANUAL - INSTRUCCIONES CRÍTICAS PARA EVITAR CONFUSIONES:
+  // Get quality criteria (simplified for manual mode)
+  const qualityCriteria = isManualMode && isSpecificIngredient ?
+    `📋 CRITERIOS DE CALIDAD:
+- EXACTITUD: Genera información precisamente para "${ingredient}"
+- PRECIOS: Solo precios B2B/HORECA de distribuidores profesionales
+- FUENTES: Usa fuentes oficiales y especializadas
+- FORMATO: Responde SOLO con JSON válido sin comentarios adicionales
 
-⚠️ GENERA INFORMACIÓN DEL INGREDIENTE, NO RECETAS CON EL INGREDIENTE:
-- El usuario solicita información técnica DEL ingrediente "${ingredient}"
-- NO generes nombres de platos que contengan "${ingredient}"
-- NO generes recetas que lleven "${ingredient}" como componente
-- GENERA datos científicos, nutricionales y técnicos DEL PROPIO "${ingredient}"
-- El campo "name" debe ser exactamente "${ingredient}", no un plato
-
-⚠️ VERIFICACIÓN DE DUPLICADOS:
-- Si "${ingredient}" YA EXISTE en la base de datos, DETÉN la generación inmediatamente
-- Responde SOLO con el ingrediente solicitado o error de duplicado
-- NO gastes tokens generando ingredientes ya existentes
-- Verifica TODAS las variaciones de nombres (español, catalán, gallego, vasco, sinónimos)
-
-⚠️ FORMATO DE RESPUESTA:
-- "name": "${ingredient}" ✅ (correcto)
-- "name": "Plato con ${ingredient}" ❌ (incorrecto)
-- "name": "Receta de ${ingredient}" ❌ (incorrecto)
-` : '';
+Responde con 1 ingrediente investigado en formato JSON.` :
+    getQualityCriteria(isSpecificIngredient || isManualMode, ingredient, count);
 
   return `${categoryInstruction}
-  
-  ${manualModeWarnings}
-  
-  ${existingIngredientsText}
-  
-  ${modeSpecificInstructions}
-  
-  ${researchInstructions}
-  
-  Para ${isManualMode || isSpecificIngredient ? `el ingrediente "${ingredient}"` : 'cada ingrediente'}, proporciona la siguiente información en formato JSON:
-  ${jsonFormat}
-  
-  ${descriptionInstructions}
-  
-  ${qualityCriteria}`;
+
+${existingIngredientsText}
+
+${modeSpecificInstructions}
+
+${researchInstructions}
+
+Para ${isManualMode || isSpecificIngredient ? `el ingrediente "${ingredient}"` : 'cada ingrediente'}, proporciona la información en formato JSON:
+${jsonFormat}
+
+${descriptionInstructions}
+
+${qualityCriteria}`;
 };

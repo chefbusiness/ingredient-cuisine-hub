@@ -60,24 +60,22 @@ RECUERDA:
 export const getModeInstructions = (isSpecificIngredient: boolean, ingredient?: string, region: string = 'España') => {
   if (isSpecificIngredient && ingredient) {
     return `
-🎯 MODO MANUAL - FICHA TÉCNICA DE INGREDIENTE ESPECÍFICO:
-- Debes investigar EXACTAMENTE el ingrediente: "${ingredient}"
+🎯 MODO ESPECÍFICO - INGREDIENTE SOLICITADO:
+- Investiga EXACTAMENTE el ingrediente: "${ingredient}"
 - NO cambies el nombre del ingrediente solicitado
 - Si el ingrediente tiene variantes regionales, usa la variante de ${region}
 - Investiga datos específicos para este ingrediente particular
 - Asegúrate de que toda la información corresponda exactamente a "${ingredient}"
 - VERIFICA el origen histórico del ingrediente con fuentes académicas
-- IMPORTANTE: NO uses marcadores de sección en la descripción
 - CRÍTICO: Genera información DEL ingrediente "${ingredient}", NO recetas que lo contengan`;
   } else {
     return `
-🤖 MODO AUTOMÁTICO - PERPLEXITY DECIDE:
+🤖 MODO AUTOMÁTICO - SELECCIÓN INTELIGENTE:
 - Selecciona ingredientes interesantes y útiles para profesionales
 - Prioriza ingredientes comunes en cocina profesional de ${region}
 - Evita ingredientes demasiado exóticos o difíciles de conseguir
 - Asegúrate de que sean ingredientes realmente utilizados en hostelería
 - VERIFICA orígenes históricos antes de incluir información
-- IMPORTANTE: NO uses marcadores de sección en la descripción
 - CRÍTICO: Genera información DE cada ingrediente, NO recetas que los contengan`;
   }
 };

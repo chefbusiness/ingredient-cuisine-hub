@@ -10,6 +10,7 @@ import { validateSources } from './source-validator.ts';
 import { createFallbackData } from './fallback-data.ts';
 import { buildSuccessResponse, buildFallbackResponse, buildErrorResponse } from './response-builder.ts';
 import { getExistingIngredients } from './existing-ingredients.ts';
+import { generateIngredientData } from './utils.ts'; // AÑADIDO: usar utils para modo manual
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -66,62 +67,75 @@ serve(async (req) => {
       });
     }
 
+    // DETECTAR MODO MANUAL: Verificar si hay ingredient específico o ingredientsList
+    const isManualMode = (requestBody.ingredient && requestBody.ingredient.trim()) || 
+                        (requestBody.ingredientsList && requestBody.ingredientsList.length > 0);
+    
+    console.log('🎯 === MODO DETECTADO ===');
+    console.log('📋 Modo manual detectado:', isManualMode);
+    console.log('📋 Ingrediente específico:', requestBody.ingredient || 'N/A');
+    console.log('📋 Lista de ingredientes:', requestBody.ingredientsList?.length || 0);
+
     // Verificar si Perplexity API Key está disponible
     const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
     console.log('🔑 Perplexity API Key status:', perplexityApiKey ? `Presente (${perplexityApiKey.length} chars)` : 'NO ENCONTRADA');
-
-    // Get existing ingredients to avoid duplicates
-    console.log('📋 Obteniendo ingredientes existentes...');
-    let existingIngredients = [];
-    try {
-      existingIngredients = await getExistingIngredients();
-      console.log('📊 Ingredientes existentes cargados:', existingIngredients.length);
-    } catch (existingError) {
-      console.log('⚠️ Error obteniendo ingredientes existentes:', existingError.message);
-    }
 
     // INTENTAR CON PERPLEXITY PRIMERO
     if (perplexityApiKey) {
       console.log('🌐 === INTENTANDO GENERACIÓN CON PERPLEXITY ===');
       
       try {
-        const perplexityClient = new PerplexityClient();
+        let generatedData;
         
-        // USAR EL PROMPT COMPLETO DESARROLLADO
-        let prompt;
-        if (requestBody.type === 'ingredient') {
-          prompt = generateIngredientPrompt(requestBody, existingIngredients);
-          console.log('📝 Usando prompt completo de ingredientes desarrollado');
-        } else if (requestBody.type === 'category') {
-          prompt = generateCategoryPrompt(requestBody.count || 1);
-          console.log('📝 Usando prompt de categorías');
+        if (isManualMode) {
+          // CORREGIDO: Usar utils.ts para modo manual que tiene la lógica correcta
+          console.log('🎯 === USANDO MODO MANUAL CON UTILS.TS ===');
+          generatedData = await generateIngredientData(
+            requestBody.count || 1,
+            requestBody.category,
+            '',
+            requestBody.ingredientsList || (requestBody.ingredient ? [requestBody.ingredient] : undefined)
+          );
         } else {
-          throw new Error('Tipo de contenido no soportado');
+          // MODO AUTOMÁTICO: Usar PerplexityClient directamente
+          console.log('🤖 === MODO AUTOMÁTICO: USAR CLIENT DIRECTO ===');
+          const perplexityClient = new PerplexityClient();
+          
+          // Get existing ingredients to avoid duplicates
+          console.log('📋 Obteniendo ingredientes existentes...');
+          let existingIngredients = [];
+          try {
+            existingIngredients = await getExistingIngredients();
+            console.log('📊 Ingredientes existentes cargados:', existingIngredients.length);
+          } catch (existingError) {
+            console.log('⚠️ Error obteniendo ingredientes existentes:', existingError.message);
+          }
+          
+          const prompt = generateIngredientPrompt(requestBody, existingIngredients);
+          console.log('📝 Prompt generado, longitud:', prompt.length);
+          
+          generatedData = await perplexityClient.generateContent(prompt);
         }
         
-        console.log('🔍 Enviando solicitud a Perplexity con prompt completo...');
-        console.log('📄 Longitud del prompt:', prompt.length, 'caracteres');
-        
-        const perplexityData = await perplexityClient.generateContent(prompt);
-        
-        if (perplexityData && perplexityData.length > 0) {
-          console.log('✅ Perplexity respondió exitosamente:', perplexityData.length, 'elementos');
+        if (generatedData && generatedData.length > 0) {
+          console.log('✅ Perplexity respondió exitosamente:', generatedData.length, 'elementos');
           
           // Log successful generation
           await logAdminAction('generate_content_perplexity', requestBody.type || 'ingredient', {
-            count: perplexityData.length,
+            count: generatedData.length,
             category: requestBody.category,
             region: requestBody.region,
-            generated_count: perplexityData.length,
+            generated_count: generatedData.length,
             ai_provider: 'perplexity_sonar_deep_research',
-            generation_mode: requestBody.ingredientsList ? 'manual' : 'automatic',
-            perplexity_success: true
+            generation_mode: isManualMode ? 'manual' : 'automatic',
+            perplexity_success: true,
+            requested_ingredient: requestBody.ingredient || undefined
           });
 
           const response = buildSuccessResponse(
-            perplexityData,
+            generatedData,
             'perplexity_sonar_deep_research',
-            requestBody.ingredientsList ? 'manual' : 'automatic',
+            isManualMode ? 'manual' : 'automatic',
             'Contenido generado exitosamente con investigación web real de Perplexity'
           );
 
@@ -152,14 +166,14 @@ serve(async (req) => {
         region: requestBody.region,
         generated_count: fallbackData.length,
         ai_provider: 'fallback_after_perplexity_error',
-        generation_mode: requestBody.ingredientsList ? 'manual' : 'automatic',
+        generation_mode: isManualMode ? 'manual' : 'automatic',
         perplexity_available: !!perplexityApiKey,
         perplexity_success: false
       });
 
       const response = buildFallbackResponse(
         fallbackData,
-        requestBody.ingredientsList ? 'manual' : 'automatic',
+        isManualMode ? 'manual' : 'automatic',
         perplexityApiKey ? 'Error temporal con Perplexity API - usando datos de prueba' : 'Perplexity API Key no configurada - usando datos de prueba'
       );
 

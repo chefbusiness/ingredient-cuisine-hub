@@ -27,7 +27,7 @@ export class PerplexityClient {
       console.log('🔄 Sonar Deep Research falló, intentando con modelo estándar online...');
       console.log('📄 Error Deep Research:', error.message);
       
-      // FALLBACK: Usar modelo estándar online
+      // FALLBACK: Usar modelo estándar online CORREGIDO
       return await this.tryStandardOnline(prompt);
     }
   }
@@ -142,10 +142,10 @@ export class PerplexityClient {
   }
 
   private async tryStandardOnline(prompt: string): Promise<any[]> {
-    console.log('🔄 === FALLBACK: Usando Sonar Online Estándar ===');
+    console.log('🔄 === FALLBACK: Usando modelo estándar corregido ===');
     
     const requestBody = {
-      model: 'sonar-online',
+      model: 'llama-3.1-sonar-small-128k-online', // CORREGIDO: modelo válido
       messages: [
         {
           role: 'system',
@@ -176,7 +176,7 @@ export class PerplexityClient {
       frequency_penalty: 1.0
     };
 
-    console.log('📡 Ejecutando consulta con Sonar Online estándar (timeout: 60s)...');
+    console.log('📡 Ejecutando consulta con modelo estándar corregido (timeout: 60s)...');
     const startTime = Date.now();
 
     const controller = new AbortController();
@@ -195,18 +195,18 @@ export class PerplexityClient {
 
       clearTimeout(timeoutId);
       const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
-      console.log(`⚡ Sonar Online completado en ${elapsedTime} segundos`);
+      console.log(`⚡ Modelo estándar completado en ${elapsedTime} segundos`);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Error de Sonar Online:', response.status, response.statusText, errorText);
-        throw new Error(`Error de Sonar Online: ${response.status} ${response.statusText}. Detalles: ${errorText}`);
+        console.error('❌ Error del modelo estándar:', response.status, response.statusText, errorText);
+        throw new Error(`Error del modelo estándar: ${response.status} ${response.statusText}. Detalles: ${errorText}`);
       }
 
       const data = await response.json();
       const generatedContent = data.choices[0].message.content;
       
-      console.log('📦 Respuesta recibida de Sonar Online (primeros 200 chars):', generatedContent.substring(0, 200));
+      console.log('📦 Respuesta recibida del modelo estándar (primeros 200 chars):', generatedContent.substring(0, 200));
       
       return this.parseContent(generatedContent);
     } catch (error) {
@@ -214,11 +214,11 @@ export class PerplexityClient {
       const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
       
       if (error.name === 'AbortError') {
-        console.log(`⏰ TIMEOUT tras ${elapsedTime}s: Incluso Sonar Online falló`);
+        console.log(`⏰ TIMEOUT tras ${elapsedTime}s: Incluso el modelo estándar falló`);
         throw new Error('TIMEOUT_ALL_MODELS: Todos los modelos de Perplexity fallaron por timeout');
       }
       
-      console.error('❌ Error detallado en Sonar Online:', {
+      console.error('❌ Error detallado en modelo estándar:', {
         name: error.name,
         message: error.message,
         stack: error.stack

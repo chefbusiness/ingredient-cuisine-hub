@@ -1,6 +1,6 @@
 
-import { generateIngredientPrompt } from './ingredient-prompts.ts';
-import { generateCategoryPrompt } from './category-prompts.ts';
+import { generateIngredientPrompt } from './prompts/ingredient-prompts.ts';
+import { generateCategoryPrompt } from './prompts/category-prompts.ts';
 import { GenerateContentParams } from './types.ts';
 
 // Este archivo mantiene compatibilidad pero redirige al sistema completo de prompts

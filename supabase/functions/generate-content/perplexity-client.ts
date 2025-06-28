@@ -12,28 +12,28 @@ export class PerplexityClient {
       throw new Error('PERPLEXITY_API_KEY environment variable is required');
     }
     this.apiKey = apiKey;
-    console.log('🔑 Perplexity API Key configurada para Sonar Deep Research, longitud:', this.apiKey.length);
+    console.log('🔑 Perplexity API Key configurada para Sonar Pro, longitud:', this.apiKey.length);
   }
 
   async generateContent(prompt: string): Promise<any[]> {
-    console.log('🔍 === PERPLEXITY CLIENT CON SONAR DEEP RESEARCH ===');
+    console.log('🔍 === PERPLEXITY CLIENT CON SONAR PRO ===');
     console.log('📝 Prompt recibido (primeros 200 chars):', prompt.substring(0, 200));
     
-    // PRIMER INTENTO: Sonar Deep Research con timeout extendido
+    // PRIMER INTENTO: Sonar Pro (modelo principal)
     try {
-      return await this.tryDeepResearch(prompt);
+      return await this.trySonarPro(prompt);
     } catch (error) {
-      console.log('🔄 Sonar Deep Research falló, intentando con modelo estándar online...');
-      console.log('📄 Error Deep Research:', error.message);
+      console.log('🔄 Sonar Pro falló, intentando con modelo fallback...');
+      console.log('📄 Error Sonar Pro:', error.message);
       
-      // FALLBACK: Usar modelo estándar online
-      return await this.tryStandardOnline(prompt);
+      // FALLBACK: Usar modelo LLaMA
+      return await this.tryLlamaFallback(prompt);
     }
   }
 
-  private async tryDeepResearch(prompt: string): Promise<any[]> {
+  private async trySonarPro(prompt: string): Promise<any[]> {
     const requestBody = {
-      model: 'sonar-deep-research',
+      model: 'sonar-pro',
       messages: [
         {
           role: 'system',
@@ -45,7 +45,7 @@ export class PerplexityClient {
           - Si solicitan "Roquefort", genera SOLO Roquefort
           - NUNCA generes ingredientes alternativos o similares
 
-          🔍 INVESTIGACIÓN PROFUNDA:
+          🔍 INVESTIGACIÓN WEB:
           - Usa tu acceso a internet para buscar información real y actualizada
           - Consulta fuentes gastronómicas especializadas
           - Verifica denominaciones de origen y características específicas
@@ -57,7 +57,8 @@ export class PerplexityClient {
           - Italia: Metro Italia, mercados mayoristas
           - Denominaciones de origen oficiales
 
-          Responde SIEMPRE en formato JSON válido, sin comentarios adicionales.`
+          Responde SIEMPRE en formato JSON válido, sin comentarios adicionales.
+          NO uses etiquetas <think> ni otros elementos no-JSON.`
         },
         {
           role: 'user',
@@ -74,15 +75,15 @@ export class PerplexityClient {
       frequency_penalty: PERPLEXITY_CONFIG.frequency_penalty
     };
 
-    console.log('📡 Enviando consulta profunda a Sonar Deep Research (timeout: 300s)...');
+    console.log('📡 Enviando consulta a Sonar Pro (timeout: 120s)...');
     console.log('🔑 Usando API Key configurada correctamente');
     const startTime = Date.now();
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.log('⏰ TIMEOUT: Sonar Deep Research superó los 300 segundos');
+      console.log('⏰ TIMEOUT: Sonar Pro superó los 120 segundos');
       controller.abort();
-    }, 300000); // 5 minutos
+    }, 120000); // 2 minutos para Sonar Pro
 
     try {
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -97,18 +98,18 @@ export class PerplexityClient {
 
       clearTimeout(timeoutId);
       const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
-      console.log(`⏱️ Sonar Deep Research completado en ${elapsedTime} segundos`);
+      console.log(`⏱️ Sonar Pro completado en ${elapsedTime} segundos`);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Error de Sonar Deep Research:', response.status, response.statusText, errorText);
-        throw new Error(`Error de Sonar Deep Research: ${response.status} ${response.statusText}`);
+        console.error('❌ Error de Sonar Pro:', response.status, response.statusText, errorText);
+        throw new Error(`Error de Sonar Pro: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
       const generatedContent = data.choices[0].message.content;
       
-      console.log('📦 Respuesta recibida de Sonar Deep Research (primeros 300 chars):', generatedContent.substring(0, 300));
+      console.log('📦 Respuesta recibida de Sonar Pro (primeros 300 chars):', generatedContent.substring(0, 300));
 
       // Extraer y validar fuentes si están disponibles
       if (data.citations && data.citations.length > 0) {
@@ -122,11 +123,11 @@ export class PerplexityClient {
       const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
       
       if (error.name === 'AbortError') {
-        console.log(`⏰ TIMEOUT tras ${elapsedTime}s: Sonar Deep Research superó 5 minutos`);
-        throw new Error('TIMEOUT_DEEP_RESEARCH: Investigación demasiado compleja para Deep Research');
+        console.log(`⏰ TIMEOUT tras ${elapsedTime}s: Sonar Pro superó 2 minutos`);
+        throw new Error('TIMEOUT_SONAR_PRO: Investigación demasiado compleja para Sonar Pro');
       }
       
-      console.error('❌ Error detallado en Sonar Deep Research:', {
+      console.error('❌ Error detallado en Sonar Pro:', {
         name: error.name,
         message: error.message,
         stack: error.stack
@@ -135,11 +136,11 @@ export class PerplexityClient {
     }
   }
 
-  private async tryStandardOnline(prompt: string): Promise<any[]> {
-    console.log('🔄 === FALLBACK: Usando Sonar Online Estándar ===');
+  private async tryLlamaFallback(prompt: string): Promise<any[]> {
+    console.log('🔄 === FALLBACK: Usando LLaMA Sonar ===');
     
     const requestBody = {
-      model: 'sonar-online',
+      model: 'llama-3.1-sonar-small-128k-online',
       messages: [
         {
           role: 'system',
@@ -150,7 +151,7 @@ export class PerplexityClient {
           - NO generes ingredientes alternativos o similares
           - Usa tu acceso a internet para buscar información real
 
-          Responde SOLO con JSON válido, sin comentarios.`
+          Responde SOLO con JSON válido, sin comentarios ni etiquetas adicionales.`
         },
         {
           role: 'user',
@@ -158,7 +159,7 @@ export class PerplexityClient {
         }
       ],
       temperature: PERPLEXITY_CONFIG.temperature,
-      max_tokens: 2000,
+      max_tokens: 2500,
       top_p: PERPLEXITY_CONFIG.top_p,
       return_images: PERPLEXITY_CONFIG.return_images,
       return_related_questions: PERPLEXITY_CONFIG.return_related_questions,
@@ -166,7 +167,7 @@ export class PerplexityClient {
       frequency_penalty: PERPLEXITY_CONFIG.frequency_penalty
     };
 
-    console.log('📡 Ejecutando consulta con Sonar Online estándar (timeout: 60s)...');
+    console.log('📡 Ejecutando consulta con LLaMA Sonar (timeout: 60s)...');
     const startTime = Date.now();
 
     const controller = new AbortController();
@@ -185,18 +186,18 @@ export class PerplexityClient {
 
       clearTimeout(timeoutId);
       const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
-      console.log(`⚡ Sonar Online completado en ${elapsedTime} segundos`);
+      console.log(`⚡ LLaMA Sonar completado en ${elapsedTime} segundos`);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ Error de Sonar Online:', response.status, response.statusText, errorText);
-        throw new Error(`Error de Sonar Online: ${response.status} ${response.statusText}`);
+        console.error('❌ Error de LLaMA Sonar:', response.status, response.statusText, errorText);
+        throw new Error(`Error de LLaMA Sonar: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
       const generatedContent = data.choices[0].message.content;
       
-      console.log('📦 Respuesta recibida de Sonar Online (primeros 300 chars):', generatedContent.substring(0, 300));
+      console.log('📦 Respuesta recibida de LLaMA Sonar (primeros 300 chars):', generatedContent.substring(0, 300));
       
       return parseContent(generatedContent);
     } catch (error) {
@@ -204,11 +205,11 @@ export class PerplexityClient {
       const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
       
       if (error.name === 'AbortError') {
-        console.log(`⏰ TIMEOUT tras ${elapsedTime}s: Incluso Sonar Online falló`);
+        console.log(`⏰ TIMEOUT tras ${elapsedTime}s: LLaMA Sonar también falló`);
         throw new Error('TIMEOUT_ALL_MODELS: Todos los modelos de Perplexity fallaron por timeout');
       }
       
-      console.error('❌ Error detallado en Sonar Online:', error);
+      console.error('❌ Error detallado en LLaMA Sonar:', error);
       throw error;
     }
   }

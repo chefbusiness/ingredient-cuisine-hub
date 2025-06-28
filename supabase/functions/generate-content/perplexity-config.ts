@@ -1,7 +1,7 @@
 
 export const PERPLEXITY_CONFIG = {
-  model: 'sonar-deep-research',
-  fallback_model: 'sonar-online',
+  model: 'sonar-pro',
+  fallback_model: 'llama-3.1-sonar-small-128k-online',
   temperature: 0.1,
   max_tokens: 4000,
   top_p: 0.9,
@@ -23,4 +23,4 @@ export const PERPLEXITY_CONFIG = {
   ]
 } as const;
 
-console.log('⚙️ Perplexity config actualizada para Sonar Deep Research:', PERPLEXITY_CONFIG.model);
+console.log('⚙️ Perplexity config actualizada para Sonar Pro:', PERPLEXITY_CONFIG.model);

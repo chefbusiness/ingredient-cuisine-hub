@@ -8,7 +8,7 @@ export async function processAutomaticMode(
   category: string | undefined,
   existingIngredientsData: any[]
 ): Promise<any[]> {
-  console.log('🤖 === AUTOMATIC MODE: SONAR DEEP RESEARCH DECIDES INGREDIENTS ===');
+  console.log('🤖 === AUTOMATIC MODE: SONAR PRO DECIDES INGREDIENTS ===');
   
   const perplexity = new PerplexityClient();
   
@@ -21,18 +21,18 @@ export async function processAutomaticMode(
 
   const prompt = generatePrompt(params, existingIngredientsData);
   
-  console.log(`📡 Sending Deep Research request for ${count} random ingredients`);
+  console.log(`📡 Sending Sonar Pro request for ${count} random ingredients`);
   const response = await perplexity.generateContent(prompt);
   
   if (response && response.length > 0) {
     const generatedIngredients = response.map(ing => ({
       ...ing,
-      generated_with: 'sonar-deep-research'
+      generated_with: 'sonar-pro'
     }));
-    console.log(`✅ Successfully generated ${response.length} random ingredients with Deep Research`);
+    console.log(`✅ Successfully generated ${response.length} random ingredients with Sonar Pro`);
     return generatedIngredients;
   } else {
-    console.log('⚠️ No ingredients generated in automatic Deep Research mode');
+    console.log('⚠️ No ingredients generated in automatic Sonar Pro mode');
     return [];
   }
 }

@@ -3,6 +3,55 @@ import { generatePrompt } from './prompts.ts';
 import { PerplexityClient } from './perplexity-client.ts';
 import { GenerateContentParams } from './types.ts';
 
+// FUNCIONES DE VALIDACIÓN MOVIDAS DESDE save-generated-content/validation.ts
+const normalizeForComparison = (text: string): string => {
+  if (!text) return '';
+  return text.toLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ') // Normalizar espacios
+    .replace(/de\s+/gi, '') // Remover "de" pero conservar estructura
+    .replace(/del\s+/gi, '') // Remover "del" pero conservar estructura
+    .replace(/[áàä]/g, 'a')
+    .replace(/[éèë]/g, 'e') 
+    .replace(/[íìï]/g, 'i')
+    .replace(/[óòöô]/g, 'o')
+    .replace(/[úùüû]/g, 'u')
+    .replace(/ñ/g, 'n')
+    .replace(/ç/g, 'c');
+};
+
+const isSpecificDuplicate = (requestedName: string, existingIngredients: any[]): boolean => {
+  const normalizedRequested = normalizeForComparison(requestedName);
+  console.log(`🔍 Verificando duplicado específico para: "${requestedName}" -> normalizado: "${normalizedRequested}"`);
+  
+  const isDupe = existingIngredients.some(existing => {
+    const existingNames = [
+      existing.name,
+      existing.name_en,
+      existing.name_fr,
+      existing.name_it,
+      existing.name_pt,
+      existing.name_la
+    ].filter(Boolean);
+    
+    return existingNames.some(existingName => {
+      const normalizedExisting = normalizeForComparison(existingName);
+      
+      // SOLO comparación exacta - no más includes que causaba problemas
+      const isExactMatch = normalizedExisting === normalizedRequested;
+      
+      if (isExactMatch) {
+        console.log(`⚠️ DUPLICADO EXACTO ENCONTRADO: "${requestedName}" coincide con "${existingName}"`);
+      }
+      
+      return isExactMatch;
+    });
+  });
+  
+  console.log(`✅ Resultado verificación duplicado: ${isDupe ? 'ES DUPLICADO' : 'NO ES DUPLICADO'}`);
+  return isDupe;
+};
+
 export async function generateIngredientData(
   count: number, 
   category?: string, 
@@ -70,8 +119,7 @@ export async function generateIngredientData(
         console.log(`\n🔍 === PROCESSING INGREDIENT ${i + 1}/${validIngredients.length} ===`);
         console.log(`📝 Current ingredient: "${specificIngredient}"`);
         
-        // CORREGIDO: Pre-check for duplicates con algoritmo mejorado
-        const { isSpecificDuplicate } = await import('../save-generated-content/validation.ts');
+        // CORREGIDO: Pre-check for duplicates con algoritmo local
         const isDuplicate = isSpecificDuplicate(specificIngredient, existingIngredientsData);
         
         if (isDuplicate) {

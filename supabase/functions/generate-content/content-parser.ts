@@ -1,6 +1,6 @@
 
 export function parseContent(content: string): any[] {
-  console.log('🔍 === PARSEANDO CONTENIDO PERPLEXITY OPTIMIZADO ===');
+  console.log('🔍 === PARSEANDO CONTENIDO PERPLEXITY MEJORADO PARA MANUAL ===');
   console.log('📄 Contenido recibido longitud:', content.length, 'chars');
   
   try {
@@ -10,7 +10,7 @@ export function parseContent(content: string): any[] {
     // Remover bloques de código markdown si existen
     cleanContent = cleanContent.replace(/```json\s*/gi, '').replace(/```\s*/gi, '');
     
-    // Buscar el JSON más grande (array o objeto)
+    // MEJORADO: Buscar múltiples patrones JSON
     const arrayMatch = cleanContent.match(/\[[\s\S]*\]/);
     const objectMatch = cleanContent.match(/\{[\s\S]*\}/);
     
@@ -30,11 +30,13 @@ export function parseContent(content: string): any[] {
     console.log('📝 JSON extraído longitud:', jsonContent.length, 'chars');
     console.log('📝 Primeros 300 chars:', jsonContent.substring(0, 300));
     
-    // Limpiar comentarios y texto adicional dentro del JSON
+    // MEJORADO: Limpiar más agresivamente comentarios y errores de formato
     jsonContent = jsonContent
       .replace(/\/\/[^\n\r]*/g, '') // Remover comentarios de línea
       .replace(/\/\*[\s\S]*?\*\//g, '') // Remover comentarios de bloque
-      .replace(/,(\s*[}\]])/g, '$1'); // Remover comas finales
+      .replace(/,(\s*[}\]])/g, '$1') // Remover comas finales
+      .replace(/,\s*,/g, ',') // Remover comas dobles
+      .replace(/}\s*{/g, '},{'); // Corregir objetos mal separados
     
     // Intentar parsear JSON
     const parsed = JSON.parse(jsonContent);
@@ -58,17 +60,23 @@ export function parseContent(content: string): any[] {
     });
     
     console.log('✅ Elementos válidos después de filtrado:', validElements.length);
+    
+    // NUEVO: Log detallado de cada ingrediente para debugging
+    validElements.forEach((item, idx) => {
+      console.log(`📋 Ingrediente ${idx + 1}: "${item.name}" - Categoría: "${item.category}"`);
+    });
+    
     return validElements;
     
   } catch (error) {
     console.error('❌ Error parseando contenido:', error.message);
     console.error('📄 Contenido problemático (primeros 1000 chars):', content.substring(0, 1000));
     
-    // Intentar extracción más agresiva con regex
+    // MEJORADO: Extracción más agresiva con regex para contenido largo
     try {
-      console.log('🔄 Intentando extracción agresiva con regex...');
+      console.log('🔄 Intentando extracción agresiva mejorada...');
       
-      // Buscar múltiples objetos JSON individuales
+      // Buscar múltiples objetos JSON individuales con mejor regex
       const objectMatches = content.match(/\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g);
       if (objectMatches && objectMatches.length > 0) {
         console.log('🔍 Encontrados', objectMatches.length, 'objetos JSON individuales');
@@ -76,9 +84,15 @@ export function parseContent(content: string): any[] {
         const parsedObjects = [];
         for (const match of objectMatches) {
           try {
-            const obj = JSON.parse(match);
+            // Limpiar cada objeto individualmente
+            const cleanMatch = match
+              .replace(/\/\/[^\n\r]*/g, '')
+              .replace(/,(\s*[}\]])/g, '$1');
+              
+            const obj = JSON.parse(cleanMatch);
             if (obj.name || obj.error === 'DUPLICADO_DETECTADO') {
               parsedObjects.push(obj);
+              console.log(`✅ Objeto parseado: "${obj.name}"`);
             }
           } catch (parseError) {
             console.log('⚠️ Error parseando objeto individual:', parseError.message);
@@ -91,15 +105,19 @@ export function parseContent(content: string): any[] {
         }
       }
       
-      // Último recurso: buscar array JSON
-      const arrayMatch = content.match(/\[[\s\S]*\]/);
-      if (arrayMatch) {
-        const extracted = JSON.parse(arrayMatch[0]);
-        console.log('✅ Array JSON extraído como último recurso');
+      // Último recurso: buscar array JSON con regex más flexible
+      const flexibleArrayMatch = content.match(/\[[^\[\]]*(?:\{[^{}]*\}[^\[\]]*)*\]/);
+      if (flexibleArrayMatch) {
+        const cleanArray = flexibleArrayMatch[0]
+          .replace(/\/\/[^\n\r]*/g, '')
+          .replace(/,(\s*[}\]])/g, '$1');
+          
+        const extracted = JSON.parse(cleanArray);
+        console.log('✅ Array JSON extraído con regex flexible');
         return Array.isArray(extracted) ? extracted : [extracted];
       }
     } catch (regexError) {
-      console.error('❌ Error con extracción agresiva:', regexError.message);
+      console.error('❌ Error con extracción agresiva mejorada:', regexError.message);
     }
     
     throw new Error('No se pudo parsear el contenido como JSON válido: ' + error.message);

@@ -24,6 +24,14 @@ export async function processIngredients(data: any[], userEmail: string): Promis
   data: any[]; 
   summary: ProcessingSummary 
 }> {
+  console.log('🔄 === PROCESAMIENTO MEJORADO DE INGREDIENTES ===');
+  console.log('📋 Ingredientes recibidos para procesar:', data.length);
+  
+  // Enhanced logging for each ingredient received
+  data.forEach((ingredient, idx) => {
+    console.log(`📝 Ingrediente ${idx + 1}: "${ingredient.name}" - Categoría: "${ingredient.category}"`);
+  });
+
   // Validate all ingredients
   for (const ingredient of data) {
     if (!validateIngredientData(ingredient)) {
@@ -50,13 +58,19 @@ export async function processIngredients(data: any[], userEmail: string): Promis
   let successfullyCreated = 0;
   
   for (const ingredient of data) {
-    console.log('🔄 Procesando ingrediente:', ingredient.name, 'con categoría:', ingredient.category);
+    console.log('🔄 === PROCESANDO INGREDIENTE INDIVIDUAL ===');
+    console.log('📋 Nombre:', ingredient.name);
+    console.log('📋 Categoría:', ingredient.category);
+    console.log('📋 Descripción longitud:', ingredient.description?.length || 0);
     
     // Sanitize input data
     const sanitizedIngredient = sanitizeIngredientData(ingredient);
     
-    // Check for duplicates
-    if (isDuplicate(sanitizedIngredient, existingIngredients || [])) {
+    // MEJORADO: Check for duplicates con logging detallado
+    console.log('🔍 === VERIFICACIÓN DE DUPLICADOS DETALLADA ===');
+    const duplicateCheck = isDuplicate(sanitizedIngredient, existingIngredients || []);
+    
+    if (duplicateCheck) {
       console.log(`⚠️ DUPLICADO DETECTADO: ${sanitizedIngredient.name} ya existe, saltando...`);
       duplicatesFound++;
       results.push({
@@ -68,6 +82,8 @@ export async function processIngredients(data: any[], userEmail: string): Promis
       });
       continue;
     }
+    
+    console.log(`✅ NO ES DUPLICADO: ${sanitizedIngredient.name} será creado`);
     
     // Validate language completeness
     const languageCheck = validateLanguageCompleteness(sanitizedIngredient);
@@ -96,6 +112,13 @@ export async function processIngredients(data: any[], userEmail: string): Promis
       popularity: sanitizedIngredient.popularity
     };
 
+    console.log('💾 === CREANDO INGREDIENTE EN BD ===');
+    console.log('📋 Datos a insertar:', {
+      name: ingredientData.name,
+      name_en: ingredientData.name_en,
+      category_id: categoryId
+    });
+
     const { data: newIngredient, error: ingredientError } = await supabase
       .from('ingredients')
       .insert(ingredientData)
@@ -104,6 +127,7 @@ export async function processIngredients(data: any[], userEmail: string): Promis
 
     if (ingredientError) {
       console.error('❌ Error creando ingrediente:', ingredientError);
+      console.error('📋 Datos que causaron error:', ingredientData);
       throw ingredientError;
     }
 
@@ -139,6 +163,8 @@ export async function processIngredients(data: any[], userEmail: string): Promis
       missing_languages: languageCheck.missing,
       success: true
     });
+    
+    console.log(`✅ INGREDIENTE COMPLETADO: ${sanitizedIngredient.name}`);
   }
 
   // Log the admin action
@@ -158,7 +184,7 @@ export async function processIngredients(data: any[], userEmail: string): Promis
     console.log('⚠️ Failed to log admin action:', logError);
   }
 
-  console.log('🎉 === RESUMEN DE PROCESAMIENTO MULTI-PAÍS ===');
+  console.log('🎉 === RESUMEN DE PROCESAMIENTO MEJORADO ===');
   console.log(`✅ Ingredientes creados exitosamente: ${successfullyCreated}`);
   console.log(`⚠️ Duplicados detectados y omitidos: ${duplicatesFound}`);
   console.log(`📊 Datos preparados para generación de imágenes: ${savedIngredientsData.length}`);

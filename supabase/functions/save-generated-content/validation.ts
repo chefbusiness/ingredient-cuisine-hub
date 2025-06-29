@@ -31,8 +31,12 @@ const normalizeForComparison = (text: string): string => {
     .replace(/ç/g, 'c');
 };
 
-// Función mejorada para verificar si un ingrediente es duplicado con detección PRECISA
+// CORREGIDO: Función menos agresiva para modo manual
 export const isDuplicate = (newIngredient: any, existingIngredients: any[]): boolean => {
+  console.log(`🔍 === VERIFICACIÓN DE DUPLICADO MEJORADA ===`);
+  console.log(`📋 Verificando: "${newIngredient.name}"`);
+  console.log(`📊 Contra ${existingIngredients.length} ingredientes existentes`);
+  
   // Get all variations of the new ingredient name
   const newNames = [
     normalizeForComparison(newIngredient.name),
@@ -44,8 +48,10 @@ export const isDuplicate = (newIngredient: any, existingIngredients: any[]): boo
     normalizeForComparison(newIngredient.name_la)
   ].filter(Boolean);
   
+  console.log(`📝 Nombres a verificar: ${newNames.join(', ')}`);
+  
   // Check against all existing ingredients
-  return existingIngredients.some(existing => {
+  const isDupe = existingIngredients.some(existing => {
     const existingNames = [
       normalizeForComparison(existing.name),
       normalizeForComparison(existing.name_en),
@@ -56,18 +62,30 @@ export const isDuplicate = (newIngredient: any, existingIngredients: any[]): boo
       normalizeForComparison(existing.name_la)
     ].filter(Boolean);
     
-    // CORREGIDO: Solo coincidencia EXACTA, no includes que causaba falsos positivos
-    return existingNames.some(existingName => {
-      if (!existingName || existingName.length < 2) return false;
+    // CORREGIDO: Solo coincidencia EXACTA y con longitud mínima de 3 caracteres
+    const hasMatch = existingNames.some(existingName => {
+      if (!existingName || existingName.length < 3) return false;
       
       return newNames.some(newName => {
-        if (!newName || newName.length < 2) return false;
+        if (!newName || newName.length < 3) return false;
         
-        // SOLO comparación exacta para evitar "cabrales" vs "manchego"
-        return existingName === newName;
+        // SOLO comparación exacta para evitar falsos positivos
+        const isExactMatch = existingName === newName;
+        
+        if (isExactMatch) {
+          console.log(`⚠️ DUPLICADO EXACTO: "${newName}" === "${existingName}"`);
+          console.log(`🔍 Ingrediente existente: "${existing.name}"`);
+        }
+        
+        return isExactMatch;
       });
     });
+    
+    return hasMatch;
   });
+  
+  console.log(`✅ Resultado final: ${isDupe ? '🚫 ES DUPLICADO' : '✅ NO ES DUPLICADO'}`);
+  return isDupe;
 };
 
 // CORREGIDA: Función específica para modo manual con verificación exacta

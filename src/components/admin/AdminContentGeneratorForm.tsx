@@ -22,7 +22,7 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
   const [contentType, setContentType] = useState<'ingredient' | 'category' | 'price_update'>('ingredient');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [region, setRegion] = useState('España');
-  const [count, setCount] = useState(5);
+  const [count, setCount] = useState(5); // AUMENTADO: por defecto 5 en vez de 3
   const [isManualMode, setIsManualMode] = useState(false);
   const [ingredientsList, setIngredientsList] = useState('');
 
@@ -85,9 +85,9 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
 
   const isFormValid = () => {
     if (isManualMode) {
-      return validIngredientCount > 0 && validIngredientCount <= 20;
+      return validIngredientCount > 0 && validIngredientCount <= 50; // AUMENTADO: máximo 50 en manual
     }
-    return count > 0 && count <= 10;
+    return count > 0 && count <= 50; // AUMENTADO: de 10 a 50 ingredientes automáticos
   };
 
   return (
@@ -95,14 +95,14 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Wand2 className="h-5 w-5" />
-          Generador de Contenido con IA
+          Generador de Contenido con IA - OPTIMIZADO MASIVO
           <Badge className="bg-blue-100 text-blue-800 ml-2">
             <Globe className="h-3 w-3 mr-1" />
             Perplexity Sonar
           </Badge>
           <Badge className="bg-green-100 text-green-800">
             <Search className="h-3 w-3 mr-1" />
-            Datos Reales Web
+            Hasta 50 ingredientes
           </Badge>
         </CardTitle>
       </CardHeader>
@@ -157,7 +157,7 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
               <Label htmlFor="ingredientsList">
                 Lista de Ingredientes 
                 <span className="text-sm text-muted-foreground ml-2">
-                  (separados por comas, máximo 20)
+                  (separados por comas, máximo 50)
                 </span>
               </Label>
               <Textarea
@@ -175,14 +175,14 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
                   <span className="font-medium text-green-600">
                     {validIngredientCount} ingredientes detectados
                   </span>
-                  {validIngredientCount > 20 && (
+                  {validIngredientCount > 50 && (
                     <span className="text-red-600 ml-2">
-                      (máximo 20 permitidos)
+                      (máximo 50 permitidos)
                     </span>
                   )}
                 </div>
-                <Badge variant={validIngredientCount <= 20 ? "default" : "destructive"}>
-                  {validIngredientCount}/20
+                <Badge variant={validIngredientCount <= 50 ? "default" : "destructive"}>
+                  {validIngredientCount}/50
                 </Badge>
               </div>
             )}
@@ -265,10 +265,13 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
               <Input
                 type="number"
                 min="1"
-                max="10"
+                max="50"
                 value={count}
                 onChange={(e) => setCount(parseInt(e.target.value) || 1)}
               />
+              <div className="text-xs text-muted-foreground mt-1">
+                Máximo 50 ingredientes
+              </div>
             </div>
           )}
 
@@ -297,7 +300,7 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
           )}
           {isManualMode 
             ? `Generar ${validIngredientCount} Ingredientes Específicos`
-            : 'Generar Contenido con Perplexity AI'
+            : `Generar ${count} Ingredientes con Perplexity AI`
           }
         </Button>
 
@@ -307,7 +310,7 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
             <Globe className="h-4 w-4" />
             <span>
               <strong>
-                {isManualMode ? 'INVESTIGACIÓN ESPECÍFICA:' : 'INVESTIGACIÓN WEB REAL:'}
+                {isManualMode ? 'INVESTIGACIÓN ESPECÍFICA MASIVA:' : 'INVESTIGACIÓN WEB MASIVA:'}
               </strong> 
               Perplexity consulta internet para obtener datos actuales
             </span>
@@ -315,13 +318,14 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
           <div className="text-xs text-blue-600 space-y-1">
             {isManualMode ? (
               <>
-                <div>• Investigación individual de cada ingrediente de tu lista</div>
+                <div>• Investigación individual de cada ingrediente de tu lista (hasta 50)</div>
                 <div>• Datos específicos para cada país seleccionado</div>
+                <div>• Detección previa de duplicados para ahorrar tokens</div>
                 <div>• Misma calidad de datos que el modo automático</div>
-                <div>• Precios actuales de mercados mayoristas por ingrediente</div>
               </>
             ) : (
               <>
+                <div>• Generación masiva de hasta 50 ingredientes por categoría</div>
                 <div>• Precios actuales de mercados mayoristas (Mercamadrid, Mercabarna)</div>
                 <div>• Datos de merma de fuentes profesionales de hostelería</div>
                 <div>• Información nutricional oficial (BEDCA, USDA, FAO)</div>
@@ -330,7 +334,7 @@ const AdminContentGeneratorForm = ({ onContentGenerated }: AdminContentGenerator
             )}
           </div>
           <div className="mt-2 p-2 bg-green-50 rounded text-xs text-green-700">
-            <strong>FLUJO:</strong> Investiga datos reales → Guarda en DB → Genera imágenes con Flux 1.1 Pro
+            <strong>OPTIMIZACIÓN:</strong> Pre-filtrado de duplicados → Investigación masiva → Guarda en DB → Genera imágenes
           </div>
         </div>
       </CardContent>

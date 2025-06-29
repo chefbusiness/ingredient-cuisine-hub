@@ -7,7 +7,6 @@ import { Ingredient } from "@/hooks/useIngredients";
 import { useResponsive } from "@/hooks/useResponsive";
 import AdBanner from "@/components/AdBanner";
 import LatestIngredientsSection from "./LatestIngredientsSection";
-import RelatedIngredientsSection from "./RelatedIngredientsSection";
 
 interface IngredientSidebarProps {
   ingredient: Ingredient;
@@ -127,15 +126,6 @@ const IngredientSidebar = ({
 
       {/* Latest Ingredients */}
       <LatestIngredientsSection />
-
-      {/* Related Ingredients */}
-      {ingredient.category_id && (
-        <RelatedIngredientsSection 
-          categoryId={ingredient.category_id}
-          currentIngredientId={ingredient.id}
-          categoryName={ingredient.categories?.name}
-        />
-      )}
 
       {/* AI Chef Pro Suite Banner */}
       <AdBanner

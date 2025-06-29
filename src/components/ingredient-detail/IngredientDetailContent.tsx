@@ -6,6 +6,7 @@ import { useResponsive } from "@/hooks/useResponsive";
 import IngredientMainCard from "@/components/ingredient-detail/IngredientMainCard";
 import IngredientTabs from "@/components/ingredient-detail/IngredientTabs";
 import IngredientSidebar from "@/components/ingredient-detail/IngredientSidebar";
+import RelatedIngredientsSectionBelowTabs from "@/components/ingredient-detail/RelatedIngredientsSectionBelowTabs";
 import GlobalSearchBar from "@/components/GlobalSearchBar";
 import AdBanner from "@/components/AdBanner";
 import { Ingredient } from "@/hooks/useIngredients";
@@ -66,7 +67,7 @@ const IngredientDetailContent = ({
         </div>
 
         {/* Global Search Bar */}
-        <div className={`flex ${isMobile ? 'justify-center mb-4' : 'justify-center mb-6'}`}>
+        <div className="flex justify-center">
           <GlobalSearchBar />
         </div>
 
@@ -90,6 +91,15 @@ const IngredientDetailContent = ({
               activeTab={activeTab}
               onTabChange={setActiveTab}
             />
+
+            {/* Related Ingredients Section - Debajo de las pestañas */}
+            {ingredient.category_id && (
+              <RelatedIngredientsSectionBelowTabs 
+                categoryId={ingredient.category_id}
+                currentIngredientId={ingredient.id}
+                categoryName={ingredient.categories?.name}
+              />
+            )}
           </div>
 
           {/* Right Column - Sidebar */}

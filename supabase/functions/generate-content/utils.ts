@@ -52,21 +52,6 @@ const isSpecificDuplicate = (requestedName: string, existingIngredients: any[]):
   return isDupe;
 };
 
-// NUEVA FUNCIÓN: Pre-filtrado masivo de duplicados por categoría
-const getExistingIngredientsByCategory = (existingIngredients: any[], category?: string): string[] => {
-  if (!category) return [];
-  
-  const categoryIngredients = existingIngredients
-    .filter(ing => ing.categories?.name === category)
-    .map(ing => [ing.name, ing.name_en, ing.name_fr, ing.name_it, ing.name_pt, ing.name_la])
-    .flat()
-    .filter(Boolean)
-    .map(name => normalizeForComparison(name));
-  
-  console.log(`📊 Ingredientes existentes en categoría "${category}":`, categoryIngredients.length);
-  return categoryIngredients;
-};
-
 export async function generateIngredientData(
   count: number, 
   category?: string, 
@@ -110,8 +95,8 @@ export async function generateIngredientData(
     let generatedIngredients: any[] = [];
 
     if (ingredientsList && ingredientsList.length > 0) {
-      // MODO MANUAL MASIVO: Procesamiento optimizado de listas grandes
-      console.log('🎯 === MODO MANUAL MASIVO - PROCESAMIENTO OPTIMIZADO ===');
+      // MODO MANUAL MASIVO: CORREGIDO - Sin procesamiento por lotes innecesario
+      console.log('🎯 === MODO MANUAL MASIVO - PROCESAMIENTO DIRECTO RESTAURADO ===');
       console.log('📝 Ingredients to process:', ingredientsList.length);
       
       // OPTIMIZACIÓN: Pre-filtrar duplicados para ahorrar tokens
@@ -147,62 +132,37 @@ export async function generateIngredientData(
         return duplicateIngredients;
       }
       
-      // Limit processing for manual mode to prevent timeouts
-      const maxIngredientsManual = Math.min(nonDuplicateIngredients.length, 50);
-      const ingredientsToProcess = nonDuplicateIngredients.slice(0, maxIngredientsManual);
+      // CORREGIDO: Procesamiento directo de toda la lista sin lotes
+      console.log(`🔧 Procesando TODA LA LISTA de ${nonDuplicateIngredients.length} ingredientes de una vez`);
       
-      console.log(`🔧 Procesando ${ingredientsToProcess.length} ingredientes no duplicados (límite: 50)`);
-      
-      // PROCESAMIENTO EN LOTES para modo manual masivo
-      const batchSize = Math.min(ingredientsToProcess.length, 10); // Procesar hasta 10 a la vez
-      const batches = [];
-      for (let i = 0; i < ingredientsToProcess.length; i += batchSize) {
-        batches.push(ingredientsToProcess.slice(i, i + batchSize));
-      }
-      
-      console.log(`📦 Dividido en ${batches.length} lotes de máximo ${batchSize} ingredientes`);
-      
-      for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
-        const batch = batches[batchIndex];
-        console.log(`\n🔄 PROCESANDO LOTE ${batchIndex + 1}/${batches.length} - ${batch.length} ingredientes`);
-        
-        try {
-          const params: GenerateContentParams = {
-            type: 'ingredient',
-            count: batch.length,
-            category,
-            region: 'España',
-            ingredientsList: batch
-          };
+      try {
+        const params: GenerateContentParams = {
+          type: 'ingredient',
+          count: nonDuplicateIngredients.length,
+          category,
+          region: 'España',
+          ingredientsList: nonDuplicateIngredients // TODA la lista filtrada
+        };
 
-          console.log(`📋 Generating prompt for batch: ${batch.join(', ')}`);
-          const prompt = generatePrompt(params, existingIngredientsData);
-          
-          console.log(`📡 Sending batch request to Perplexity for: ${batch.length} ingredients`);
-          
-          const response = await perplexity.generateContent(prompt);
-          console.log(`📦 Perplexity response for batch ${batchIndex + 1}:`, {
-            success: !!response,
-            length: response?.length || 0,
-            hasData: response && response.length > 0
-          });
-          
-          if (response && response.length > 0) {
-            generatedIngredients.push(...response);
-            console.log(`✅ Successfully generated ${response.length} ingredients from batch ${batchIndex + 1}`);
-          }
-          
-          // Delay between batches to respect rate limits
-          if (batchIndex < batches.length - 1) {
-            const delay = 3000; // 3 segundos entre lotes
-            console.log(`⏸️ Waiting ${delay/1000} seconds before next batch...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-          }
-          
-        } catch (error) {
-          console.error(`❌ Error processing batch ${batchIndex + 1}:`, error);
-          // Continue with next batch even if one fails
+        console.log(`📋 Generating prompt for complete list: ${nonDuplicateIngredients.join(', ')}`);
+        const prompt = generatePrompt(params, existingIngredientsData);
+        
+        console.log(`📡 Sending COMPLETE LIST request to Perplexity for: ${nonDuplicateIngredients.length} ingredients`);
+        
+        const response = await perplexity.generateContent(prompt);
+        console.log(`📦 Perplexity response:`, {
+          success: !!response,
+          length: response?.length || 0,
+          hasData: response && response.length > 0
+        });
+        
+        if (response && response.length > 0) {
+          generatedIngredients.push(...response);
+          console.log(`✅ Successfully generated ${response.length} ingredients from complete list`);
         }
+        
+      } catch (error) {
+        console.error(`❌ Error processing complete ingredients list:`, error);
       }
       
       // Combinar resultados generados con duplicados detectados
@@ -217,15 +177,9 @@ export async function generateIngredientData(
       return successfulIngredients;
       
     } else {
-      // MODO AUTOMÁTICO MASIVO: Optimizado para generar muchos ingredientes
+      // MODO AUTOMÁTICO MASIVO: Sin cambios
       console.log('🤖 === MODO AUTOMÁTICO MASIVO: PERPLEXITY DECIDE MÚLTIPLES INGREDIENTES ===');
       console.log(`🎯 Solicitando ${count} ingredientes automáticos`);
-      
-      // OPTIMIZACIÓN: Pre-analizar categoría para evitar duplicados comunes
-      const existingInCategory = category ? getExistingIngredientsByCategory(existingIngredientsData, category) : [];
-      if (existingInCategory.length > 0) {
-        console.log(`💡 OPTIMIZACIÓN: ${existingInCategory.length} ingredientes ya existen en categoría "${category}"`);
-      }
       
       const params: GenerateContentParams = {
         type: 'ingredient',
@@ -249,7 +203,7 @@ export async function generateIngredientData(
 
     console.log(`🎉 === GENERACIÓN MASIVA COMPLETADA ===`);
     console.log(`📊 Total ingredients generated: ${generatedIngredients.length}`);
-    console.log(`🔧 Mode: ${ingredientsList && ingredientsList.length > 0 ? 'Manual Masivo (Lista Específica)' : 'Automático Masivo (Perplexity Decide)'}`);
+    console.log(`🔧 Mode: ${ingredientsList && ingredientsList.length > 0 ? 'Manual Masivo (Lista Específica - CORREGIDO)' : 'Automático Masivo (Perplexity Decide)'}`);
     console.log(`💰 Optimización de tokens: ${ingredientsList ? 'Pre-filtrado de duplicados activado' : 'Detección inteligente en prompt'}`);
     
     // Log generated ingredient names for verification

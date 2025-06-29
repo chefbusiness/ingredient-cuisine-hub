@@ -41,39 +41,48 @@ const IngredientMainCard = ({
                   alt={ingredient.name}
                   className="w-full h-full object-cover rounded-lg shadow-lg"
                 />
-                <Button 
-                  size="sm" 
-                  variant="secondary"
-                  onClick={onGenerateImage}
-                  disabled={isGeneratingImage}
-                  className="absolute bottom-2 right-2 text-xs"
-                >
-                  {isGeneratingImage ? 'Generando...' : 'Regenerar'}
-                </Button>
+                {isSuperAdmin && (
+                  <Button 
+                    size="sm" 
+                    variant="secondary"
+                    onClick={onGenerateImage}
+                    disabled={isGeneratingImage}
+                    className="absolute bottom-2 right-2 text-xs"
+                  >
+                    {isGeneratingImage ? 'Generando...' : 'Regenerar'}
+                  </Button>
+                )}
               </div>
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg shadow-lg flex items-center justify-center">
-                <div className="text-center">
-                  <Camera className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                  <p className="text-sm text-gray-500 mb-4">Sin imagen generada</p>
-                  <Button 
-                    onClick={onGenerateImage}
-                    disabled={isGeneratingImage}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    {isGeneratingImage ? (
-                      <div className="flex items-center gap-2">
-                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                        Generando...
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Zap className="h-4 w-4" />
-                        Generar con Flux 1.1 Pro
-                      </div>
-                    )}
-                  </Button>
-                </div>
+                {isSuperAdmin ? (
+                  <div className="text-center">
+                    <Camera className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500 mb-4">Sin imagen generada</p>
+                    <Button 
+                      onClick={onGenerateImage}
+                      disabled={isGeneratingImage}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      {isGeneratingImage ? (
+                        <div className="flex items-center gap-2">
+                          <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                          Generando...
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Zap className="h-4 w-4" />
+                          Generar con Flux 1.1 Pro
+                        </div>
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-center">
+                    <Camera className="h-12 w-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-sm text-gray-500">Imagen no disponible</p>
+                  </div>
+                )}
               </div>
             )}
           </div>

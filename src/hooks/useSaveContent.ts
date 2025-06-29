@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -8,13 +7,13 @@ export const useSaveContent = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async ({ type, data }: { type: string; data: any[] }) => {
+    mutationFn: async ({ type, data, isManualMode }: { type: string; data: any[]; isManualMode?: boolean }) => {
       console.log('💾 === ENHANCED SAVE CONTENT PROCESS ===');
-      console.log('📋 Input data:', { type, count: data.length });
+      console.log('📋 Input data:', { type, count: data.length, isManualMode: isManualMode || false });
       
-      // PASO 1: Guardar contenido
+      // PASO 1: Guardar contenido con parámetro de modo manual
       const { data: result, error } = await supabase.functions.invoke('save-generated-content', {
-        body: { type, data }
+        body: { type, data, isManualMode: isManualMode || false }
       });
 
       if (error) {
@@ -31,10 +30,10 @@ export const useSaveContent = () => {
         success: result.success,
         hasResults: !!result.results,
         resultCount: result.results?.length || 0,
-        hasSummary: !!result.summary
+        hasSummary: !!result.summary,
+        manualMode: isManualMode || false
       });
 
-      // PASO 2: Para ingredientes, verificar datos guardados y preparar para generación
       if (type === 'ingredient' && result.results) {
         console.log('🔍 === VERIFICATION OF SAVED INGREDIENTS ===');
         
@@ -83,7 +82,8 @@ export const useSaveContent = () => {
         type: type,
         success: result.success,
         dataCount: result.data?.length || 0,
-        ready_for_image_generation: type === 'ingredient' && result.data?.length > 0
+        ready_for_image_generation: type === 'ingredient' && result.data?.length > 0,
+        manual_mode: isManualMode || false
       });
 
       return result;
@@ -94,12 +94,12 @@ export const useSaveContent = () => {
       queryClient.invalidateQueries({ queryKey: ['ingredients'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       
-      const { type } = variables;
+      const { type, isManualMode } = variables;
       const savedCount = result.data?.length || 0;
       
       toast({
         title: "✅ Contenido guardado exitosamente",
-        description: `${savedCount} ${type === 'ingredient' ? 'ingredientes' : 'elementos'} guardados en la base de datos`,
+        description: `${savedCount} ${type === 'ingredient' ? 'ingredientes' : 'elementos'} guardados en ${isManualMode ? 'modo manual' : 'modo automático'}`,
       });
     },
     onError: (error) => {

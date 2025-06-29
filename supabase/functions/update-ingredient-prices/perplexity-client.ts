@@ -18,9 +18,9 @@ export class PerplexityClient {
   }
 
   async generateContent(prompt: string): Promise<any[]> {
-    console.log('🔍 === INVESTIGACIÓN PROFUNDA CON SONAR DEEP RESEARCH PARA HOSTELERÍA ===');
+    console.log('🔍 === INVESTIGACIÓN MASIVA CON SONAR DEEP RESEARCH PARA HOSTELERÍA ===');
     
-    // PRIMER INTENTO: Sonar Deep Research con timeout extendido
+    // PRIMER INTENTO: Sonar Deep Research con timeout extendido para generación masiva
     try {
       return await this.tryDeepResearch(prompt);
     } catch (error) {
@@ -58,6 +58,12 @@ export class PerplexityClient {
           - Italia: Metro Italia → mercados mayoristas → distribuidores ristorazione
           - EEUU: Restaurant Depot → US Foods → Sysco
           
+          🚀 GENERACIÓN MASIVA OPTIMIZADA:
+          - Puedes generar múltiples ingredientes por respuesta (hasta 50)
+          - Mantén la calidad de datos para cada ingrediente individual
+          - Estructura el JSON como array de objetos
+          - Evita duplicados consultando la lista proporcionada
+          
           IMPORTANTE: Responde SOLO con JSON válido, sin comentarios adicionales ni texto explicativo.
           NO incluyas comentarios dentro del JSON (como // No disponible).
           
@@ -69,7 +75,7 @@ export class PerplexityClient {
         }
       ],
       temperature: 0.1,
-      max_tokens: 3000,
+      max_tokens: 20000, // AUMENTADO: Para soportar múltiples ingredientes
       top_p: 0.9,
       return_images: false,
       return_related_questions: false,
@@ -86,15 +92,15 @@ export class PerplexityClient {
       frequency_penalty: 1.0
     };
 
-    console.log('📡 Enviando consulta profunda a Sonar Deep Research (timeout: 300s)...');
+    console.log('📡 Enviando consulta masiva a Sonar Deep Research (timeout: 450s)...');
     console.log('🔑 Usando API Key configurada correctamente');
     const startTime = Date.now();
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.log('⏰ TIMEOUT: Sonar Deep Research superó los 300 segundos');
+      console.log('⏰ TIMEOUT: Sonar Deep Research superó los 450 segundos');
       controller.abort();
-    }, 300000);
+    }, 450000); // AUMENTADO: 7.5 minutos para generación masiva
 
     try {
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -120,7 +126,8 @@ export class PerplexityClient {
       const data = await response.json();
       const generatedContent = data.choices[0].message.content;
       
-      console.log('📦 Respuesta recibida de Sonar Deep Research (primeros 200 chars):', generatedContent.substring(0, 200));
+      console.log('📦 Respuesta masiva recibida de Sonar Deep Research (longitud):', generatedContent.length);
+      console.log('📦 Primeros 400 chars:', generatedContent.substring(0, 400));
       
       return this.parseContent(generatedContent);
     } catch (error) {
@@ -128,8 +135,8 @@ export class PerplexityClient {
       const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
       
       if (error.name === 'AbortError') {
-        console.log(`⏰ TIMEOUT tras ${elapsedTime}s: Sonar Deep Research superó 5 minutos - Muy complejo para Deep Research`);
-        throw new Error('TIMEOUT_DEEP_RESEARCH: Investigación demasiado compleja para Deep Research');
+        console.log(`⏰ TIMEOUT tras ${elapsedTime}s: Sonar Deep Research superó 7.5 minutos - Muy complejo para Deep Research`);
+        throw new Error('TIMEOUT_DEEP_RESEARCH: Investigación masiva demasiado compleja para Deep Research');
       }
       
       console.error('❌ Error detallado en Deep Research:', {
@@ -142,7 +149,7 @@ export class PerplexityClient {
   }
 
   private async tryStandardOnline(prompt: string): Promise<any[]> {
-    console.log('🔄 === FALLBACK: Usando modelo estándar corregido ===');
+    console.log('🔄 === FALLBACK: Usando modelo estándar masivo ===');
     
     const requestBody = {
       model: 'llama-3.1-sonar-small-128k-online', // CORREGIDO: modelo válido
@@ -160,6 +167,8 @@ export class PerplexityClient {
           - Restaurant Depot (EEUU)
           - Metro (Francia)
           
+          Puedes generar múltiples ingredientes por respuesta manteniendo calidad.
+          
           Responde SOLO con JSON válido, sin comentarios.`
         },
         {
@@ -168,7 +177,7 @@ export class PerplexityClient {
         }
       ],
       temperature: 0.2,
-      max_tokens: 2000,
+      max_tokens: 15000, // AUMENTADO: Para múltiples ingredientes en fallback
       top_p: 0.9,
       return_images: false,
       return_related_questions: false,
@@ -176,11 +185,11 @@ export class PerplexityClient {
       frequency_penalty: 1.0
     };
 
-    console.log('📡 Ejecutando consulta con modelo estándar corregido (timeout: 60s)...');
+    console.log('📡 Ejecutando consulta masiva con modelo estándar (timeout: 120s)...');
     const startTime = Date.now();
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // AUMENTADO: 2 minutos
 
     try {
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -195,7 +204,7 @@ export class PerplexityClient {
 
       clearTimeout(timeoutId);
       const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
-      console.log(`⚡ Modelo estándar completado en ${elapsedTime} segundos`);
+      console.log(`⚡ Modelo estándar masivo completado en ${elapsedTime} segundos`);
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -206,7 +215,8 @@ export class PerplexityClient {
       const data = await response.json();
       const generatedContent = data.choices[0].message.content;
       
-      console.log('📦 Respuesta recibida del modelo estándar (primeros 200 chars):', generatedContent.substring(0, 200));
+      console.log('📦 Respuesta masiva recibida del modelo estándar (longitud):', generatedContent.length);
+      console.log('📦 Primeros 400 chars:', generatedContent.substring(0, 400));
       
       return this.parseContent(generatedContent);
     } catch (error) {
@@ -214,8 +224,8 @@ export class PerplexityClient {
       const elapsedTime = ((Date.now() - startTime) / 1000).toFixed(1);
       
       if (error.name === 'AbortError') {
-        console.log(`⏰ TIMEOUT tras ${elapsedTime}s: Incluso el modelo estándar falló`);
-        throw new Error('TIMEOUT_ALL_MODELS: Todos los modelos de Perplexity fallaron por timeout');
+        console.log(`⏰ TIMEOUT tras ${elapsedTime}s: Incluso el modelo estándar masivo falló`);
+        throw new Error('TIMEOUT_ALL_MODELS: Todos los modelos de Perplexity fallaron por timeout en generación masiva');
       }
       
       console.error('❌ Error detallado en modelo estándar:', {
@@ -231,19 +241,24 @@ export class PerplexityClient {
     try {
       let cleanContent = content;
       
+      // Remover bloques de código markdown
       const jsonMatch = content.match(/```json\s*([\s\S]*?)\s*```/);
       if (jsonMatch) {
         cleanContent = jsonMatch[1];
       }
       
+      // Limpiar comentarios
       cleanContent = cleanContent.replace(/\/\/[^\n\r]*/g, '');
       cleanContent = cleanContent.replace(/\/\*[\s\S]*?\*\//g, '');
       
       const parsed = JSON.parse(cleanContent);
-      return Array.isArray(parsed) ? parsed : [parsed];
+      const result = Array.isArray(parsed) ? parsed : [parsed];
+      
+      console.log('✅ Contenido masivo parseado:', result.length, 'ingredientes');
+      return result;
     } catch (error) {
-      console.error('❌ Error parsing JSON:', error);
-      console.error('📄 Contenido completo recibido:', content);
+      console.error('❌ Error parsing JSON masivo:', error);
+      console.error('📄 Contenido completo recibido (primeros 1500 chars):', content.substring(0, 1500));
       return [];
     }
   }

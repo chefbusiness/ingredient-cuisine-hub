@@ -18,12 +18,21 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
-export async function processIngredients(data: any[], userEmail: string): Promise<{ 
+export async function processIngredients(data: any[], userEmail: string, isManualMode: boolean = false): Promise<{ 
   success: boolean; 
   results: ProcessingResult[]; 
   data: any[]; 
   summary: ProcessingSummary 
 }> {
+  console.log(`🔄 === PROCESAMIENTO ${isManualMode ? 'MODO MANUAL ULTRA-PERMISIVO' : 'MODO AUTOMÁTICO ESTRICTO'} DE INGREDIENTES ===`);
+  console.log('📋 Ingredientes recibidos para procesar:', data.length);
+  console.log('🔑 Usuario ejecutando:', userEmail);
+  
+  // Enhanced logging for each ingredient received
+  data.forEach((ingredient, idx) => {
+    console.log(`📝 Ingrediente ${idx + 1}: "${ingredient.name}" - Categoría: "${ingredient.category}"`);
+  });
+
   // Validate all ingredients
   for (const ingredient of data) {
     if (!validateIngredientData(ingredient)) {
@@ -50,24 +59,32 @@ export async function processIngredients(data: any[], userEmail: string): Promis
   let successfullyCreated = 0;
   
   for (const ingredient of data) {
-    console.log('🔄 Procesando ingrediente:', ingredient.name, 'con categoría:', ingredient.category);
+    console.log(`🔄 === PROCESANDO INGREDIENTE INDIVIDUAL ${isManualMode ? '(MODO MANUAL ULTRA-PERMISIVO)' : '(MODO AUTOMÁTICO ESTRICTO)'} ===`);
+    console.log('📋 Nombre:', ingredient.name);
+    console.log('📋 Categoría:', ingredient.category);
+    console.log('📋 Descripción longitud:', ingredient.description?.length || 0);
     
     // Sanitize input data
     const sanitizedIngredient = sanitizeIngredientData(ingredient);
     
-    // Check for duplicates
-    if (isDuplicate(sanitizedIngredient, existingIngredients || [])) {
-      console.log(`⚠️ DUPLICADO DETECTADO: ${sanitizedIngredient.name} ya existe, saltando...`);
+    // VERIFICACIÓN DE DUPLICADOS CON ALGORITMO ESPECÍFICO POR MODO
+    console.log(`🔍 === VERIFICACIÓN DE DUPLICADOS CON ALGORITMO ${isManualMode ? 'ULTRA-PERMISIVO' : 'ESTRICTO'} ===`);
+    const duplicateCheck = isDuplicate(sanitizedIngredient, existingIngredients || [], isManualMode);
+    
+    if (duplicateCheck) {
+      console.log(`⚠️ DUPLICADO DETECTADO: ${sanitizedIngredient.name} ${isManualMode ? 'es 100% idéntico a uno existente' : 'ya existe con normalización estricta'}, saltando...`);
       duplicatesFound++;
       results.push({
         name: sanitizedIngredient.name,
         category: sanitizedIngredient.category,
         success: false,
-        reason: 'duplicate',
+        reason: isManualMode ? 'duplicate_identical' : 'duplicate',
         skipped: true
       });
       continue;
     }
+    
+    console.log(`✅ ${isManualMode ? 'NO ES IDÉNTICO' : 'NO ES DUPLICADO'}: ${sanitizedIngredient.name} será creado`);
     
     // Validate language completeness
     const languageCheck = validateLanguageCompleteness(sanitizedIngredient);
@@ -96,6 +113,13 @@ export async function processIngredients(data: any[], userEmail: string): Promis
       popularity: sanitizedIngredient.popularity
     };
 
+    console.log('💾 === CREANDO INGREDIENTE EN BD ===');
+    console.log('📋 Datos a insertar:', {
+      name: ingredientData.name,
+      name_en: ingredientData.name_en,
+      category_id: categoryId
+    });
+
     const { data: newIngredient, error: ingredientError } = await supabase
       .from('ingredients')
       .insert(ingredientData)
@@ -104,6 +128,7 @@ export async function processIngredients(data: any[], userEmail: string): Promis
 
     if (ingredientError) {
       console.error('❌ Error creando ingrediente:', ingredientError);
+      console.error('📋 Datos que causaron error:', ingredientData);
       throw ingredientError;
     }
 
@@ -139,30 +164,40 @@ export async function processIngredients(data: any[], userEmail: string): Promis
       missing_languages: languageCheck.missing,
       success: true
     });
+    
+    console.log(`✅ INGREDIENTE COMPLETADO: ${sanitizedIngredient.name}`);
   }
 
-  // Log the admin action
+  // AUDIT LOG OPCIONAL Y SEGURO
+  console.log('📝 === INTENTANDO REGISTRAR AUDIT LOG (OPCIONAL) ===');
   try {
+    // Intentar log del audit con manejo de errores
     await supabase.rpc('log_admin_action', {
-      action_type: 'save_ingredients_multicountry',
+      action_type: isManualMode ? 'save_ingredients_manual_ultra_permissive' : 'save_ingredients_automatic_strict',
       resource_type: 'ingredient',
       action_details: {
         total_processed: data.length,
         successfully_created: successfullyCreated,
         duplicates_skipped: duplicatesFound,
         user_email: userEmail,
+        manual_mode: isManualMode,
+        ultra_permissive: isManualMode,
         multi_country_pricing: true
       }
     });
+    console.log('✅ Audit log registrado exitosamente');
   } catch (logError) {
-    console.log('⚠️ Failed to log admin action:', logError);
+    console.log('⚠️ AUDIT LOG FALLÓ (NO CRÍTICO):', logError);
+    console.log('⚠️ Los ingredientes se guardaron correctamente, solo falló el log de auditoría');
+    // NO lanzar error - permitir que continúe el proceso
   }
 
-  console.log('🎉 === RESUMEN DE PROCESAMIENTO MULTI-PAÍS ===');
+  console.log(`🎉 === RESUMEN DE PROCESAMIENTO ${isManualMode ? 'MODO MANUAL ULTRA-PERMISIVO' : 'MODO AUTOMÁTICO ESTRICTO'} ===`);
   console.log(`✅ Ingredientes creados exitosamente: ${successfullyCreated}`);
   console.log(`⚠️ Duplicados detectados y omitidos: ${duplicatesFound}`);
   console.log(`📊 Datos preparados para generación de imágenes: ${savedIngredientsData.length}`);
   console.log(`🌍 Precios procesados para múltiples países por ingrediente`);
+  console.log(`🎯 Algoritmo utilizado: ${isManualMode ? 'ULTRA-PERMISIVO (solo idénticos)' : 'ESTRICTO (normalización avanzada)'}`);
 
   return {
     success: true,
@@ -172,7 +207,9 @@ export async function processIngredients(data: any[], userEmail: string): Promis
       total_processed: data.length,
       successfully_created: successfullyCreated,
       duplicates_skipped: duplicatesFound,
-      multi_country_pricing_enabled: true
+      multi_country_pricing_enabled: true,
+      manual_mode: isManualMode,
+      ultra_permissive_mode: isManualMode
     }
   };
 }

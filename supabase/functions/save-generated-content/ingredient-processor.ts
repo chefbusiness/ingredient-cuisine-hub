@@ -18,13 +18,13 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
-export async function processIngredients(data: any[], userEmail: string): Promise<{ 
+export async function processIngredients(data: any[], userEmail: string, isManualMode: boolean = false): Promise<{ 
   success: boolean; 
   results: ProcessingResult[]; 
   data: any[]; 
   summary: ProcessingSummary 
 }> {
-  console.log('🔄 === PROCESAMIENTO MEJORADO DE INGREDIENTES ===');
+  console.log(`🔄 === PROCESAMIENTO ${isManualMode ? 'MODO MANUAL' : 'MODO AUTOMÁTICO'} DE INGREDIENTES ===`);
   console.log('📋 Ingredientes recibidos para procesar:', data.length);
   
   // Enhanced logging for each ingredient received
@@ -58,7 +58,7 @@ export async function processIngredients(data: any[], userEmail: string): Promis
   let successfullyCreated = 0;
   
   for (const ingredient of data) {
-    console.log('🔄 === PROCESANDO INGREDIENTE INDIVIDUAL ===');
+    console.log(`🔄 === PROCESANDO INGREDIENTE INDIVIDUAL ${isManualMode ? '(MODO MANUAL)' : '(MODO AUTOMÁTICO)'} ===`);
     console.log('📋 Nombre:', ingredient.name);
     console.log('📋 Categoría:', ingredient.category);
     console.log('📋 Descripción longitud:', ingredient.description?.length || 0);
@@ -66,9 +66,9 @@ export async function processIngredients(data: any[], userEmail: string): Promis
     // Sanitize input data
     const sanitizedIngredient = sanitizeIngredientData(ingredient);
     
-    // MEJORADO: Check for duplicates con logging detallado
-    console.log('🔍 === VERIFICACIÓN DE DUPLICADOS DETALLADA ===');
-    const duplicateCheck = isDuplicate(sanitizedIngredient, existingIngredients || []);
+    // CORREGIDO: Pasar el parámetro isManualMode a la función de duplicados
+    console.log('🔍 === VERIFICACIÓN DE DUPLICADOS CON MODO ESPECÍFICO ===');
+    const duplicateCheck = isDuplicate(sanitizedIngredient, existingIngredients || [], isManualMode);
     
     if (duplicateCheck) {
       console.log(`⚠️ DUPLICADO DETECTADO: ${sanitizedIngredient.name} ya existe, saltando...`);
@@ -170,13 +170,14 @@ export async function processIngredients(data: any[], userEmail: string): Promis
   // Log the admin action
   try {
     await supabase.rpc('log_admin_action', {
-      action_type: 'save_ingredients_multicountry',
+      action_type: isManualMode ? 'save_ingredients_manual_mode' : 'save_ingredients_multicountry',
       resource_type: 'ingredient',
       action_details: {
         total_processed: data.length,
         successfully_created: successfullyCreated,
         duplicates_skipped: duplicatesFound,
         user_email: userEmail,
+        manual_mode: isManualMode,
         multi_country_pricing: true
       }
     });
@@ -184,7 +185,7 @@ export async function processIngredients(data: any[], userEmail: string): Promis
     console.log('⚠️ Failed to log admin action:', logError);
   }
 
-  console.log('🎉 === RESUMEN DE PROCESAMIENTO MEJORADO ===');
+  console.log(`🎉 === RESUMEN DE PROCESAMIENTO ${isManualMode ? 'MODO MANUAL' : 'MODO AUTOMÁTICO'} ===`);
   console.log(`✅ Ingredientes creados exitosamente: ${successfullyCreated}`);
   console.log(`⚠️ Duplicados detectados y omitidos: ${duplicatesFound}`);
   console.log(`📊 Datos preparados para generación de imágenes: ${savedIngredientsData.length}`);
@@ -198,7 +199,8 @@ export async function processIngredients(data: any[], userEmail: string): Promis
       total_processed: data.length,
       successfully_created: successfullyCreated,
       duplicates_skipped: duplicatesFound,
-      multi_country_pricing_enabled: true
+      multi_country_pricing_enabled: true,
+      manual_mode: isManualMode
     }
   };
 }

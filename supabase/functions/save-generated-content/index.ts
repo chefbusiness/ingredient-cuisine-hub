@@ -39,7 +39,7 @@ serve(async (req) => {
 
     console.log('✅ Authorization successful, processing save request...');
 
-    const { type, data } = await req.json();
+    const { type, data, isManualMode } = await req.json();
 
     // Input validation
     if (!type || !['ingredient', 'category'].includes(type)) {
@@ -73,10 +73,10 @@ serve(async (req) => {
       });
     }
 
-    console.log(`📋 Processing ${data.length} ${type}(s) for user: ${authResult.userEmail}`);
+    console.log(`📋 Processing ${data.length} ${type}(s) for user: ${authResult.userEmail} ${isManualMode ? '(MODO MANUAL)' : '(MODO AUTOMÁTICO)'}`);
 
     if (type === 'ingredient') {
-      const result = await processIngredients(data, authResult.userEmail!);
+      const result = await processIngredients(data, authResult.userEmail!, isManualMode || false);
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

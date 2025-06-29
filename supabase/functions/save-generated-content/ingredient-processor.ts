@@ -26,6 +26,7 @@ export async function processIngredients(data: any[], userEmail: string, isManua
 }> {
   console.log(`🔄 === PROCESAMIENTO ${isManualMode ? 'MODO MANUAL ULTRA-PERMISIVO' : 'MODO AUTOMÁTICO ESTRICTO'} DE INGREDIENTES ===`);
   console.log('📋 Ingredientes recibidos para procesar:', data.length);
+  console.log('🔑 Usuario ejecutando:', userEmail);
   
   // Enhanced logging for each ingredient received
   data.forEach((ingredient, idx) => {
@@ -167,8 +168,10 @@ export async function processIngredients(data: any[], userEmail: string, isManua
     console.log(`✅ INGREDIENTE COMPLETADO: ${sanitizedIngredient.name}`);
   }
 
-  // Log the admin action
+  // AUDIT LOG OPCIONAL Y SEGURO
+  console.log('📝 === INTENTANDO REGISTRAR AUDIT LOG (OPCIONAL) ===');
   try {
+    // Intentar log del audit con manejo de errores
     await supabase.rpc('log_admin_action', {
       action_type: isManualMode ? 'save_ingredients_manual_ultra_permissive' : 'save_ingredients_automatic_strict',
       resource_type: 'ingredient',
@@ -182,8 +185,11 @@ export async function processIngredients(data: any[], userEmail: string, isManua
         multi_country_pricing: true
       }
     });
+    console.log('✅ Audit log registrado exitosamente');
   } catch (logError) {
-    console.log('⚠️ Failed to log admin action:', logError);
+    console.log('⚠️ AUDIT LOG FALLÓ (NO CRÍTICO):', logError);
+    console.log('⚠️ Los ingredientes se guardaron correctamente, solo falló el log de auditoría');
+    // NO lanzar error - permitir que continúe el proceso
   }
 
   console.log(`🎉 === RESUMEN DE PROCESAMIENTO ${isManualMode ? 'MODO MANUAL ULTRA-PERMISIVO' : 'MODO AUTOMÁTICO ESTRICTO'} ===`);

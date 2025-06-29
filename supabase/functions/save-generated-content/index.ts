@@ -15,7 +15,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('🔄 Processing save-generated-content request...');
+    console.log('🔄 === SAVE-GENERATED-CONTENT INICIANDO CON AUDIT LOG SEGURO ===');
     
     // Security check: Verify super admin access
     const authHeader = req.headers.get('authorization');
@@ -38,6 +38,7 @@ serve(async (req) => {
     }
 
     console.log('✅ Authorization successful, processing save request...');
+    console.log('🔑 Usuario autenticado:', authResult.userEmail);
 
     const { type, data, isManualMode } = await req.json();
 
@@ -73,10 +74,19 @@ serve(async (req) => {
       });
     }
 
-    console.log(`📋 Processing ${data.length} ${type}(s) for user: ${authResult.userEmail} ${isManualMode ? '(MODO MANUAL)' : '(MODO AUTOMÁTICO)'}`);
+    console.log(`📋 Processing ${data.length} ${type}(s) for user: ${authResult.userEmail} ${isManualMode ? '(MODO MANUAL ULTRA-PERMISIVO)' : '(MODO AUTOMÁTICO ESTRICTO)'}`);
 
     if (type === 'ingredient') {
       const result = await processIngredients(data, authResult.userEmail!, isManualMode || false);
+      
+      console.log('🎉 === PROCESAMIENTO DE INGREDIENTES COMPLETADO ===');
+      console.log('📊 Resultado final:', {
+        success: result.success,
+        created: result.summary.successfully_created,
+        duplicates: result.summary.duplicates_skipped,
+        mode: isManualMode ? 'MANUAL_ULTRA_PERMISSIVE' : 'AUTOMATIC_STRICT'
+      });
+      
       return new Response(JSON.stringify(result), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -92,10 +102,15 @@ serve(async (req) => {
     throw new Error('Tipo de contenido no soportado');
 
   } catch (error) {
-    console.error('❌ Error en save-generated-content:', error);
+    console.error('❌ === ERROR CRÍTICO EN SAVE-GENERATED-CONTENT ===');
+    console.error('❌ Error details:', error);
+    console.error('❌ Error message:', error.message);
+    console.error('❌ Error stack:', error.stack);
+    
     return new Response(JSON.stringify({ 
       error: error.message,
-      success: false 
+      success: false,
+      details: 'Check function logs for more information'
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

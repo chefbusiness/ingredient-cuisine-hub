@@ -1,6 +1,4 @@
 
-import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
 import { PageLimitBanner } from "@/components/auth/PageLimitBanner";
 import { useResponsive } from "@/hooks/useResponsive";
 import IngredientMainCard from "@/components/ingredient-detail/IngredientMainCard";
@@ -46,7 +44,7 @@ const IngredientDetailContent = ({
 
   return (
     <main className="flex-1">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6">
         {/* Banner de límite de páginas */}
         {remainingViews !== null && (
           <PageLimitBanner 
@@ -55,19 +53,8 @@ const IngredientDetailContent = ({
           />
         )}
 
-        {/* Botón volver */}
-        <div className={isMobile ? 'mb-4' : 'mb-6'}>
-          <Link 
-            to="/directorio" 
-            className="inline-flex items-center space-x-2 text-green-600 hover:text-green-700 transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span className={isMobile ? 'text-sm' : ''}>Volver al directorio</span>
-          </Link>
-        </div>
-
-        {/* Global Search Bar */}
-        <div className="flex justify-center">
+        {/* Global Search Bar - Ancho completo y responsive */}
+        <div className="w-full mb-6">
           <GlobalSearchBar />
         </div>
 

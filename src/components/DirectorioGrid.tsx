@@ -1,3 +1,4 @@
+
 import { TrendingUp, Camera, Sparkles, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -102,7 +103,7 @@ const DirectorioGrid = ({ ingredients }: DirectorioGridProps) => {
                   }}
                 />
                 {getImageBadge(ingredient)}
-                <div className={`absolute top-1.5 right-8 flex items-center space-x-1 bg-background/90 rounded-md px-1.5 py-0.5 ${isMobile ? 'text-xs' : 'text-xs'}`}>
+                <div className={`absolute top-1.5 flex items-center space-x-1 bg-background/90 rounded-md px-1.5 py-0.5 ${isMobile ? 'text-xs right-12' : 'text-xs right-16'}`}>
                   <TrendingUp className={`text-primary ${isMobile ? 'h-2.5 w-2.5' : 'h-3 w-3'}`} />
                   <span className="font-medium text-foreground">
                     {ingredient.popularity}%
@@ -160,7 +161,7 @@ const DirectorioGrid = ({ ingredients }: DirectorioGridProps) => {
             size="sm"
             className={`absolute z-10 bg-background/90 hover:bg-background ${
               isFavorite(String(ingredient.id)) ? 'text-red-500' : 'text-muted-foreground'
-            } ${isMobile ? 'top-1.5 right-1.5 h-6 w-6 p-0' : 'top-2 right-12 h-8 w-8 p-0'}`}
+            } ${isMobile ? 'top-1.5 right-1.5 h-6 w-6 p-0' : 'top-2 right-2 h-8 w-8 p-0'}`}
             onClick={(e) => handleFavoriteClick(e, String(ingredient.id))}
           >
             <Heart 

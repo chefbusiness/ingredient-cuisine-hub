@@ -1,3 +1,4 @@
+
 import { TrendingUp, Camera, Sparkles, Heart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -109,7 +110,7 @@ const DirectorioList = ({ ingredients }: DirectorioListProps) => {
                       </div>
                       
                       {!isMobile && (
-                        <div className="flex items-center space-x-1 bg-background/90 rounded-md px-2 py-1 ml-2">
+                        <div className="flex items-center space-x-1 bg-background/90 rounded-md px-2 py-1 ml-4">
                           <TrendingUp className="h-3 w-3 text-primary" />
                           <span className="text-xs font-medium text-foreground">
                             {ingredient.popularity}%

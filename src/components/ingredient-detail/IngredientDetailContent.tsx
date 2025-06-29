@@ -1,4 +1,3 @@
-
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { PageLimitBanner } from "@/components/auth/PageLimitBanner";
@@ -70,6 +69,9 @@ const IngredientDetailContent = ({
               primaryImage={primaryImage}
               onGenerateImage={handleGenerateImage}
               isGeneratingImage={isGeneratingImage}
+              onToggleFavorite={handleToggleFavorite}
+              isFavorite={isFavorite(ingredient?.id || "")}
+              isToggleFavoriteLoading={favoritesLoading}
             />
             
             <IngredientTabs 

@@ -1,5 +1,4 @@
-
-import { Camera, TrendingUp, Zap } from "lucide-react";
+import { Camera, TrendingUp, Zap, Sparkles, Heart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,15 +12,48 @@ interface IngredientMainCardProps {
   primaryImage?: string;
   onGenerateImage: () => void;
   isGeneratingImage: boolean;
+  onToggleFavorite?: () => void;
+  isFavorite?: boolean;
+  isToggleFavoriteLoading?: boolean;
 }
 
 const IngredientMainCard = ({ 
   ingredient, 
   primaryImage, 
   onGenerateImage, 
-  isGeneratingImage 
+  isGeneratingImage,
+  onToggleFavorite,
+  isFavorite,
+  isToggleFavoriteLoading
 }: IngredientMainCardProps) => {
   const { isSuperAdmin } = useSuperAdmin();
+
+  const getImageBadge = () => {
+    const badgeClass = "absolute top-1.5 left-1.5 text-white text-xs px-1.5 py-0.5 rounded flex items-center gap-1";
+    
+    if (ingredient.real_image_url) {
+      return (
+        <div className={`${badgeClass} bg-green-500/90`}>
+          <Camera className="h-2.5 w-2.5" />
+          <span>Real</span>
+        </div>
+      );
+    } else if (ingredient.image_url) {
+      return (
+        <div className={`${badgeClass} bg-blue-500/90`}>
+          <Sparkles className="h-2.5 w-2.5" />
+          <span>IA</span>
+        </div>
+      );
+    } else {
+      return (
+        <div className={`${badgeClass} bg-orange-500/90`}>
+          <Camera className="h-2.5 w-2.5" />
+          <span>Sin imagen</span>
+        </div>
+      );
+    }
+  };
 
   return (
     <Card className="bg-white/90">
@@ -33,7 +65,7 @@ const IngredientMainCard = ({
         )}
         
         <div className="flex flex-col md:flex-row gap-6">
-          <div className="md:w-64 h-64 flex-shrink-0">
+          <div className="md:w-64 h-64 flex-shrink-0 relative">
             {primaryImage ? (
               <div className="relative w-full h-full">
                 <img
@@ -41,6 +73,36 @@ const IngredientMainCard = ({
                   alt={ingredient.name}
                   className="w-full h-full object-cover rounded-lg shadow-lg"
                 />
+                
+                {/* Image type badge */}
+                {getImageBadge()}
+                
+                {/* Popularity badge */}
+                <div className="absolute top-1.5 right-12 flex items-center space-x-1 bg-background/90 rounded-md px-1.5 py-0.5 text-xs">
+                  <TrendingUp className="h-2.5 w-2.5 text-primary" />
+                  <span className="font-medium text-foreground">
+                    {ingredient.popularity}%
+                  </span>
+                </div>
+
+                {/* Favorite button */}
+                {onToggleFavorite && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`absolute top-1.5 right-1.5 z-10 bg-background/90 hover:bg-background h-6 w-6 p-0 ${
+                      isFavorite ? 'text-red-500' : 'text-muted-foreground'
+                    }`}
+                    onClick={onToggleFavorite}
+                    disabled={isToggleFavoriteLoading}
+                  >
+                    <Heart 
+                      className={`h-3 w-3 ${isFavorite ? 'fill-current' : ''}`} 
+                    />
+                  </Button>
+                )}
+
+                {/* Super admin regenerate button */}
                 {isSuperAdmin && (
                   <Button 
                     size="sm" 
@@ -54,7 +116,35 @@ const IngredientMainCard = ({
                 )}
               </div>
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg shadow-lg flex items-center justify-center">
+              <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg shadow-lg flex items-center justify-center relative">
+                {/* Image type badge for no image */}
+                {getImageBadge()}
+                
+                {/* Popularity badge */}
+                <div className="absolute top-1.5 right-12 flex items-center space-x-1 bg-background/90 rounded-md px-1.5 py-0.5 text-xs">
+                  <TrendingUp className="h-2.5 w-2.5 text-primary" />
+                  <span className="font-medium text-foreground">
+                    {ingredient.popularity}%
+                  </span>
+                </div>
+
+                {/* Favorite button */}
+                {onToggleFavorite && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`absolute top-1.5 right-1.5 z-10 bg-background/90 hover:bg-background h-6 w-6 p-0 ${
+                      isFavorite ? 'text-red-500' : 'text-muted-foreground'
+                    }`}
+                    onClick={onToggleFavorite}
+                    disabled={isToggleFavoriteLoading}
+                  >
+                    <Heart 
+                      className={`h-3 w-3 ${isFavorite ? 'fill-current' : ''}`} 
+                    />
+                  </Button>
+                )}
+
                 {isSuperAdmin ? (
                   <div className="text-center">
                     <Camera className="h-12 w-12 text-gray-400 mx-auto mb-3" />

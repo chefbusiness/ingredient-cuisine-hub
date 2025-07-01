@@ -1,3 +1,4 @@
+
 import { TrendingUp, Flame, Eye, Camera, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";

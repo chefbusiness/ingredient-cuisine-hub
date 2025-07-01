@@ -108,6 +108,10 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return newProfile;
       });
 
+      // Forzar recarga del perfil para asegurar sincronización
+      console.log('🔄 Force refreshing profile to ensure sync...');
+      await loadProfile();
+
       toast({
         title: "Perfil actualizado",
         description: "Los cambios se han guardado correctamente"
@@ -216,7 +220,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       console.log('🔗 Public URL obtained:', publicUrl);
       console.log('🔄 About to update profile with new avatar URL');
 
-      // Actualizar perfil con nueva URL
+      // Actualizar perfil con nueva URL usando nuestro método updateProfile
       await updateProfile({ avatar_url: publicUrl });
 
       console.log('✅ Avatar upload process completed successfully');

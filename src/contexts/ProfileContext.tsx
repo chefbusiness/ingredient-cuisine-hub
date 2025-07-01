@@ -61,7 +61,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
       
       console.log('✅ Profile loaded successfully:', data);
-      console.log('🖼️ Current avatar_url in profile:', (data as any)?.avatar_url);
+      console.log('🖼️ Current avatar_url in profile:', data?.avatar_url);
       setProfile(data as UserProfile);
     } catch (error) {
       console.error('❌ Error loading profile:', error);
@@ -100,13 +100,13 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       console.log('✅ Database update successful');
 
-      // Actualizar estado local inmediatamente
-      setProfile(prev => prev ? { ...prev, ...updates } : null);
-      console.log('🔄 Local profile state updated');
-
-      // Forzar recarga del perfil para asegurar sincronización
-      console.log('🔄 Reloading profile to ensure sync...');
-      await loadProfile();
+      // Actualizar estado local inmediatamente con la nueva información
+      setProfile(prev => {
+        const newProfile = prev ? { ...prev, ...updateData } : null;
+        console.log('🔄 Updated local profile state:', newProfile);
+        console.log('🖼️ New avatar_url in state:', newProfile?.avatar_url);
+        return newProfile;
+      });
 
       toast({
         title: "Perfil actualizado",
@@ -214,8 +214,9 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
         .getPublicUrl(fileName);
 
       console.log('🔗 Public URL obtained:', publicUrl);
+      console.log('🔄 About to update profile with new avatar URL');
 
-      // Actualizar perfil con nueva URL y forzar recarga
+      // Actualizar perfil con nueva URL
       await updateProfile({ avatar_url: publicUrl });
 
       console.log('✅ Avatar upload process completed successfully');

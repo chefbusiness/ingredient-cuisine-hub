@@ -30,6 +30,7 @@ export const useUserProfile = () => {
   const loadProfile = async () => {
     if (!user) return;
 
+    console.log('🔍 Loading profile for user:', user.id);
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -38,10 +39,16 @@ export const useUserProfile = () => {
         .eq('id', user.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Error loading profile:', error);
+        throw error;
+      }
+      
+      console.log('✅ Profile loaded successfully:', data);
+      console.log('🖼️ Current avatar_url in profile:', data?.avatar_url);
       setProfile(data);
     } catch (error) {
-      console.error('Error loading profile:', error);
+      console.error('❌ Error loading profile:', error);
       toast({
         title: "Error",
         description: "No se pudo cargar el perfil",
@@ -55,25 +62,42 @@ export const useUserProfile = () => {
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!user) return;
 
+    console.log('📝 Updating profile with data:', updates);
     setUpdating(true);
     try {
+      const updateData = {
+        ...updates,
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('📤 Sending update to database:', updateData);
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ Database update error:', error);
+        throw error;
+      }
 
+      console.log('✅ Database update successful');
+
+      // Actualizar estado local
       setProfile(prev => prev ? { ...prev, ...updates } : null);
+      console.log('🔄 Local profile state updated');
+
+      // Forzar recarga del perfil para asegurar sincronización
+      console.log('🔄 Reloading profile to ensure sync...');
+      await loadProfile();
+
       toast({
         title: "Perfil actualizado",
         description: "Los cambios se han guardado correctamente"
       });
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error('❌ Error updating profile:', error);
       toast({
         title: "Error",
         description: "No se pudo actualizar el perfil",
@@ -140,16 +164,20 @@ export const useUserProfile = () => {
 
   const uploadAvatar = async (file: File) => {
     if (!user) {
-      console.error('No user found for avatar upload');
+      console.error('❌ No user found for avatar upload');
       return;
     }
+
+    console.log('🚀 Starting avatar upload process...');
+    console.log('📁 File details:', { name: file.name, size: file.size, type: file.type });
+    console.log('👤 User ID:', user.id);
 
     setUpdating(true);
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/avatar.${fileExt}`;
 
-      console.log('Uploading avatar:', { fileName, fileSize: file.size, userId: user.id });
+      console.log('📤 Uploading to storage with filename:', fileName);
 
       // Subir archivo con upsert para sobrescribir automáticamente
       const { error: uploadError } = await supabase.storage
@@ -160,23 +188,24 @@ export const useUserProfile = () => {
         });
 
       if (uploadError) {
-        console.error('Storage upload error:', uploadError);
+        console.error('❌ Storage upload error:', uploadError);
         throw new Error(`Error de subida: ${uploadError.message}`);
       }
 
-      console.log('Upload successful, getting public URL');
+      console.log('✅ Upload successful, getting public URL');
 
       // Obtener URL pública
       const { data: { publicUrl } } = supabase.storage
         .from('profile-avatars')
         .getPublicUrl(fileName);
 
-      console.log('Public URL obtained:', publicUrl);
+      console.log('🔗 Public URL obtained:', publicUrl);
 
       // Actualizar perfil con nueva URL
+      console.log('📝 Updating profile with avatar URL...');
       await updateProfile({ avatar_url: publicUrl });
 
-      console.log('Profile updated successfully with new avatar URL');
+      console.log('✅ Avatar upload process completed successfully');
 
       toast({
         title: "Avatar actualizado",
@@ -184,7 +213,7 @@ export const useUserProfile = () => {
       });
 
     } catch (error) {
-      console.error('Error in uploadAvatar function:', error);
+      console.error('❌ Error in uploadAvatar function:', error);
       toast({
         title: "Error",
         description: `No se pudo subir la foto de perfil: ${error.message}`,

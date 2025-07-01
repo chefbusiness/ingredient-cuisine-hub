@@ -1,4 +1,3 @@
-
 import UnifiedHeader from "@/components/UnifiedHeader";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
@@ -7,6 +6,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { Ingredient } from "@/hooks/useIngredients";
 import { generateIngredientSchema, generateBreadcrumbSchema } from "@/utils/seoSchemas";
+import { capitalize } from "@/lib/utils";
 
 interface IngredientDetailLayoutProps {
   ingredient?: Ingredient;
@@ -52,6 +52,11 @@ const IngredientDetailLayout = ({
   
   const breadcrumbItems = ingredient ? [
     { name: "Directorio", url: "/directorio" },
+    // Agregar categoría si existe
+    ...(ingredient.categories?.name ? [{
+      name: capitalize(ingredient.categories.name),
+      url: `/directorio?category=${encodeURIComponent(ingredient.categories.name)}`
+    }] : []),
     { 
       name: ingredient.name, 
       url: ingredient.slug 
@@ -64,6 +69,11 @@ const IngredientDetailLayout = ({
   const breadcrumbSchemaItems = ingredient ? [
     { name: "Inicio", url: BASE_URL },
     { name: "Directorio", url: `${BASE_URL}/directorio` },
+    // Agregar categoría al schema si existe
+    ...(ingredient.categories?.name ? [{
+      name: capitalize(ingredient.categories.name),
+      url: `${BASE_URL}/directorio?category=${encodeURIComponent(ingredient.categories.name)}`
+    }] : []),
     { 
       name: ingredient.name, 
       url: ingredient.slug 

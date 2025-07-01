@@ -1,10 +1,11 @@
+
 import { Camera, TrendingUp, Zap, Sparkles, Heart } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Ingredient } from "@/hooks/useIngredients";
 import StructuredDescription from "./StructuredDescription";
-import QualityValidator from "@/components/admin/QualityValidator";
+import AIChefProBanner from "@/components/AIChefProBanner";
 import { useSuperAdmin } from "@/hooks/useSuperAdmin";
 
 interface IngredientMainCardProps {
@@ -58,11 +59,10 @@ const IngredientMainCard = ({
   return (
     <Card className="bg-white/90">
       <CardContent className="p-6">
-        {isSuperAdmin && (
-          <div className="mb-4">
-            <QualityValidator ingredient={ingredient} />
-          </div>
-        )}
+        {/* AI Chef Pro Banner - visible for all users */}
+        <div className="mb-4">
+          <AIChefProBanner />
+        </div>
         
         <div className="flex flex-col md:flex-row gap-6">
           <div className="md:w-64 h-64 flex-shrink-0 relative">

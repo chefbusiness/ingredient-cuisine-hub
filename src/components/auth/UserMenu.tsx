@@ -2,6 +2,7 @@
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,8 +11,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { User, Heart, History, Settings, LogOut, Crown } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface UserMenuProps {
   onShowAuthModal: () => void;
@@ -20,6 +22,7 @@ interface UserMenuProps {
 export const UserMenu: React.FC<UserMenuProps> = ({ onShowAuthModal }) => {
   const { user, signOut } = useAuth();
   const { isSuperAdmin } = useSuperAdmin();
+  const { profile } = useUserProfile();
 
   if (!user) {
     return (
@@ -41,6 +44,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ onShowAuthModal }) => {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
+            <AvatarImage src={profile?.avatar_url} alt="Avatar" />
             <AvatarFallback className={`text-xs ${isSuperAdmin ? 'bg-yellow-100 text-yellow-800' : ''}`}>
               {isSuperAdmin && <Crown className="h-3 w-3 absolute top-0 right-0" />}
               {userInitials}
@@ -66,6 +70,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({ onShowAuthModal }) => {
         </div>
         <DropdownMenuSeparator />
         
+        <DropdownMenuItem asChild>
+          <Link to="/perfil" className="cursor-pointer">
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Mi Perfil</span>
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuItem>
           <Heart className="mr-2 h-4 w-4" />
           <span>Mis Favoritos</span>
@@ -73,10 +83,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({ onShowAuthModal }) => {
         <DropdownMenuItem>
           <History className="mr-2 h-4 w-4" />
           <span>Historial</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem>
-          <Settings className="mr-2 h-4 w-4" />
-          <span>Configuración</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut}>

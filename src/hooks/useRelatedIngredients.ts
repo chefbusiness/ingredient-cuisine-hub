@@ -2,7 +2,16 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export const useRelatedIngredients = (categoryId: string, currentIngredientId: string, limit: number = 4) => {
+interface UseRelatedIngredientsOptions {
+  enabled?: boolean;
+}
+
+export const useRelatedIngredients = (
+  categoryId: string, 
+  currentIngredientId: string, 
+  limit: number = 4,
+  options: UseRelatedIngredientsOptions = {}
+) => {
   return useQuery({
     queryKey: ['related-ingredients', categoryId, currentIngredientId, limit],
     queryFn: async () => {
@@ -32,6 +41,8 @@ export const useRelatedIngredients = (categoryId: string, currentIngredientId: s
 
       return data || [];
     },
-    enabled: !!categoryId && !!currentIngredientId,
+    enabled: (options.enabled !== false) && !!categoryId && !!currentIngredientId,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos
   });
 };

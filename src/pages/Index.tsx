@@ -2,7 +2,7 @@
 import UnifiedHeader from "@/components/UnifiedHeader";
 import HeroSection from "@/components/HeroSection";
 import CategoriesSection from "@/components/CategoriesSection";
-import CountriesSection from "@/components/CountriesSection";
+import PopularIngredientsHomepageSection from "@/components/PopularIngredientsHomepageSection";
 import FeaturedIngredientsSection from "@/components/FeaturedIngredientsSection";
 import StatsSection from "@/components/StatsSection";
 import FAQSection from "@/components/FAQSection";
@@ -40,7 +40,7 @@ const Index = () => {
       <UnifiedHeader />
       <HeroSection />
       <CategoriesSection />
-      <CountriesSection />
+      <PopularIngredientsHomepageSection />
       <FeaturedIngredientsSection />
       <StatsSection />
       <FAQSection />

@@ -52,6 +52,11 @@ const IngredientDetailLayout = ({
   
   const breadcrumbItems = ingredient ? [
     { name: "Directorio", url: "/directorio" },
+    // Agregar categoría si existe
+    ...(ingredient.categories?.name ? [{
+      name: ingredient.categories.name,
+      url: `/directorio?category=${encodeURIComponent(ingredient.categories.name)}`
+    }] : []),
     { 
       name: ingredient.name, 
       url: ingredient.slug 
@@ -64,6 +69,11 @@ const IngredientDetailLayout = ({
   const breadcrumbSchemaItems = ingredient ? [
     { name: "Inicio", url: BASE_URL },
     { name: "Directorio", url: `${BASE_URL}/directorio` },
+    // Agregar categoría al schema si existe
+    ...(ingredient.categories?.name ? [{
+      name: ingredient.categories.name,
+      url: `${BASE_URL}/directorio?category=${encodeURIComponent(ingredient.categories.name)}`
+    }] : []),
     { 
       name: ingredient.name, 
       url: ingredient.slug 

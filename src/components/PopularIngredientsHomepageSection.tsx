@@ -132,7 +132,7 @@ const PopularIngredientsHomepageSection = () => {
             >
               <Link 
                 to={ingredientUrl}
-                onClick={() => trackPopularIngredientClick(ingredient.id, type)}
+                onClick={() => trackPopularIngredientClick(ingredient.id, type === 'viewed' ? 'most_viewed' : 'trending')}
               >
                 <Card className="border border-border bg-background hover:bg-muted/50 hover:shadow-md transition-all group h-full cursor-pointer hover:scale-[1.02] hover:-translate-y-0.5">
                   <CardContent className={isMobile ? 'p-3' : 'p-4'}>

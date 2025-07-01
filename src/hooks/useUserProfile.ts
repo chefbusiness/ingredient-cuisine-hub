@@ -146,36 +146,40 @@ export const useUserProfile = () => {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/avatar.${fileExt}`;
 
-      // Eliminar avatar anterior si existe
-      if (profile?.avatar_url) {
-        const oldPath = profile.avatar_url.split('/').pop();
-        if (oldPath) {
-          await supabase.storage
-            .from('profile-avatars')
-            .remove([`${user.id}/${oldPath}`]);
-        }
-      }
+      console.log('Uploading avatar:', { fileName, fileSize: file.size });
 
-      // Subir nuevo avatar
+      // Subir archivo con upsert para sobrescribir automáticamente
       const { error: uploadError } = await supabase.storage
         .from('profile-avatars')
-        .upload(fileName, file, { upsert: true });
+        .upload(fileName, file, { 
+          upsert: true,
+          contentType: file.type
+        });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
+
+      console.log('Upload successful, getting public URL');
 
       // Obtener URL pública
       const { data: { publicUrl } } = supabase.storage
         .from('profile-avatars')
         .getPublicUrl(fileName);
 
+      console.log('Public URL obtained:', publicUrl);
+
       // Actualizar perfil con nueva URL
       await updateProfile({ avatar_url: publicUrl });
+
+      console.log('Profile updated successfully');
 
     } catch (error) {
       console.error('Error uploading avatar:', error);
       toast({
         title: "Error",
-        description: "No se pudo subir la foto de perfil",
+        description: `No se pudo subir la foto de perfil: ${error.message}`,
         variant: "destructive"
       });
     } finally {

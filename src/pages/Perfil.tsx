@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import UnifiedHeader from '@/components/UnifiedHeader';
@@ -16,6 +17,7 @@ const Perfil = () => {
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
   const { isMobile } = useResponsive();
+  const [activeTab, setActiveTab] = useState("info");
 
   // Redirect si no está autenticado
   if (!authLoading && !user) {
@@ -50,7 +52,7 @@ const Perfil = () => {
 
           <Card className="bg-white/90 backdrop-blur-sm">
             <CardContent className="p-6">
-              <Tabs defaultValue="info" className="w-full">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className={`grid w-full ${isMobile ? 'grid-cols-1 h-auto' : 'grid-cols-3'}`}>
                   <TabsTrigger value="info" className={`flex items-center gap-2 ${isMobile ? 'justify-start py-3' : ''}`}>
                     <User className="h-4 w-4" />

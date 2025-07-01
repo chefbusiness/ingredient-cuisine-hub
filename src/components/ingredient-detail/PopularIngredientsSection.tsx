@@ -1,5 +1,5 @@
 
-import { TrendingUp, Fire, Eye } from "lucide-react";
+import { TrendingUp, Flame, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePopularIngredients } from "@/hooks/usePopularIngredients";
@@ -96,7 +96,7 @@ const PopularIngredientsSection = ({ limit = 5 }: PopularIngredientsSectionProps
                 </>
               ) : (
                 <>
-                  <Fire className="h-2.5 w-2.5" />
+                  <Flame className="h-2.5 w-2.5" />
                   <span className="font-medium">{ingredient.popularity}%</span>
                 </>
               )}
@@ -143,7 +143,7 @@ const PopularIngredientsSection = ({ limit = 5 }: PopularIngredientsSectionProps
                   value="trending" 
                   className={`flex items-center gap-2 transition-all duration-200 ${isMobile ? 'text-xs px-2' : 'text-sm'}`}
                 >
-                  <Fire className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+                  <Flame className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
                   {isMobile ? 'Trend' : 'Trending'}
                 </TabsTrigger>
                 <TabsTrigger 

@@ -19,6 +19,8 @@ interface PopularIngredient {
 interface PopularIngredientsData {
   mostViewed: PopularIngredient[];
   trending: PopularIngredient[];
+  anonymousViews: PopularIngredient[]; // For backward compatibility
+  registeredViews: PopularIngredient[]; // For backward compatibility
   loading: boolean;
   error: string | null;
 }
@@ -27,6 +29,8 @@ export const usePopularIngredients = (limit: number = 5) => {
   const [data, setData] = useState<PopularIngredientsData>({
     mostViewed: [],
     trending: [],
+    anonymousViews: [],
+    registeredViews: [],
     loading: true,
     error: null
   });
@@ -39,7 +43,7 @@ export const usePopularIngredients = (limit: number = 5) => {
         const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
-        // Ingredientes más vistos en las últimas 24 horas (usuarios anónimos + registrados)
+        // Ingredientes más vistos en las últimas 24 horas (usuarios anónimos)
         const { data: recentViews } = await supabase
           .from('page_views')
           .select(`
@@ -52,6 +56,7 @@ export const usePopularIngredients = (limit: number = 5) => {
           .gte('viewed_at', twentyFourHoursAgo)
           .not('ingredient_id', 'is', null);
 
+        // Ingredientes más vistos por usuarios registrados
         const { data: userViews } = await supabase
           .from('user_history')
           .select(`
@@ -63,25 +68,81 @@ export const usePopularIngredients = (limit: number = 5) => {
           `)
           .gte('viewed_at', twentyFourHoursAgo);
 
-        // Combinar vistas anónimas y de usuarios registrados
-        const allViews = [...(recentViews || []), ...(userViews || [])];
+        // Procesar vistas anónimas
+        const anonymousViewCounts = new Map<string, { ingredient: any; count: number }>();
         
-        // Contar visualizaciones por ingrediente
-        const viewCounts = new Map<string, { ingredient: any; count: number }>();
+        (recentViews || []).forEach(view => {
+          if (view.ingredient_id && view.ingredients) {
+            const key = view.ingredient_id;
+            const current = anonymousViewCounts.get(key) || { 
+              ingredient: view.ingredients, 
+              count: 0 
+            };
+            anonymousViewCounts.set(key, { ...current, count: current.count + 1 });
+          }
+        });
+
+        // Procesar vistas de usuarios registrados
+        const registeredViewCounts = new Map<string, { ingredient: any; count: number }>();
+        
+        (userViews || []).forEach(view => {
+          if (view.ingredient_id && view.ingredients) {
+            const key = view.ingredient_id;
+            const current = registeredViewCounts.get(key) || { 
+              ingredient: view.ingredients, 
+              count: 0 
+            };
+            registeredViewCounts.set(key, { ...current, count: current.count + 1 });
+          }
+        });
+
+        // Convertir a arrays para backward compatibility
+        const anonymousViews = Array.from(anonymousViewCounts.entries())
+          .map(([id, data]) => ({
+            id,
+            name: data.ingredient.name,
+            name_en: data.ingredient.name_en,
+            slug: data.ingredient.slug,
+            image_url: data.ingredient.image_url,
+            real_image_url: data.ingredient.real_image_url,
+            popularity: data.ingredient.popularity,
+            viewCount: data.count,
+            categories: data.ingredient.categories
+          }))
+          .sort((a, b) => b.viewCount - a.viewCount)
+          .slice(0, limit);
+
+        const registeredViews = Array.from(registeredViewCounts.entries())
+          .map(([id, data]) => ({
+            id,
+            name: data.ingredient.name,
+            name_en: data.ingredient.name_en,
+            slug: data.ingredient.slug,
+            image_url: data.ingredient.image_url,
+            real_image_url: data.ingredient.real_image_url,
+            popularity: data.ingredient.popularity,
+            viewCount: data.count,
+            categories: data.ingredient.categories
+          }))
+          .sort((a, b) => b.viewCount - a.viewCount)
+          .slice(0, limit);
+
+        // Combinar todas las vistas para mostViewed
+        const allViews = [...(recentViews || []), ...(userViews || [])];
+        const allViewCounts = new Map<string, { ingredient: any; count: number }>();
         
         allViews.forEach(view => {
           if (view.ingredient_id && view.ingredients) {
             const key = view.ingredient_id;
-            const current = viewCounts.get(key) || { 
+            const current = allViewCounts.get(key) || { 
               ingredient: view.ingredients, 
               count: 0 
             };
-            viewCounts.set(key, { ...current, count: current.count + 1 });
+            allViewCounts.set(key, { ...current, count: current.count + 1 });
           }
         });
 
-        // Convertir a array y ordenar por visualizaciones
-        const mostViewed = Array.from(viewCounts.entries())
+        const mostViewed = Array.from(allViewCounts.entries())
           .map(([id, data]) => ({
             id,
             name: data.ingredient.name,
@@ -110,7 +171,7 @@ export const usePopularIngredients = (limit: number = 5) => {
         // Calcular trending score (popularidad base + actividad reciente)
         const trending = (trendingData || [])
           .map(ingredient => {
-            const recentActivity = viewCounts.get(ingredient.id)?.count || 0;
+            const recentActivity = allViewCounts.get(ingredient.id)?.count || 0;
             const trendingScore = ingredient.popularity + (recentActivity * 10);
             
             return {
@@ -132,6 +193,8 @@ export const usePopularIngredients = (limit: number = 5) => {
         setData({
           mostViewed,
           trending,
+          anonymousViews, // For backward compatibility
+          registeredViews, // For backward compatibility
           loading: false,
           error: null
         });

@@ -45,10 +45,11 @@ const PopularIngredientsHomepageSection = () => {
           <div key={i} className="animate-pulse" style={{ animationDelay: `${i * 100}ms` }}>
             <Card className="border border-border bg-background">
               <CardContent className={isMobile ? 'p-3' : 'p-4'}>
-                <div className="space-y-2">
-                  <Skeleton className={`w-full rounded ${isMobile ? 'h-16' : 'h-20'}`} />
+                <div className="space-y-3">
+                  <Skeleton className={`w-full rounded ${isMobile ? 'h-20' : 'h-24'}`} />
                   <div className="space-y-2">
                     <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-3 w-3/4" />
                     <div className="flex items-center justify-between">
                       <Skeleton className="h-3 w-16" />
                       <Skeleton className="h-4 w-12" />
@@ -135,9 +136,9 @@ const PopularIngredientsHomepageSection = () => {
               >
                 <Card className="border border-border bg-background hover:bg-muted/50 hover:shadow-md transition-all group h-full cursor-pointer hover:scale-[1.02] hover:-translate-y-0.5">
                   <CardContent className={isMobile ? 'p-3' : 'p-4'}>
-                    <div className="space-y-2">
-                      {/* Imagen del ingrediente - Altura reducida para mostrar imagen completa */}
-                      <div className={`relative overflow-hidden rounded-md bg-muted/20 ${isMobile ? 'h-16' : 'h-20'}`}>
+                    <div className="space-y-3">
+                      {/* Imagen del ingrediente - Restaurar tamaño original pero mostrar imagen completa */}
+                      <div className={`relative overflow-hidden rounded-md bg-muted/20 ${isMobile ? 'h-20' : 'h-24'}`}>
                         <img
                           src={getIngredientImage(ingredient)}
                           alt={ingredient.name}
@@ -175,6 +176,9 @@ const PopularIngredientsHomepageSection = () => {
                         <h4 className={`font-medium text-foreground line-clamp-1 transition-colors duration-200 group-hover:text-primary ${isMobile ? 'text-sm' : 'text-base'}`}>
                           {ingredient.name}
                         </h4>
+                        <p className={`text-muted-foreground line-clamp-1 transition-colors duration-200 group-hover:text-foreground/80 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                          {ingredient.name_en}
+                        </p>
                         <div className="flex items-center justify-between">
                           <Badge variant="secondary" className={`transition-colors duration-200 group-hover:bg-green-100 group-hover:text-green-700 ${isMobile ? 'text-xs px-1.5 py-0.5' : 'text-xs'}`}>
                             {ingredient.categories?.name || 'Sin categoría'}

@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
+// Extended profile type that includes avatar_url
 interface UserProfile {
   id: string;
   email: string;
@@ -46,8 +47,9 @@ export const useUserProfile = () => {
       }
       
       console.log('✅ Profile loaded successfully:', data);
-      console.log('🖼️ Current avatar_url in profile:', data?.avatar_url);
-      setProfile(data);
+      console.log('🖼️ Current avatar_url in profile:', (data as any)?.avatar_url);
+      // Type assertion to handle the missing avatar_url in auto-generated types
+      setProfile(data as UserProfile);
     } catch (error) {
       console.error('❌ Error loading profile:', error);
       toast({
@@ -57,7 +59,7 @@ export const useUserProfile = () => {
       });
     } finally {
       setLoading(false);
-    };
+    }
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {

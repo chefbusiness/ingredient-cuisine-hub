@@ -1,4 +1,3 @@
-
 import { TrendingUp, Flame, Eye, Camera, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,8 +19,8 @@ const PopularIngredientsHomepageSection = () => {
     animationDelay: 200
   });
 
-  // Aumentamos el límite para la homepage
-  const limit = isMobile ? 4 : isTablet ? 6 : 8;
+  // Límite ajustado para layout horizontal
+  const limit = isMobile ? 4 : 6;
   const { mostViewed, trending, loading, error } = usePopularIngredients(limit);
   const { trackSectionView, trackTabSwitch, trackPopularIngredientClick } = usePopularIngredientsAnalytics();
 
@@ -33,11 +32,8 @@ const PopularIngredientsHomepageSection = () => {
   }, [isIntersecting, hasAnimated, trackSectionView]);
 
   const LoadingSkeleton = () => {
-    const gridClasses = isMobile 
-      ? "grid grid-cols-2 gap-3" 
-      : isTablet 
-      ? "grid grid-cols-3 gap-4" 
-      : "grid grid-cols-4 gap-4";
+    // Grid horizontal: 2 columnas en desktop, 1 en móvil
+    const gridClasses = isMobile ? "space-y-3" : "grid grid-cols-2 gap-4";
 
     return (
       <div className={gridClasses}>
@@ -45,9 +41,9 @@ const PopularIngredientsHomepageSection = () => {
           <div key={i} className="animate-pulse" style={{ animationDelay: `${i * 100}ms` }}>
             <Card className="border border-border bg-background">
               <CardContent className={isMobile ? 'p-3' : 'p-4'}>
-                <div className="space-y-3">
-                  <Skeleton className={`w-full rounded ${isMobile ? 'h-20' : 'h-24'}`} />
-                  <div className="space-y-2">
+                <div className="flex gap-3">
+                  <Skeleton className={`flex-shrink-0 rounded ${isMobile ? 'w-16 h-16' : 'w-20 h-20'}`} />
+                  <div className="flex-1 space-y-2">
                     <Skeleton className="h-4 w-full" />
                     <Skeleton className="h-3 w-3/4" />
                     <div className="flex items-center justify-between">
@@ -109,11 +105,8 @@ const PopularIngredientsHomepageSection = () => {
       );
     }
 
-    const gridClasses = isMobile 
-      ? "grid grid-cols-2 gap-3" 
-      : isTablet 
-      ? "grid grid-cols-3 gap-4" 
-      : "grid grid-cols-4 gap-4";
+    // Grid horizontal: 2 columnas en desktop, stack vertical en móvil
+    const gridClasses = isMobile ? "space-y-3" : "grid grid-cols-2 gap-4";
 
     return (
       <div className={gridClasses}>
@@ -134,11 +127,11 @@ const PopularIngredientsHomepageSection = () => {
                 to={ingredientUrl}
                 onClick={() => trackPopularIngredientClick(ingredient.id, type === 'viewed' ? 'most_viewed' : 'trending')}
               >
-                <Card className="border border-border bg-background hover:bg-muted/50 hover:shadow-md transition-all group h-full cursor-pointer hover:scale-[1.02] hover:-translate-y-0.5">
+                <Card className="border border-border bg-background hover:bg-muted/50 hover:shadow-md transition-all group cursor-pointer hover:scale-[1.02] hover:-translate-y-0.5">
                   <CardContent className={isMobile ? 'p-3' : 'p-4'}>
-                    <div className="space-y-3">
-                      {/* Imagen del ingrediente - Restaurar tamaño original pero mostrar imagen completa */}
-                      <div className={`relative overflow-hidden rounded-md bg-muted/20 ${isMobile ? 'h-20' : 'h-24'}`}>
+                    <div className="flex gap-3">
+                      {/* Imagen del ingrediente - cuadrada a la izquierda */}
+                      <div className={`flex-shrink-0 relative overflow-hidden rounded-md bg-muted/20 ${isMobile ? 'w-16 h-16' : 'w-20 h-20'}`}>
                         <img
                           src={getIngredientImage(ingredient)}
                           alt={ingredient.name}
@@ -152,27 +145,27 @@ const PopularIngredientsHomepageSection = () => {
                         {getImageBadge(ingredient)}
                         
                         {/* Badge de estadísticas */}
-                        <div className={`absolute top-2 right-2 flex items-center gap-1 text-xs px-2 py-1 rounded-full transition-all duration-300 backdrop-blur-sm ${
+                        <div className={`absolute top-1 right-1 flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full transition-all duration-300 backdrop-blur-sm ${
                           type === 'viewed' 
                             ? 'bg-blue-500/90 hover:bg-blue-600/95 text-white' 
                             : 'bg-orange-500/90 hover:bg-orange-600/95 text-white'
                         }`}>
                           {type === 'viewed' ? (
                             <>
-                              <Eye className="h-2.5 w-2.5" />
-                              <span className="font-medium">{formatViewCount(ingredient.viewCount)}</span>
+                              <Eye className="h-2 w-2" />
+                              <span className="font-medium text-xs">{formatViewCount(ingredient.viewCount)}</span>
                             </>
                           ) : (
                             <>
-                              <Flame className="h-2.5 w-2.5" />
-                              <span className="font-medium">{ingredient.popularity}%</span>
+                              <Flame className="h-2 w-2" />
+                              <span className="font-medium text-xs">{ingredient.popularity}%</span>
                             </>
                           )}
                         </div>
                       </div>
                       
-                      {/* Información del ingrediente */}
-                      <div className="space-y-2">
+                      {/* Información del ingrediente - a la derecha */}
+                      <div className="flex-1 min-w-0 space-y-2">
                         <h4 className={`font-medium text-foreground line-clamp-1 transition-colors duration-200 group-hover:text-primary ${isMobile ? 'text-sm' : 'text-base'}`}>
                           {ingredient.name}
                         </h4>

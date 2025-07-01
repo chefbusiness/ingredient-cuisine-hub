@@ -25,11 +25,11 @@ const RelatedIngredientsSectionBelowTabs = ({
     animationDelay: 300
   });
 
-  // Solo cargar datos cuando el componente es visible
+  // Aumentar límite de 8 a 9 ingredientes para layout 3x3
   const { data: relatedIngredients, isLoading } = useRelatedIngredients(
     categoryId, 
     currentIngredientId, 
-    8,
+    9,
     { enabled: isIntersecting }
   );
 
@@ -39,9 +39,9 @@ const RelatedIngredientsSectionBelowTabs = ({
         ? 'grid-cols-1' 
         : isTablet 
           ? 'grid-cols-2' 
-          : 'grid-cols-4'
+          : 'grid-cols-3'
     }`}>
-      {[...Array(8)].map((_, i) => (
+      {[...Array(9)].map((_, i) => (
         <div 
           key={i} 
           className="animate-pulse"
@@ -80,7 +80,7 @@ const RelatedIngredientsSectionBelowTabs = ({
                 ? 'grid-cols-1' 
                 : isTablet 
                   ? 'grid-cols-2' 
-                  : 'grid-cols-4'
+                  : 'grid-cols-3'
             }`}>
               {relatedIngredients.map((ingredient, index) => (
                 <div

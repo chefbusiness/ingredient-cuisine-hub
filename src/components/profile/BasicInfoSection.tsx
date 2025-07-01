@@ -1,109 +1,116 @@
 
 import { useState } from 'react';
-import { User } from '@supabase/supabase-js';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useUserProfile } from '@/hooks/useUserProfile';
-import { Mail, Calendar, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useProfile } from '@/contexts/ProfileContext';
+import { Loader2 } from 'lucide-react';
 
 interface BasicInfoSectionProps {
   profile: any;
-  user: User | null;
+  user: any;
 }
 
 const BasicInfoSection = ({ profile, user }: BasicInfoSectionProps) => {
-  const { updateEmail, updating } = useUserProfile();
-  const [isEditing, setIsEditing] = useState(false);
-  const [newEmail, setNewEmail] = useState(user?.email || '');
+  const { updateProfile, updating } = useProfile();
+  const [formData, setFormData] = useState({
+    preferred_language: profile?.preferred_language || 'es',
+    preferred_currency: profile?.preferred_currency || 'EUR'
+  });
 
-  const handleEmailUpdate = async () => {
-    if (newEmail && newEmail !== user?.email) {
-      await updateEmail(newEmail);
-      setIsEditing(false);
-    }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await updateProfile(formData);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Mail className="h-5 w-5" />
-          Información Personal
-        </CardTitle>
+        <CardTitle>Información Personal</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            {isEditing ? (
-              <div className="flex gap-2">
-                <Input
-                  id="email"
-                  type="email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder="tu@email.com"
-                />
-                <Button 
-                  onClick={handleEmailUpdate}
-                  disabled={updating || !newEmail || newEmail === user?.email}
-                  size="sm"
-                >
-                  {updating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Guardar'}
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setIsEditing(false);
-                    setNewEmail(user?.email || '');
-                  }}
-                  size="sm"
-                >
-                  Cancelar
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{user?.email}</span>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                >
-                  Editar
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {profile?.created_at && (
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                Fecha de registro
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                {formatDate(profile.created_at)}
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={user?.email || ''}
+                disabled
+                className="bg-gray-50"
+              />
+              <p className="text-sm text-gray-500">
+                El email no se puede cambiar desde aquí
               </p>
             </div>
-          )}
 
-          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-sm text-blue-800">
-              <strong>Cuenta Premium Gratuita:</strong> Tienes acceso ilimitado a todos los ingredientes y funcionalidades.
-            </p>
+            <div className="space-y-2">
+              <Label htmlFor="role">Rol</Label>
+              <Input
+                id="role"
+                value={profile?.role === 'super_admin' ? 'Super Administrador' : 'Usuario'}
+                disabled
+                className="bg-gray-50"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="language">Idioma Preferido</Label>
+              <Select
+                value={formData.preferred_language}
+                onValueChange={(value) => handleChange('preferred_language', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="es">Español (España)</SelectItem>
+                  <SelectItem value="es-la">Español (Latinoamérica)</SelectItem>
+                  <SelectItem value="en">English</SelectItem>
+                  <SelectItem value="fr">Français</SelectItem>
+                  <SelectItem value="it">Italiano</SelectItem>
+                  <SelectItem value="pt">Português</SelectItem>
+                  <SelectItem value="zh">中文</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="currency">Moneda Preferida</Label>
+              <Select
+                value={formData.preferred_currency}
+                onValueChange={(value) => handleChange('preferred_currency', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="EUR">EUR (€)</SelectItem>
+                  <SelectItem value="USD">USD ($)</SelectItem>
+                  <SelectItem value="MXN">MXN ($)</SelectItem>
+                  <SelectItem value="ARS">ARS ($)</SelectItem>
+                  <SelectItem value="COP">COP ($)</SelectItem>
+                  <SelectItem value="PEN">PEN (S/)</SelectItem>
+                  <SelectItem value="CLP">CLP ($)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </div>
+
+          <div className="flex justify-end pt-4">
+            <Button type="submit" disabled={updating}>
+              {updating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Guardar Cambios
+            </Button>
+          </div>
+        </form>
       </CardContent>
     </Card>
   );

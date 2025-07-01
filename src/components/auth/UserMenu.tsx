@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/contexts/ProfileContext';
 import { useSuperAdmin } from '@/hooks/useSuperAdmin';
-import { useUserProfile } from '@/hooks/useUserProfile';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -21,8 +21,8 @@ interface UserMenuProps {
 
 export const UserMenu: React.FC<UserMenuProps> = ({ onShowAuthModal }) => {
   const { user, signOut } = useAuth();
+  const { profile } = useProfile();
   const { isSuperAdmin } = useSuperAdmin();
-  const { profile } = useUserProfile();
 
   if (!user) {
     return (

@@ -1,9 +1,9 @@
 
 import { useAuth } from '@/contexts/AuthContext';
-import { useUserProfile } from '@/hooks/useUserProfile';
+import { useProfile } from '@/contexts/ProfileContext';
 import UnifiedHeader from '@/components/UnifiedHeader';
 import Footer from '@/components/Footer';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Lock, Camera, Loader2 } from 'lucide-react';
 import { Navigate } from 'react-router-dom';
@@ -14,7 +14,7 @@ import { useResponsive } from '@/hooks/useResponsive';
 
 const Perfil = () => {
   const { user, loading: authLoading } = useAuth();
-  const { profile, loading: profileLoading } = useUserProfile();
+  const { profile, loading: profileLoading } = useProfile();
   const { isMobile } = useResponsive();
 
   // Redirect si no está autenticado

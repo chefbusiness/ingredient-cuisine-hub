@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { useResponsive } from "@/hooks/useResponsive";
 import LazyImage from "@/components/LazyImage";
+import { memo } from "react";
 
 interface IngredientCompactCardProps {
   ingredient: {
@@ -20,7 +21,7 @@ interface IngredientCompactCardProps {
   };
 }
 
-const IngredientCompactCard = ({ ingredient }: IngredientCompactCardProps) => {
+const IngredientCompactCard = memo(({ ingredient }: IngredientCompactCardProps) => {
   const { isMobile } = useResponsive();
 
   const getIngredientImage = () => {
@@ -56,7 +57,7 @@ const IngredientCompactCard = ({ ingredient }: IngredientCompactCardProps) => {
 
   return (
     <Link to={getIngredientUrl()}>
-      <Card className="clean-card group overflow-hidden hover:shadow-md transition-shadow">
+      <Card className="clean-card group overflow-hidden hover:shadow-md transition-all duration-200 hover:scale-[1.02]">
         <CardContent className="p-2">
           <div className="flex gap-2">
             <div className={`flex-shrink-0 relative overflow-hidden rounded ${isMobile ? 'w-12 h-12' : 'w-16 h-16'}`}>
@@ -92,6 +93,8 @@ const IngredientCompactCard = ({ ingredient }: IngredientCompactCardProps) => {
       </Card>
     </Link>
   );
-};
+});
+
+IngredientCompactCard.displayName = 'IngredientCompactCard';
 
 export default IngredientCompactCard;

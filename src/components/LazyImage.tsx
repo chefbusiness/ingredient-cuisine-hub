@@ -1,6 +1,6 @@
 
-import { useState } from 'react';
-import { useIntersectionObserver } from '@/hooks/useIntersectionObserver';
+import { useState, memo } from 'react';
+import { useOptimizedIntersectionObserver } from '@/hooks/useOptimizedIntersectionObserver';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface LazyImageProps {
@@ -12,7 +12,7 @@ interface LazyImageProps {
   onLoad?: (e: React.SyntheticEvent<HTMLImageElement>) => void;
 }
 
-const LazyImage = ({ 
+const LazyImage = memo(({ 
   src, 
   alt, 
   className = "", 
@@ -20,7 +20,7 @@ const LazyImage = ({
   onError,
   onLoad
 }: LazyImageProps) => {
-  const { targetRef, isIntersecting } = useIntersectionObserver({
+  const { targetRef, isIntersecting } = useOptimizedIntersectionObserver({
     threshold: 0.1,
     rootMargin: '100px',
     triggerOnce: true
@@ -36,39 +36,38 @@ const LazyImage = ({
   };
 
   const handleError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-    setHasError(true);
     if (!hasError && currentSrc !== fallbackSrc) {
       setCurrentSrc(fallbackSrc);
-      setHasError(false); // Reset error state to try fallback
+      setHasError(false);
+    } else {
+      setHasError(true);
     }
     onError?.(e);
   };
 
   return (
     <div ref={targetRef} className={`relative ${className}`}>
-      {!isIntersecting && (
+      {!isIntersecting || !isLoaded ? (
         <Skeleton className="w-full h-full absolute inset-0" />
-      )}
+      ) : null}
       
       {isIntersecting && (
-        <>
-          {!isLoaded && (
-            <Skeleton className="w-full h-full absolute inset-0" />
-          )}
-          <img
-            src={currentSrc}
-            alt={alt}
-            className={`w-full h-full object-cover transition-opacity duration-300 ${
-              isLoaded ? 'opacity-100' : 'opacity-0'
-            }`}
-            loading="lazy"
-            onLoad={handleLoad}
-            onError={handleError}
-          />
-        </>
+        <img
+          src={currentSrc}
+          alt={alt}
+          className={`w-full h-full object-cover transition-opacity duration-300 ${
+            isLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
+          loading="lazy"
+          onLoad={handleLoad}
+          onError={handleError}
+          decoding="async"
+        />
       )}
     </div>
   );
-};
+});
+
+LazyImage.displayName = 'LazyImage';
 
 export default LazyImage;

@@ -2,7 +2,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export const useLatestIngredients = (limit: number = 4) => {
+interface UseLatestIngredientsOptions {
+  enabled?: boolean;
+}
+
+export const useLatestIngredients = (limit: number = 4, options: UseLatestIngredientsOptions = {}) => {
   return useQuery({
     queryKey: ['latest-ingredients', limit],
     queryFn: async () => {
@@ -28,5 +32,8 @@ export const useLatestIngredients = (limit: number = 4) => {
 
       return data || [];
     },
+    enabled: options.enabled !== false,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    gcTime: 10 * 60 * 1000, // 10 minutos (antes cacheTime)
   });
 };

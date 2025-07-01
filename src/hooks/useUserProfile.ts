@@ -10,6 +10,7 @@ interface UserProfile {
   avatar_url?: string;
   preferred_language?: string;
   preferred_currency?: string;
+  role?: string;
   created_at: string;
   updated_at: string;
 }
@@ -56,7 +57,7 @@ export const useUserProfile = () => {
       });
     } finally {
       setLoading(false);
-    }
+    };
   };
 
   const updateProfile = async (updates: Partial<UserProfile>) => {

@@ -10,6 +10,7 @@ interface LazyImageProps {
   fallbackSrc?: string;
   onError?: (e: React.SyntheticEvent<HTMLImageElement>) => void;
   onLoad?: (e: React.SyntheticEvent<HTMLImageElement>) => void;
+  animationDelay?: number;
 }
 
 const LazyImage = memo(({ 
@@ -18,12 +19,14 @@ const LazyImage = memo(({
   className = "", 
   fallbackSrc = 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&h=400&fit=crop',
   onError,
-  onLoad
+  onLoad,
+  animationDelay = 0
 }: LazyImageProps) => {
-  const { targetRef, isIntersecting } = useOptimizedIntersectionObserver({
+  const { targetRef, isIntersecting, hasAnimated } = useOptimizedIntersectionObserver({
     threshold: 0.1,
     rootMargin: '100px',
-    triggerOnce: true
+    triggerOnce: true,
+    animationDelay
   });
 
   const [isLoaded, setIsLoaded] = useState(false);
@@ -46,24 +49,37 @@ const LazyImage = memo(({
   };
 
   return (
-    <div ref={targetRef} className={`relative ${className}`}>
-      {!isIntersecting || !isLoaded ? (
-        <Skeleton className="w-full h-full absolute inset-0" />
-      ) : null}
+    <div 
+      ref={targetRef} 
+      className={`relative overflow-hidden group ${className}`}
+    >
+      {/* Skeleton con animación de salida */}
+      <Skeleton 
+        className={`w-full h-full absolute inset-0 transition-all duration-500 ${
+          isLoaded && hasAnimated 
+            ? 'opacity-0 scale-95 pointer-events-none' 
+            : 'opacity-100 scale-100'
+        }`} 
+      />
       
       {isIntersecting && (
         <img
           src={currentSrc}
           alt={alt}
-          className={`w-full h-full object-cover transition-opacity duration-300 ${
-            isLoaded ? 'opacity-100' : 'opacity-0'
-          }`}
+          className={`w-full h-full object-cover transition-all duration-700 ease-out transform ${
+            isLoaded && hasAnimated
+              ? 'opacity-100 scale-100' 
+              : 'opacity-0 scale-105'
+          } group-hover:scale-110`}
           loading="lazy"
           onLoad={handleLoad}
           onError={handleError}
           decoding="async"
         />
       )}
+      
+      {/* Overlay sutil en hover */}
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-all duration-300 pointer-events-none" />
     </div>
   );
 });

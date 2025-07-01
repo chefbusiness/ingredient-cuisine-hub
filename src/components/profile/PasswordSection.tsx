@@ -1,131 +1,155 @@
 
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { useProfile } from '@/contexts/ProfileContext';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import { Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const PasswordSection = () => {
-  const { updatePassword, updating } = useProfile();
-  const [formData, setFormData] = useState({
-    newPassword: '',
-    confirmPassword: ''
-  });
-  const [showPassword, setShowPassword] = useState(false);
+  const { updatePassword, updating } = useUserProfile();
+  const { toast } = useToast();
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (formData.newPassword.length < 6) {
-      newErrors.newPassword = 'La contraseña debe tener al menos 6 caracteres';
+  const handlePasswordUpdate = async () => {
+    if (newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "La contraseña debe tener al menos 6 caracteres",
+        variant: "destructive"
+      });
+      return;
     }
 
-    if (formData.newPassword !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Las contraseñas no coinciden';
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Las contraseñas no coinciden",
+        variant: "destructive"
+      });
+      return;
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    await updatePassword(newPassword);
     
-    if (!validateForm()) return;
-
-    await updatePassword(formData.newPassword);
-    
-    // Limpiar formulario después del éxito
-    setFormData({ newPassword: '', confirmPassword: '' });
+    // Limpiar formulario después de actualizar
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
   };
 
-  const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Limpiar error específico cuando el usuario empiece a escribir
-    if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
-    }
-  };
+  const isFormValid = newPassword.length >= 6 && newPassword === confirmPassword;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Cambiar Contraseña</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <Lock className="h-5 w-5" />
+          Cambiar Contraseña
+        </CardTitle>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="newPassword">Nueva Contraseña</Label>
-            <div className="relative">
-              <Input
-                id="newPassword"
-                type={showPassword ? "text" : "password"}
-                value={formData.newPassword}
-                onChange={(e) => handleChange('newPassword', e.target.value)}
-                placeholder="Ingresa tu nueva contraseña"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-0 top-0 h-full px-3"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-            {errors.newPassword && (
-              <p className="text-sm text-red-500">{errors.newPassword}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirmar Nueva Contraseña</Label>
-            <div className="relative">
-              <Input
-                id="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                value={formData.confirmPassword}
-                onChange={(e) => handleChange('confirmPassword', e.target.value)}
-                placeholder="Confirma tu nueva contraseña"
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-0 top-0 h-full px-3"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                {showConfirmPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-            {errors.confirmPassword && (
-              <p className="text-sm text-red-500">{errors.confirmPassword}</p>
-            )}
-          </div>
-
-          <div className="flex justify-end pt-4">
-            <Button 
-              type="submit" 
-              disabled={updating || !formData.newPassword || !formData.confirmPassword}
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="current-password">Contraseña Actual (opcional)</Label>
+          <div className="relative">
+            <Input
+              id="current-password"
+              type={showCurrentPassword ? 'text' : 'password'}
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder="Tu contraseña actual"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+              onClick={() => setShowCurrentPassword(!showCurrentPassword)}
             >
-              {updating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Actualizar Contraseña
+              {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </Button>
           </div>
-        </form>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="new-password">Nueva Contraseña</Label>
+          <div className="relative">
+            <Input
+              id="new-password"
+              type={showNewPassword ? 'text' : 'password'}
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              placeholder="Mínimo 6 caracteres"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+              onClick={() => setShowNewPassword(!showNewPassword)}
+            >
+              {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="confirm-password">Confirmar Nueva Contraseña</Label>
+          <div className="relative">
+            <Input
+              id="confirm-password"
+              type={showConfirmPassword ? 'text' : 'password'}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Repite la nueva contraseña"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
+          </div>
+        </div>
+
+        {newPassword && newPassword.length < 6 && (
+          <p className="text-sm text-red-600">La contraseña debe tener al menos 6 caracteres</p>
+        )}
+
+        {newPassword && confirmPassword && newPassword !== confirmPassword && (
+          <p className="text-sm text-red-600">Las contraseñas no coinciden</p>
+        )}
+
+        <Button 
+          onClick={handlePasswordUpdate}
+          disabled={updating || !isFormValid}
+          className="w-full"
+        >
+          {updating ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Actualizando...
+            </div>
+          ) : (
+            'Cambiar Contraseña'
+          )}
+        </Button>
+
+        <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+          <p className="text-sm text-amber-800">
+            <strong>Nota:</strong> Al cambiar tu contraseña, se cerrará la sesión en todos los dispositivos por seguridad.
+          </p>
+        </div>
       </CardContent>
     </Card>
   );

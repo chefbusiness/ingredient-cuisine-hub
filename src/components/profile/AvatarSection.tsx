@@ -2,7 +2,7 @@
 import { useState, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useProfile } from '@/contexts/ProfileContext';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { Camera, Upload, Trash2, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -14,7 +14,7 @@ interface AvatarSectionProps {
 
 const AvatarSection = ({ profile }: AvatarSectionProps) => {
   const { user } = useAuth();
-  const { uploadAvatar, updateProfile, updating } = useProfile();
+  const { uploadAvatar, updateProfile, updating } = useUserProfile();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);

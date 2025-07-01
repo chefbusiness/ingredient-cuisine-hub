@@ -16,6 +16,7 @@ import Cookies from "./pages/Cookies";
 import Terminos from "./pages/Terminos";
 import NotFound from "./pages/NotFound";
 import Admin from "./pages/Admin";
+import Perfil from "./pages/Perfil";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/directorio" element={<Directorio />} />
               <Route path="/ingrediente/:id" element={<IngredienteDetalle />} />
+              <Route path="/perfil" element={<Perfil />} />
               <Route path="/sobre-nosotros" element={<SobreNosotros />} />
               <Route path="/contacto" element={<Contacto />} />
               <Route path="/categorias" element={<Categorias />} />

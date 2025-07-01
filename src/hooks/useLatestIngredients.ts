@@ -20,7 +20,13 @@ export const useLatestIngredients = (limit: number = 4, options: UseLatestIngred
           image_url,
           real_image_url,
           popularity,
-          categories(name)
+          categories(name),
+          ingredient_prices(
+            id,
+            price,
+            unit,
+            countries(name, currency_symbol, code)
+          )
         `)
         .order('created_at', { ascending: false })
         .limit(limit);

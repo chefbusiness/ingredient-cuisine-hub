@@ -44,15 +44,14 @@ const PopularIngredientsHomepageSection = () => {
         {[...Array(limit)].map((_, i) => (
           <div key={i} className="animate-pulse" style={{ animationDelay: `${i * 100}ms` }}>
             <Card className="border border-border bg-background">
-              <CardContent className={isMobile ? 'p-3' : 'p-4'}>
-                <div className="space-y-3">
-                  <Skeleton className={`w-full rounded ${isMobile ? 'h-20' : 'h-24'}`} />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-3 w-3/4" />
+              <CardContent className={isMobile ? 'p-2' : 'p-3'}>
+                <div className="space-y-2">
+                  <Skeleton className={`w-full rounded ${isMobile ? 'h-12' : 'h-16'}`} />
+                  <div className="space-y-1">
+                    <Skeleton className="h-3 w-full" />
                     <div className="flex items-center justify-between">
-                      <Skeleton className="h-3 w-16" />
-                      <Skeleton className="h-4 w-12" />
+                      <Skeleton className="h-2 w-16" />
+                      <Skeleton className="h-3 w-12" />
                     </div>
                   </div>
                 </div>
@@ -71,20 +70,20 @@ const PopularIngredientsHomepageSection = () => {
   };
 
   const getImageBadge = (ingredient: any) => {
-    const badgeClass = "absolute top-2 left-2 text-white text-xs px-1.5 py-0.5 rounded flex items-center gap-1 transition-all duration-300 group-hover:scale-105";
+    const badgeClass = "absolute top-1 left-1 text-white text-xs px-1 py-0.5 rounded flex items-center gap-1 transition-all duration-300 group-hover:scale-105";
     
     if (ingredient.real_image_url) {
       return (
         <div className={`${badgeClass} bg-green-500/90 group-hover:bg-green-600/95`}>
-          <Camera className="h-2.5 w-2.5" />
-          {!isMobile && <span>Real</span>}
+          <Camera className="h-2 w-2" />
+          {!isMobile && <span className="text-xs">Real</span>}
         </div>
       );
     } else if (ingredient.image_url) {
       return (
         <div className={`${badgeClass} bg-blue-500/90 group-hover:bg-blue-600/95`}>
-          <Sparkles className="h-2.5 w-2.5" />
-          {!isMobile && <span>IA</span>}
+          <Sparkles className="h-2 w-2" />
+          {!isMobile && <span className="text-xs">IA</span>}
         </div>
       );
     }
@@ -135,10 +134,10 @@ const PopularIngredientsHomepageSection = () => {
                 onClick={() => trackPopularIngredientClick(ingredient.id, type === 'viewed' ? 'most_viewed' : 'trending')}
               >
                 <Card className="border border-border bg-background hover:bg-muted/50 hover:shadow-md transition-all group h-full cursor-pointer hover:scale-[1.02] hover:-translate-y-0.5">
-                  <CardContent className={isMobile ? 'p-3' : 'p-4'}>
-                    <div className="space-y-3">
-                      {/* Imagen del ingrediente */}
-                      <div className={`relative overflow-hidden rounded-md ${isMobile ? 'h-20' : 'h-24'}`}>
+                  <CardContent className={isMobile ? 'p-2' : 'p-3'}>
+                    <div className="space-y-1.5">
+                      {/* Imagen del ingrediente - MÁS COMPACTA */}
+                      <div className={`relative overflow-hidden rounded-md ${isMobile ? 'h-12' : 'h-16'}`}>
                         <LazyImage
                           src={getIngredientImage(ingredient)}
                           alt={ingredient.name}
@@ -147,41 +146,39 @@ const PopularIngredientsHomepageSection = () => {
                         />
                         {getImageBadge(ingredient)}
                         
-                        {/* Badge de estadísticas */}
-                        <div className={`absolute top-2 right-2 flex items-center gap-1 text-xs px-2 py-1 rounded-full transition-all duration-300 backdrop-blur-sm ${
+                        {/* Badge de estadísticas - MÁS PEQUEÑO */}
+                        <div className={`absolute top-1 right-1 flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full transition-all duration-300 backdrop-blur-sm ${
                           type === 'viewed' 
                             ? 'bg-blue-500/90 hover:bg-blue-600/95 text-white' 
                             : 'bg-orange-500/90 hover:bg-orange-600/95 text-white'
                         }`}>
                           {type === 'viewed' ? (
                             <>
-                              <Eye className="h-2.5 w-2.5" />
-                              <span className="font-medium">{formatViewCount(ingredient.viewCount)}</span>
+                              <Eye className="h-2 w-2" />
+                              <span className="font-medium text-xs">{formatViewCount(ingredient.viewCount)}</span>
                             </>
                           ) : (
                             <>
-                              <Flame className="h-2.5 w-2.5" />
-                              <span className="font-medium">{ingredient.popularity}%</span>
+                              <Flame className="h-2 w-2" />
+                              <span className="font-medium text-xs">{ingredient.popularity}%</span>
                             </>
                           )}
                         </div>
                       </div>
                       
-                      {/* Información del ingrediente */}
-                      <div className="space-y-2">
-                        <h4 className={`font-medium text-foreground line-clamp-1 transition-colors duration-200 group-hover:text-primary ${isMobile ? 'text-sm' : 'text-base'}`}>
+                      {/* Información del ingrediente - SIMPLIFICADA */}
+                      <div className="space-y-1">
+                        <h4 className={`font-medium text-foreground line-clamp-1 transition-colors duration-200 group-hover:text-primary ${isMobile ? 'text-xs' : 'text-sm'}`}>
                           {ingredient.name}
                         </h4>
-                        <p className={`text-muted-foreground line-clamp-1 transition-colors duration-200 group-hover:text-foreground/80 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                          {ingredient.name_en}
-                        </p>
+                        {/* REMOVIDO: nombre en inglés para ahorrar espacio */}
                         <div className="flex items-center justify-between">
-                          <Badge variant="secondary" className={`transition-colors duration-200 group-hover:bg-green-100 group-hover:text-green-700 ${isMobile ? 'text-xs px-1.5 py-0.5' : 'text-xs'}`}>
+                          <Badge variant="secondary" className={`transition-colors duration-200 group-hover:bg-green-100 group-hover:text-green-700 ${isMobile ? 'text-xs px-1 py-0' : 'text-xs px-1.5 py-0.5'}`}>
                             {ingredient.categories?.name || 'Sin categoría'}
                           </Badge>
                           <div className="flex items-center space-x-1 transition-all duration-300 group-hover:scale-105">
-                            <TrendingUp className={`text-primary transition-colors duration-200 group-hover:text-primary/80 ${isMobile ? 'h-3 w-3' : 'h-3.5 w-3.5'}`} />
-                            <span className={`font-medium text-foreground transition-colors duration-200 group-hover:text-primary ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                            <TrendingUp className={`text-primary transition-colors duration-200 group-hover:text-primary/80 ${isMobile ? 'h-2.5 w-2.5' : 'h-3 w-3'}`} />
+                            <span className={`font-medium text-foreground transition-colors duration-200 group-hover:text-primary ${isMobile ? 'text-xs' : 'text-xs'}`}>
                               {ingredient.popularity}%
                             </span>
                           </div>

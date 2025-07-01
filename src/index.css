@@ -110,6 +110,7 @@
   ::-webkit-scrollbar-thumb {
     background: hsl(var(--border));
     border-radius: 10px;
+    transition: background 0.2s ease;
   }
 
   ::-webkit-scrollbar-thumb:hover {
@@ -120,7 +121,11 @@
 @layer components {
   /* Clean card styles */
   .clean-card {
-    @apply bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200;
+    @apply bg-card border border-border rounded-lg shadow-sm transition-all duration-300 ease-out;
+  }
+
+  .clean-card:hover {
+    @apply shadow-md border-border/80 transform scale-[1.01];
   }
 
   /* Simple navigation */
@@ -131,12 +136,14 @@
   /* Minimal buttons */
   .btn-clean {
     @apply bg-primary text-primary-foreground hover:bg-primary/90 
-           rounded-md px-4 py-2 text-sm font-medium transition-colors duration-200;
+           rounded-md px-4 py-2 text-sm font-medium transition-all duration-300 ease-out
+           hover:shadow-md hover:scale-105 active:scale-95;
   }
 
   .btn-outline-clean {
     @apply border border-border bg-background hover:bg-accent hover:text-accent-foreground
-           rounded-md px-4 py-2 text-sm font-medium transition-colors duration-200;
+           rounded-md px-4 py-2 text-sm font-medium transition-all duration-300 ease-out
+           hover:shadow-sm hover:scale-105 active:scale-95;
   }
 
   /* Simple hero section */
@@ -148,16 +155,117 @@
   .heading-clean {
     @apply text-foreground font-semibold tracking-tight;
   }
+
+  /* Smooth hover states */
+  .hover-lift {
+    @apply transition-all duration-300 ease-out hover:scale-105 hover:-translate-y-1 hover:shadow-lg;
+  }
+
+  .hover-grow {
+    @apply transition-transform duration-200 ease-out hover:scale-110;
+  }
+
+  .hover-fade {
+    @apply transition-opacity duration-200 ease-out hover:opacity-80;
+  }
+
+  /* Loading animations */
+  .pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .skeleton-shimmer {
+    background: linear-gradient(90deg, 
+      hsl(var(--muted)) 25%, 
+      hsl(var(--muted-foreground) / 0.1) 50%, 
+      hsl(var(--muted)) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
 }
 
 @layer utilities {
-  /* Simple animations */
+  /* Enhanced animations */
   .animate-fade-in {
-    animation: fadeIn 0.3s ease-out;
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.5s ease-out;
+  }
+
+  .animate-bounce-subtle {
+    animation: bounceSubtle 2s infinite;
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
   }
 
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes fadeInUp {
+    from { 
+      opacity: 0; 
+      transform: translateY(20px); 
+    }
+    to { 
+      opacity: 1; 
+      transform: translateY(0); 
+    }
+  }
+
+  @keyframes slideInRight {
+    from { 
+      opacity: 0; 
+      transform: translateX(30px); 
+    }
+    to { 
+      opacity: 1; 
+      transform: translateX(0); 
+    }
+  }
+
+  @keyframes bounceSubtle {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+  }
+
+  /* Staggered animations */
+  .stagger-1 { animation-delay: 0.1s; }
+  .stagger-2 { animation-delay: 0.2s; }
+  .stagger-3 { animation-delay: 0.3s; }
+  .stagger-4 { animation-delay: 0.4s; }
+  .stagger-5 { animation-delay: 0.5s; }
+
+  /* Interactive states */
+  .interactive {
+    @apply transition-all duration-200 ease-out cursor-pointer;
+  }
+
+  .interactive:hover {
+    @apply transform scale-105;
+  }
+
+  .interactive:active {
+    @apply transform scale-95;
   }
 }

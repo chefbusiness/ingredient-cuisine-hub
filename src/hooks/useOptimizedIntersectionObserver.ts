@@ -6,16 +6,19 @@ interface UseOptimizedIntersectionObserverOptions {
   rootMargin?: string;
   triggerOnce?: boolean;
   skip?: boolean;
+  animationDelay?: number;
 }
 
 export const useOptimizedIntersectionObserver = ({
   threshold = 0.1,
   rootMargin = '50px',
   triggerOnce = true,
-  skip = false
+  skip = false,
+  animationDelay = 0
 }: UseOptimizedIntersectionObserverOptions = {}) => {
   const targetRef = useRef<HTMLDivElement>(null);
   const [isIntersecting, setIsIntersecting] = useState(false);
+  const [hasAnimated, setHasAnimated] = useState(false);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
   useEffect(() => {
@@ -26,10 +29,23 @@ export const useOptimizedIntersectionObserver = ({
     observerRef.current = new IntersectionObserver(
       ([entry]) => {
         const isVisible = entry.isIntersecting;
-        setIsIntersecting(isVisible);
+        
+        if (isVisible && !hasAnimated) {
+          if (animationDelay > 0) {
+            setTimeout(() => {
+              setIsIntersecting(true);
+              setHasAnimated(true);
+            }, animationDelay);
+          } else {
+            setIsIntersecting(true);
+            setHasAnimated(true);
+          }
 
-        if (isVisible && triggerOnce && observerRef.current) {
-          observerRef.current.unobserve(target);
+          if (triggerOnce && observerRef.current) {
+            observerRef.current.unobserve(target);
+          }
+        } else if (!triggerOnce) {
+          setIsIntersecting(isVisible);
         }
       },
       {
@@ -45,7 +61,7 @@ export const useOptimizedIntersectionObserver = ({
         observerRef.current.disconnect();
       }
     };
-  }, [threshold, rootMargin, triggerOnce, skip]);
+  }, [threshold, rootMargin, triggerOnce, skip, animationDelay, hasAnimated]);
 
-  return { targetRef, isIntersecting };
+  return { targetRef, isIntersecting, hasAnimated };
 };

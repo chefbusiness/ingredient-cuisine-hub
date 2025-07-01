@@ -7,6 +7,7 @@ import { Ingredient } from "@/hooks/useIngredients";
 import { useResponsive } from "@/hooks/useResponsive";
 import AdBanner from "@/components/AdBanner";
 import LatestIngredientsSection from "./LatestIngredientsSection";
+import PopularIngredientsSection from "./PopularIngredientsSection";
 
 interface IngredientSidebarProps {
   ingredient: Ingredient;
@@ -126,6 +127,9 @@ const IngredientSidebar = ({
 
       {/* Latest Ingredients */}
       <LatestIngredientsSection />
+
+      {/* Popular Ingredients - Nueva sección */}
+      <PopularIngredientsSection limit={4} />
 
       {/* AI Chef Pro Suite Banner */}
       <AdBanner

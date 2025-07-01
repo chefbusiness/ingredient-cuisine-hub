@@ -19,9 +19,10 @@ const RelatedIngredientsSectionBelowTabs = ({
   categoryName 
 }: RelatedIngredientsSectionBelowTabsProps) => {
   const { isMobile, isTablet } = useResponsive();
-  const { targetRef, isIntersecting } = useOptimizedIntersectionObserver({
+  const { targetRef, isIntersecting, hasAnimated } = useOptimizedIntersectionObserver({
     rootMargin: '150px',
-    triggerOnce: true
+    triggerOnce: true,
+    animationDelay: 300
   });
 
   // Solo cargar datos cuando el componente es visible
@@ -41,19 +42,30 @@ const RelatedIngredientsSectionBelowTabs = ({
           : 'grid-cols-4'
     }`}>
       {[...Array(8)].map((_, i) => (
-        <div key={i} className="animate-pulse">
-          <Skeleton className="bg-gray-200 rounded-lg h-24" />
+        <div 
+          key={i} 
+          className="animate-pulse"
+          style={{ animationDelay: `${i * 75}ms` }}
+        >
+          <Skeleton className="bg-gray-200 rounded-lg h-24 transition-all duration-300 hover:bg-gray-300" />
         </div>
       ))}
     </div>
   );
 
   return (
-    <div ref={targetRef}>
-      <Card className="bg-white/90">
-        <CardHeader>
-          <CardTitle className={`flex items-center gap-2 ${isMobile ? 'text-lg' : 'text-xl'}`}>
-            <Tags className={isMobile ? 'h-5 w-5' : 'h-6 w-6'} />
+    <div 
+      ref={targetRef}
+      className={`transition-all duration-800 ease-out ${
+        hasAnimated 
+          ? 'opacity-100 transform translate-y-0' 
+          : 'opacity-0 transform translate-y-6'
+      }`}
+    >
+      <Card className="bg-white/90 border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+        <CardHeader className="transition-colors duration-200 hover:bg-muted/20">
+          <CardTitle className={`flex items-center gap-2 transition-colors duration-200 ${isMobile ? 'text-lg' : 'text-xl'}`}>
+            <Tags className={`transition-transform duration-300 hover:rotate-12 ${isMobile ? 'h-5 w-5' : 'h-6 w-6'}`} />
             {categoryName ? `Más ${categoryName}` : 'Ingredientes Relacionados'}
           </CardTitle>
         </CardHeader>
@@ -70,8 +82,21 @@ const RelatedIngredientsSectionBelowTabs = ({
                   ? 'grid-cols-2' 
                   : 'grid-cols-4'
             }`}>
-              {relatedIngredients.map((ingredient) => (
-                <IngredientCompactCard key={ingredient.id} ingredient={ingredient} />
+              {relatedIngredients.map((ingredient, index) => (
+                <div
+                  key={ingredient.id}
+                  className={`transition-all duration-600 ease-out ${
+                    hasAnimated 
+                      ? 'opacity-100 transform translate-y-0 scale-100' 
+                      : 'opacity-0 transform translate-y-4 scale-95'
+                  }`}
+                  style={{ transitionDelay: `${index * 100}ms` }}
+                >
+                  <IngredientCompactCard 
+                    ingredient={ingredient} 
+                    animationDelay={index * 75}
+                  />
+                </div>
               ))}
             </div>
           ) : null}

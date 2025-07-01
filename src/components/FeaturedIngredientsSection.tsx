@@ -1,35 +1,14 @@
-import { TrendingUp, Camera, Sparkles } from "lucide-react";
+
+import { Clock, Camera, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { usePopularIngredients } from "@/hooks/usePopularIngredients";
-import { useIngredients } from "@/hooks/useIngredients";
+import { useLatestIngredients } from "@/hooks/useLatestIngredients";
 import LazyImage from "@/components/LazyImage";
 
 const FeaturedIngredientsSection = () => {
-  // Get both popular ingredients from views and general ingredients sorted by popularity
-  const { anonymousViews, registeredViews, loading: popularLoading } = usePopularIngredients();
-  const { data: allIngredients = [], isLoading: ingredientsLoading } = useIngredients(undefined, undefined, 'popularidad');
-
-  // Combine and deduplicate ingredients, prioritizing those with recent views
-  const getFeaturedIngredients = () => {
-    const recentlyViewed = [...anonymousViews, ...registeredViews];
-    const viewedIds = new Set(recentlyViewed.map(ing => ing.id));
-    
-    // Get full ingredient data for recently viewed items
-    const recentlyViewedWithData = recentlyViewed
-      .map(viewedItem => allIngredients.find(ing => ing.id === viewedItem.id))
-      .filter(Boolean);
-    
-    // Add popular ingredients that haven't been recently viewed
-    const additionalIngredients = allIngredients
-      .filter(ing => !viewedIds.has(ing.id))
-      .slice(0, 8 - recentlyViewedWithData.length);
-
-    return [...recentlyViewedWithData, ...additionalIngredients].slice(0, 8);
-  };
-
-  const featuredIngredients = getFeaturedIngredients();
+  // Get the 8 most recent ingredients
+  const { data: latestIngredients = [], isLoading } = useLatestIngredients(8);
 
   const getIngredientImage = (ingredient: any) => {
     // Use real image if available, then AI image, then fallback
@@ -70,11 +49,7 @@ const FeaturedIngredientsSection = () => {
     return "Precio no disponible";
   };
 
-  const isRecentlyViewed = (ingredientId: string) => {
-    return [...anonymousViews, ...registeredViews].some(ing => ing.id === ingredientId);
-  };
-
-  if (popularLoading || ingredientsLoading || !featuredIngredients.length) {
+  if (isLoading || !latestIngredients.length) {
     return null;
   }
 
@@ -82,16 +57,17 @@ const FeaturedIngredientsSection = () => {
     <section className="py-12">
       <div className="container mx-auto px-4">
         <div className="text-center mb-8">
-          <h3 className="text-xl font-medium text-foreground mb-2">
-            Ingredientes Más Populares
+          <h3 className="text-xl font-medium text-foreground mb-2 flex items-center justify-center gap-2">
+            <Clock className="h-5 w-5" />
+            Últimos Ingredientes
           </h3>
           <p className="text-sm text-muted-foreground">
-            Los ingredientes más consultados por profesionales
+            Los ingredientes más recientes añadidos al directorio
           </p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {featuredIngredients.map((ingredient) => (
+          {latestIngredients.map((ingredient) => (
             <Link key={ingredient.id} to={`/ingrediente/${ingredient.slug}`}>
               <Card className="border border-border bg-background hover:bg-muted/30 transition-colors group overflow-hidden h-full">
                 <div className="aspect-square overflow-hidden relative">
@@ -100,16 +76,10 @@ const FeaturedIngredientsSection = () => {
                     alt={ingredient.name}
                     className="group-hover:scale-105 transition-transform duration-300"
                     onError={(e) => {
-                      console.log('Image failed to load for featured ingredient:', ingredient.name);
+                      console.log('Image failed to load for latest ingredient:', ingredient.name);
                     }}
                   />
                   {getImageBadge(ingredient)}
-                  {isRecentlyViewed(ingredient.id) && (
-                    <Badge className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs">
-                      <TrendingUp className="w-3 h-3 mr-1" />
-                      Trending
-                    </Badge>
-                  )}
                 </div>
                 <CardContent className="p-3">
                   <h4 className="font-medium text-sm text-foreground mb-1">

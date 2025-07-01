@@ -139,14 +139,17 @@ export const useUserProfile = () => {
   };
 
   const uploadAvatar = async (file: File) => {
-    if (!user) return;
+    if (!user) {
+      console.error('No user found for avatar upload');
+      return;
+    }
 
     setUpdating(true);
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/avatar.${fileExt}`;
 
-      console.log('Uploading avatar:', { fileName, fileSize: file.size });
+      console.log('Uploading avatar:', { fileName, fileSize: file.size, userId: user.id });
 
       // Subir archivo con upsert para sobrescribir automáticamente
       const { error: uploadError } = await supabase.storage
@@ -157,8 +160,8 @@ export const useUserProfile = () => {
         });
 
       if (uploadError) {
-        console.error('Upload error:', uploadError);
-        throw uploadError;
+        console.error('Storage upload error:', uploadError);
+        throw new Error(`Error de subida: ${uploadError.message}`);
       }
 
       console.log('Upload successful, getting public URL');
@@ -173,10 +176,15 @@ export const useUserProfile = () => {
       // Actualizar perfil con nueva URL
       await updateProfile({ avatar_url: publicUrl });
 
-      console.log('Profile updated successfully');
+      console.log('Profile updated successfully with new avatar URL');
+
+      toast({
+        title: "Avatar actualizado",
+        description: "Tu foto de perfil se ha actualizado correctamente"
+      });
 
     } catch (error) {
-      console.error('Error uploading avatar:', error);
+      console.error('Error in uploadAvatar function:', error);
       toast({
         title: "Error",
         description: `No se pudo subir la foto de perfil: ${error.message}`,

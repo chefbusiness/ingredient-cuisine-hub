@@ -1,3 +1,4 @@
+
 import UnifiedHeader from "@/components/UnifiedHeader";
 import Footer from "@/components/Footer";
 import SEOHead from "@/components/SEOHead";
@@ -86,7 +87,7 @@ const IngredientDetailLayout = ({
   const ingredientSchema = ingredient ? generateIngredientSchema(ingredient) : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-orange-50 to-yellow-50 flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {seoData && <SEOHead seoData={seoData} />}
       {breadcrumbSchema && <StructuredData data={breadcrumbSchema} id="breadcrumb-schema" />}
       {ingredientSchema && <StructuredData data={ingredientSchema} id="ingredient-schema" />}

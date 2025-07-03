@@ -10,29 +10,89 @@ const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-// Detectar bots de redes sociales y crawlers
+// Detectar bots de redes sociales, crawlers y herramientas de programación
 function isSocialBot(userAgent: string): boolean {
   const botPatterns = [
+    // Bots sociales principales
     'facebookexternalhit',
-    'Twitterbot',
+    'Twitterbot', 
     'WhatsApp',
     'Telegram',
     'LinkedInBot',
     'Slackbot',
     'Discordbot',
+    // Bots de búsqueda
     'googlebot',
     'bingbot',
     'Applebot',
-    'TelegramBot',
-    'WhatsAppBot'
+    'baiduspider',
+    'yandexbot',
+    // Herramientas de programación y scheduling
+    'PostPlanner',
+    'Buffer',
+    'Hootsuite',
+    'SocialBee',
+    'Later',
+    'Sprout',
+    'CoSchedule',
+    'MeetEdgar',
+    // Crawlers genéricos
+    'crawler',
+    'spider',
+    'scraper',
+    'bot',
+    'fetch',
+    'preview',
+    'link',
+    'meta',
+    'preview-generator',
+    // User agents específicos de herramientas
+    'curl',
+    'wget',
+    'axios',
+    'node-fetch',
+    'python-requests',
+    'okhttp',
+    'PostmanRuntime'
   ]
   
+  const userAgentLower = userAgent.toLowerCase()
+  
+  // Detectar patrones de bot
   return botPatterns.some(pattern => 
-    userAgent.toLowerCase().includes(pattern.toLowerCase())
-  )
+    userAgentLower.includes(pattern.toLowerCase())
+  ) || 
+  // Detectar user agents muy básicos (probable bot/crawler)
+  userAgent.length < 50 ||
+  // Detectar ausencia de información del navegador típica
+  (!userAgentLower.includes('mozilla') && !userAgentLower.includes('chrome') && !userAgentLower.includes('safari') && !userAgentLower.includes('firefox'))
 }
 
-// Generar HTML con meta tags para el ingrediente
+// Generar HTML para usuarios normales (con redirección inmediata)
+function generateUserHTML(ingredient: any): string {
+  const canonicalUrl = ingredient.slug 
+    ? `https://ingredientsindex.pro/ingrediente/${ingredient.slug}`
+    : `https://ingredientsindex.pro/ingrediente/${ingredient.id}`
+
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirigiendo...</title>
+    <script>
+      // Redirección inmediata para usuarios
+      window.location.replace('${canonicalUrl}');
+    </script>
+    <meta http-equiv="refresh" content="0;url=${canonicalUrl}">
+</head>
+<body>
+    <p>Redirigiendo a <a href="${canonicalUrl}">${ingredient.name}</a>...</p>
+</body>
+</html>`
+}
+
+// Generar HTML completo con meta tags para bots/crawlers
 function generateIngredientHTML(ingredient: any): string {
   const title = `${ingredient.name} | Ingrediente Profesional - Precios y Características | IngredientsIndex.pro`
   const description = `${ingredient.description} Información completa sobre ${ingredient.name}: precios, merma (${ingredient.merma}%), rendimiento (${ingredient.rendimiento}%), usos culinarios y más.`
@@ -70,12 +130,13 @@ function generateIngredientHTML(ingredient: any): string {
     
     <link rel="canonical" href="${canonicalUrl}">
     
-    <!-- Redirección automática para usuarios normales -->
-    <script>
-      if (!/bot|crawler|spider|crawling/i.test(navigator.userAgent)) {
-        window.location.href = '${canonicalUrl}';
-      }
-    </script>
+    <!-- Meta tags adicionales para mejor SEO -->
+    <meta name="robots" content="index, follow">
+    <meta name="author" content="IngredientsIndex.pro">
+    <meta property="og:locale" content="es_ES">
+    <meta property="article:author" content="IngredientsIndex.pro">
+    <meta property="article:section" content="Ingredientes">
+    <meta name="theme-color" content="#22c55e">
 </head>
 <body>
     <h1>${ingredient.name}</h1>
@@ -108,13 +169,10 @@ Deno.serve(async (req) => {
     const ingredientParam = ingredientMatch[1]
     console.log('📋 Ingrediente param:', ingredientParam)
 
-    // Detectar si es un bot social
-    if (!isSocialBot(userAgent)) {
-      console.log('👤 Usuario normal, redirigiendo...')
-      return Response.redirect(`https://ingredientsindex.pro${url.pathname}`, 302)
-    }
-
-    console.log('🤖 Bot detectado, generando meta tags...')
+    // Verificar si es un bot/crawler o usuario normal
+    const isBot = isSocialBot(userAgent)
+    console.log(`${isBot ? '🤖' : '👤'} ${isBot ? 'Bot/Crawler' : 'Usuario normal'} detectado`)
+    console.log('📊 User-Agent completo:', userAgent)
 
     // Determinar si es UUID (ID) o slug
     const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(ingredientParam)
@@ -151,14 +209,20 @@ Deno.serve(async (req) => {
 
     console.log('✅ Ingrediente encontrado:', ingredient.name)
 
-    // Generar HTML con meta tags
-    const html = generateIngredientHTML(ingredient)
+    // Generar HTML optimizado según el tipo de usuario
+    const html = isBot 
+      ? generateIngredientHTML(ingredient) // HTML estático para bots
+      : generateUserHTML(ingredient) // HTML con redirección para usuarios
+    
+    const cacheControl = isBot 
+      ? 'public, max-age=3600' // Cache más largo para bots
+      : 'no-cache, no-store, must-revalidate' // Sin cache para usuarios
 
     return new Response(html, {
       headers: {
         ...corsHeaders,
         'Content-Type': 'text/html; charset=utf-8',
-        'Cache-Control': 'public, max-age=3600', // Cache por 1 hora
+        'Cache-Control': cacheControl,
       },
     })
 

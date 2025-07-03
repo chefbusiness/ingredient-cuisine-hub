@@ -10,10 +10,10 @@ const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-// Detectar bots de redes sociales, crawlers y herramientas de programación
+// Detectar solo bots sociales específicos y conocidos
 function isSocialBot(userAgent: string): boolean {
   const botPatterns = [
-    // Bots sociales principales
+    // Solo bots sociales específicos que necesitan meta tags
     'facebookexternalhit',
     'Twitterbot', 
     'WhatsApp',
@@ -21,13 +21,7 @@ function isSocialBot(userAgent: string): boolean {
     'LinkedInBot',
     'Slackbot',
     'Discordbot',
-    // Bots de búsqueda
-    'googlebot',
-    'bingbot',
-    'Applebot',
-    'baiduspider',
-    'yandexbot',
-    // Herramientas de programación y scheduling
+    // Herramientas de scheduling social específicas
     'PostPlanner',
     'Buffer',
     'Hootsuite',
@@ -35,37 +29,15 @@ function isSocialBot(userAgent: string): boolean {
     'Later',
     'Sprout',
     'CoSchedule',
-    'MeetEdgar',
-    // Crawlers genéricos
-    'crawler',
-    'spider',
-    'scraper',
-    'bot',
-    'fetch',
-    'preview',
-    'link',
-    'meta',
-    'preview-generator',
-    // User agents específicos de herramientas
-    'curl',
-    'wget',
-    'axios',
-    'node-fetch',
-    'python-requests',
-    'okhttp',
-    'PostmanRuntime'
+    'MeetEdgar'
   ]
   
   const userAgentLower = userAgent.toLowerCase()
   
-  // Detectar patrones de bot
+  // Solo detectar patrones muy específicos de bots sociales
   return botPatterns.some(pattern => 
     userAgentLower.includes(pattern.toLowerCase())
-  ) || 
-  // Detectar user agents muy básicos (probable bot/crawler)
-  userAgent.length < 50 ||
-  // Detectar ausencia de información del navegador típica
-  (!userAgentLower.includes('mozilla') && !userAgentLower.includes('chrome') && !userAgentLower.includes('safari') && !userAgentLower.includes('firefox'))
+  )
 }
 
 // Generar HTML para usuarios normales (con redirección inmediata)

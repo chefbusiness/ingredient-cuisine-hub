@@ -93,3 +93,6 @@ verify_jwt = true
 
 [functions.test-connection]
 verify_jwt = true
+
+[functions.ingredient-meta-prerender]
+verify_jwt = false

@@ -1,8 +1,16 @@
 
 /sitemap.xml /sitemap.xml 200! Content-Type: application/xml Cache-Control: no-cache,no-store,must-revalidate
 
-# Proxy universal para ingredientes - manejará TODOS los casos en la Edge Function
-/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200
+# Solo interceptar bots sociales específicos para meta tags
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *facebookexternalhit*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Twitterbot*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *WhatsApp*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *LinkedInBot*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Slackbot*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Discordbot*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *PostPlanner*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Buffer*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Hootsuite*
 
 # Redirección general para SPA
 /* /index.html 200

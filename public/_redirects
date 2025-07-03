@@ -1,14 +1,8 @@
 
 /sitemap.xml /sitemap.xml 200! Content-Type: application/xml Cache-Control: no-cache,no-store,must-revalidate
 
-# Redirección para bots sociales en URLs de ingredientes
-/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! headers={"User-Agent": "facebookexternalhit*"}
-/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! headers={"User-Agent": "Twitterbot*"}
-/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! headers={"User-Agent": "WhatsApp*"}
-/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! headers={"User-Agent": "TelegramBot*"}
-/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! headers={"User-Agent": "LinkedInBot*"}
-/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! headers={"User-Agent": "Slackbot*"}
-/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! headers={"User-Agent": "Discordbot*"}
+# Proxy universal para ingredientes - manejará TODOS los casos en la Edge Function
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200
 
 # Redirección general para SPA
 /* /index.html 200

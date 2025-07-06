@@ -46,7 +46,7 @@ serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'llama-3.1-sonar-small-128k-online',
+            model: 'sonar-pro', // ACTUALIZADO: modelo correcto según nueva API de Perplexity
             messages: [
               { role: 'user', content: 'Test connection - respond with "OK"' }
             ],

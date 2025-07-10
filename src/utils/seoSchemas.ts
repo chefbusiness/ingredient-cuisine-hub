@@ -70,6 +70,34 @@ export const generateIngredientSchema = (ingredient: Ingredient) => ({
     : `${BASE_URL}/ingrediente/${ingredient.id}`
 });
 
+export const generateIngredientSEO = (ingredient: Ingredient) => {
+  const title = `${ingredient.name} | Ingrediente Profesional - Precios y Características | IngredientsIndex.pro`;
+  const description = ingredient.description.length > 155 
+    ? `${ingredient.description.substring(0, 152)}...` 
+    : ingredient.description;
+  const metaDescription = `${description} Información completa sobre ${ingredient.name}: precios, merma (${ingredient.merma}%), rendimiento (${ingredient.rendimiento}%), usos culinarios y más.`;
+  const imageUrl = ingredient.real_image_url || ingredient.image_url || `${BASE_URL}/og-image.jpg`;
+  const canonicalUrl = ingredient.slug 
+    ? `${BASE_URL}/ingrediente/${ingredient.slug}`
+    : `${BASE_URL}/ingrediente/${ingredient.id}`;
+  const keywords = `${ingredient.name}, ingrediente, cocina profesional, hostelería, precios, merma, rendimiento, ${ingredient.categories?.name || 'ingredientes'}, chef, gastronomía`;
+
+  return {
+    title,
+    description: metaDescription,
+    keywords,
+    ogTitle: `${ingredient.name} - Ingrediente Profesional | IngredientsIndex.pro`,
+    ogDescription: metaDescription,
+    ogImage: imageUrl,
+    ogType: 'product',
+    twitterCard: 'summary_large_image',
+    twitterTitle: `${ingredient.name} - Ingrediente Profesional | IngredientsIndex.pro`,
+    twitterDescription: metaDescription,
+    twitterImage: imageUrl,
+    canonical: canonicalUrl
+  };
+};
+
 export const generateBreadcrumbSchema = (items: { name: string; url: string }[]) => ({
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",

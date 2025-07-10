@@ -5,7 +5,8 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Content-Type': 'application/xml; charset=utf-8',
-  'Cache-Control': 'public, max-age=3600'
+  'Cache-Control': 'public, max-age=1800', // Reducido a 30 minutos
+  'X-Robots-Tag': 'noindex', // Evitar indexar el sitemap en motores de búsqueda
 }
 
 Deno.serve(async (req) => {

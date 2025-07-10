@@ -1,6 +1,6 @@
 
 # SITEMAP DINÁMICO COMPLETO: Redirección al sitemap con TODOS los ingredientes
-/sitemap.xml https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/generate-sitemap 200! Content-Type: application/xml Cache-Control: public,max-age=3600
+/sitemap.xml https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/generate-sitemap 200! Content-Type: application/xml;charset=utf-8 Cache-Control: public,max-age=1800
 
 # Interceptar bots sociales Y crawlers SEO para meta tags optimizados
 /ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *facebookexternalhit*

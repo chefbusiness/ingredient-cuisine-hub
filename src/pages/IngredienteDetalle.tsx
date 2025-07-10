@@ -6,6 +6,9 @@ import IngredientDetailError from "@/components/ingredient-detail/IngredientDeta
 import IngredientDetailLimitReached from "@/components/ingredient-detail/IngredientDetailLimitReached";
 import IngredientDetailContent from "@/components/ingredient-detail/IngredientDetailContent";
 import AIChefBot from "@/components/AIChefBot";
+import SEOHead from "@/components/SEOHead";
+import StructuredData from "@/components/StructuredData";
+import { generateIngredientSEO, generateIngredientSchema, generateBreadcrumbSchema } from "@/utils/seoSchemas";
 
 const IngredienteDetalle = () => {
   const {
@@ -46,8 +49,22 @@ const IngredienteDetalle = () => {
     );
   }
 
+  // Generar datos SEO para el ingrediente
+  const seoData = generateIngredientSEO(ingredient);
+  const ingredientSchema = generateIngredientSchema(ingredient);
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: 'Inicio', url: 'https://ingredientsindex.pro/' },
+    { name: 'Directorio', url: 'https://ingredientsindex.pro/directorio' },
+    { name: ingredient.name, url: seoData.canonical || '' }
+  ]);
+
   return (
     <>
+      {/* SEO optimizado para cada ingrediente */}
+      <SEOHead seoData={seoData} />
+      <StructuredData data={ingredientSchema} id="ingredient-schema" />
+      <StructuredData data={breadcrumbSchema} id="breadcrumb-schema" />
+      
       <IngredientDetailLayout 
         ingredient={ingredient}
         showAuthModal={showAuthModal}

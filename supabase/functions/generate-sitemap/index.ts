@@ -33,22 +33,22 @@ Deno.serve(async (req) => {
     let categoryPages: Array<{ name: string; lastmod: string }> = [];
     let ingredientPages: Array<{ slug: string; lastmod: string }> = [];
 
-    // Intentar obtener datos dinámicos con timeout muy corto
+    // Obtener datos dinámicos con timeout razonable para SEO completo
     try {
       const supabase = createClient(
         'https://unqhfgupcutpeyepnavl.supabase.co',
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVucWhmZ3VwY3V0cGV5ZXBuYXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MzYzNTcsImV4cCI6MjA2NjExMjM1N30.fAMG2IznLEqReHQ5F4D2bZB5oh74d1jYK2NSjRXvblk'
       );
 
-      // Timeout muy corto para evitar delays
+      // Timeout más generoso para permitir cargar todos los ingredientes (SEO completo)
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 1500)
+        setTimeout(() => reject(new Error('Timeout')), 10000)
       );
 
-      // Obtener categorías
+      // Obtener todas las categorías
       try {
         const categoriesResult = await Promise.race([
-          supabase.from('categories').select('name, created_at').limit(30),
+          supabase.from('categories').select('name, created_at'),
           timeoutPromise
         ]) as any;
 
@@ -58,14 +58,14 @@ Deno.serve(async (req) => {
             lastmod: cat.created_at || currentDate
           }));
         }
-      } catch {
-        // Silenciar errores de categorías
+      } catch (error) {
+        console.log('⚠️ Error obteniendo categorías para sitemap:', error);
       }
 
-      // Obtener ingredientes
+      // Obtener TODOS los ingredientes con slug válido (crítico para SEO)
       try {
         const ingredientsResult = await Promise.race([
-          supabase.from('ingredients').select('slug, updated_at').not('slug', 'is', null).limit(200),
+          supabase.from('ingredients').select('slug, updated_at').not('slug', 'is', null).order('updated_at', { ascending: false }),
           timeoutPromise
         ]) as any;
 
@@ -74,9 +74,10 @@ Deno.serve(async (req) => {
             slug: ing.slug,
             lastmod: ing.updated_at || currentDate
           }));
+          console.log(`✅ Sitemap: ${ingredientPages.length} ingredientes cargados`);
         }
-      } catch {
-        // Silenciar errores de ingredientes
+      } catch (error) {
+        console.log('⚠️ Error obteniendo ingredientes para sitemap:', error);
       }
 
     } catch {

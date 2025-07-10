@@ -10,10 +10,10 @@ const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY')!
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-// Detectar solo bots sociales específicos y conocidos
-function isSocialBot(userAgent: string): boolean {
+// Detectar bots sociales Y crawlers SEO (Google, Bing, etc.)
+function isBotOrCrawler(userAgent: string): boolean {
   const botPatterns = [
-    // Solo bots sociales específicos que necesitan meta tags
+    // Bots sociales específicos que necesitan meta tags
     'facebookexternalhit',
     'Twitterbot', 
     'WhatsApp',
@@ -29,12 +29,34 @@ function isSocialBot(userAgent: string): boolean {
     'Later',
     'Sprout',
     'CoSchedule',
-    'MeetEdgar'
+    'MeetEdgar',
+    // CRÍTICO PARA SEO: Crawlers de motores de búsqueda
+    'Googlebot',
+    'GoogleBot',
+    'Google-Structured-Data-Testing-Tool',
+    'Google-PageSpeed',
+    'Google-Read-Aloud',
+    'Bingbot',
+    'bingbot',
+    'YandexBot',
+    'DuckDuckBot',
+    'Baiduspider',
+    'facebookcatalog',
+    // Herramientas SEO y testing
+    'Screaming Frog',
+    'SemrushBot',
+    'AhrefsBot',
+    'MJ12bot',
+    'PageSpeed',
+    'GTmetrix',
+    'Pingdom',
+    'Site24x7',
+    'UptimeRobot'
   ]
   
   const userAgentLower = userAgent.toLowerCase()
   
-  // Solo detectar patrones muy específicos de bots sociales
+  // Detectar patrones de bots sociales Y crawlers SEO
   return botPatterns.some(pattern => 
     userAgentLower.includes(pattern.toLowerCase())
   )
@@ -64,36 +86,49 @@ function generateUserHTML(ingredient: any): string {
 </html>`
 }
 
-// Generar HTML completo con meta tags para bots/crawlers
+// Generar HTML completo con meta tags SEO optimizados para bots/crawlers
 function generateIngredientHTML(ingredient: any): string {
   const title = `${ingredient.name} | Ingrediente Profesional - Precios y Características | IngredientsIndex.pro`
-  const description = `${ingredient.description} Información completa sobre ${ingredient.name}: precios, merma (${ingredient.merma}%), rendimiento (${ingredient.rendimiento}%), usos culinarios y más.`
+  const description = ingredient.description.length > 155 
+    ? `${ingredient.description.substring(0, 152)}...` 
+    : ingredient.description
+  const metaDescription = `${description} Información completa sobre ${ingredient.name}: precios, merma (${ingredient.merma}%), rendimiento (${ingredient.rendimiento}%), usos culinarios y más.`
   const imageUrl = ingredient.real_image_url || ingredient.image_url || 'https://ingredientsindex.pro/og-image.jpg'
   const canonicalUrl = ingredient.slug 
     ? `https://ingredientsindex.pro/ingrediente/${ingredient.slug}`
     : `https://ingredientsindex.pro/ingrediente/${ingredient.id}`
+  
+  // Escapar comillas para evitar errores en HTML
+  const escapedTitle = title.replace(/"/g, '&quot;')
+  const escapedDescription = metaDescription.replace(/"/g, '&quot;')
+  const escapedName = ingredient.name.replace(/"/g, '&quot;')
+  
+  // Keywords SEO dinámicas basadas en el ingrediente
+  const keywords = `${ingredient.name}, ingrediente, cocina profesional, hostelería, precios, merma, rendimiento, ${ingredient.categories?.name || 'ingredientes'}, chef, gastronomía`
 
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${title}</title>
-    <meta name="description" content="${description}">
+    <title>${escapedTitle}</title>
+    <meta name="description" content="${escapedDescription}">
+    <meta name="keywords" content="${keywords}">
     
     <!-- Open Graph / Facebook -->
-    <meta property="og:type" content="article">
+    <meta property="og:type" content="product">
     <meta property="og:url" content="${canonicalUrl}">
-    <meta property="og:title" content="${ingredient.name} - Ingrediente Profesional | IngredientsIndex.pro">
-    <meta property="og:description" content="${description}">
+    <meta property="og:title" content="${escapedName} - Ingrediente Profesional | IngredientsIndex.pro">
+    <meta property="og:description" content="${escapedDescription}">
     <meta property="og:image" content="${imageUrl}">
     <meta property="og:site_name" content="IngredientsIndex.pro">
+    <meta property="og:locale" content="es_ES">
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="${canonicalUrl}">
-    <meta property="twitter:title" content="${ingredient.name} - Ingrediente Profesional | IngredientsIndex.pro">
-    <meta property="twitter:description" content="${description}">
+    <meta property="twitter:title" content="${escapedName} - Ingrediente Profesional | IngredientsIndex.pro">
+    <meta property="twitter:description" content="${escapedDescription}">
     <meta property="twitter:image" content="${imageUrl}">
     
     <!-- WhatsApp específico -->
@@ -102,18 +137,75 @@ function generateIngredientHTML(ingredient: any): string {
     
     <link rel="canonical" href="${canonicalUrl}">
     
-    <!-- Meta tags adicionales para mejor SEO -->
-    <meta name="robots" content="index, follow">
+    <!-- Meta tags SEO avanzados -->
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
     <meta name="author" content="IngredientsIndex.pro">
-    <meta property="og:locale" content="es_ES">
     <meta property="article:author" content="IngredientsIndex.pro">
     <meta property="article:section" content="Ingredientes">
     <meta name="theme-color" content="#22c55e">
+    <meta name="format-detection" content="telephone=no">
+    
+    <!-- JSON-LD Schema.org para mejor SEO -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      "name": "${escapedName}",
+      "description": "${escapedDescription}",
+      "image": "${imageUrl}",
+      "category": "${ingredient.categories?.name || 'Ingrediente Culinario'}",
+      "brand": {
+        "@type": "Brand",
+        "name": "IngredientsIndex.pro"
+      },
+      "additionalProperty": [
+        {
+          "@type": "PropertyValue",
+          "name": "Merma",
+          "value": "${ingredient.merma}%"
+        },
+        {
+          "@type": "PropertyValue", 
+          "name": "Rendimiento",
+          "value": "${ingredient.rendimiento}%"
+        }
+      ],
+      "url": "${canonicalUrl}"
+    }
+    </script>
+    
+    <!-- Breadcrumb Schema -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Inicio",
+          "item": "https://ingredientsindex.pro/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Directorio",
+          "item": "https://ingredientsindex.pro/directorio"
+        },
+        {
+          "@type": "ListItem",
+          "position": 3,
+          "name": "${escapedName}",
+          "item": "${canonicalUrl}"
+        }
+      ]
+    }
+    </script>
 </head>
 <body>
-    <h1>${ingredient.name}</h1>
-    <p>${description}</p>
-    <img src="${imageUrl}" alt="${ingredient.name}" style="max-width: 100%; height: auto;">
+    <h1>${escapedName}</h1>
+    <p>${escapedDescription}</p>
+    <img src="${imageUrl}" alt="${escapedName}" style="max-width: 100%; height: auto;">
     <p>Para ver la información completa, visita: <a href="${canonicalUrl}">${canonicalUrl}</a></p>
 </body>
 </html>`
@@ -141,9 +233,9 @@ Deno.serve(async (req) => {
     const ingredientParam = ingredientMatch[1]
     console.log('📋 Ingrediente param:', ingredientParam)
 
-    // Verificar si es un bot/crawler o usuario normal
-    const isBot = isSocialBot(userAgent)
-    console.log(`${isBot ? '🤖' : '👤'} ${isBot ? 'Bot/Crawler' : 'Usuario normal'} detectado`)
+    // Verificar si es un bot/crawler (social + SEO) o usuario normal
+    const isBot = isBotOrCrawler(userAgent)
+    console.log(`${isBot ? '🤖' : '👤'} ${isBot ? 'Bot/Crawler/SEO' : 'Usuario normal'} detectado`)
     console.log('📊 User-Agent completo:', userAgent)
 
     // Determinar si es UUID (ID) o slug

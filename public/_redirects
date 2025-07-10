@@ -1,7 +1,8 @@
 
-/sitemap.xml /sitemap.xml 200! Content-Type: application/xml Cache-Control: no-cache,no-store,must-revalidate
+# SITEMAP DINÁMICO COMPLETO: Redirección al sitemap con TODOS los ingredientes
+/sitemap.xml https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/generate-sitemap 200! Content-Type: application/xml Cache-Control: public,max-age=3600
 
-# Solo interceptar bots sociales específicos para meta tags
+# Interceptar bots sociales Y crawlers SEO para meta tags optimizados
 /ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *facebookexternalhit*
 /ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Twitterbot*
 /ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *WhatsApp*
@@ -11,6 +12,13 @@
 /ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *PostPlanner*
 /ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Buffer*
 /ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Hootsuite*
+# CRÍTICO SEO: Interceptar Google Bot y otros crawlers
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Googlebot*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *GoogleBot*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Bingbot*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *bingbot*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *YandexBot*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *DuckDuckBot*
 
 # Redirección general para SPA
 /* /index.html 200

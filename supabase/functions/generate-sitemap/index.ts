@@ -16,8 +16,10 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log('🔄 === SITEMAP GENERATION START ===');
     const baseUrl = 'https://ingredientsindex.pro';
     const currentDate = new Date().toISOString();
+    console.log('📅 Current date:', currentDate);
 
     // URLs estáticas del sitio
     const staticPages = [
@@ -34,84 +36,89 @@ Deno.serve(async (req) => {
     let categoryPages: Array<{ name: string; lastmod: string }> = [];
     let ingredientPages: Array<{ slug: string; lastmod: string }> = [];
 
-    // Obtener datos dinámicos con timeout optimizado
-    console.log('🔄 Sitemap: Iniciando carga de datos...');
-    
+    // Inicializar cliente Supabase
+    console.log('🔗 Inicializando cliente Supabase...');
+    const supabase = createClient(
+      'https://unqhfgupcutpeyepnavl.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVucWhmZ3VwY3V0cGV5ZXBuYXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MzYzNTcsImV4cCI6MjA2NjExMjM1N30.fAMG2IznLEqReHQ5F4D2bZB5oh74d1jYK2NSjRXvblk'
+    );
+
+    // Cargar categorías rápidamente
+    console.log('📋 === CARGANDO CATEGORÍAS ===');
     try {
-      const supabase = createClient(
-        'https://unqhfgupcutpeyepnavl.supabase.co',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVucWhmZ3VwY3V0cGV5ZXBuYXZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA1MzYzNTcsImV4cCI6MjA2NjExMjM1N30.fAMG2IznLEqReHQ5F4D2bZB5oh74d1jYK2NSjRXvblk'
-      );
+      const categoriesPromise = supabase
+        .from('categories')
+        .select('name, created_at')
+        .limit(20);
+      
+      const categoriesResult = await Promise.race([
+        categoriesPromise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Categories timeout')), 2000))
+      ]) as any;
 
-      // Obtener categorías con timeout
-      try {
-        console.log('📋 Cargando categorías...');
-        const categoriesResult = await Promise.race([
-          supabase.from('categories').select('name, created_at').limit(50),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Categories timeout')), 3000))
-        ]) as any;
-
-        if (categoriesResult?.data && Array.isArray(categoriesResult.data)) {
-          categoryPages = categoriesResult.data.map((cat: any) => ({
-            name: cat.name,
-            lastmod: cat.created_at || currentDate
-          }));
-          console.log(`✅ ${categoryPages.length} categorías cargadas`);
-        }
-      } catch (error) {
-        console.log('⚠️ Error categorías:', error.message);
+      if (categoriesResult?.data && Array.isArray(categoriesResult.data)) {
+        categoryPages = categoriesResult.data.map((cat: any) => ({
+          name: cat.name,
+          lastmod: cat.created_at || currentDate
+        }));
+        console.log(`✅ ${categoryPages.length} categorías cargadas exitosamente`);
+      } else {
+        console.log('⚠️ No se encontraron categorías');
       }
-
-      // Obtener ingredientes con timeout separado
-      try {
-        console.log('🥬 Cargando ingredientes...');
-        const ingredientsResult = await Promise.race([
-          supabase.from('ingredients').select('slug, updated_at').not('slug', 'is', null).order('updated_at', { ascending: false }),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Ingredients timeout')), 4000))
-        ]) as any;
-
-        if (ingredientsResult?.data && Array.isArray(ingredientsResult.data)) {
-          ingredientPages = ingredientsResult.data.map((ing: any) => ({
-            slug: ing.slug,
-            lastmod: ing.updated_at || currentDate
-          }));
-          console.log(`✅ ${ingredientPages.length} ingredientes cargados`);
-        }
-      } catch (error) {
-        console.log('⚠️ Error ingredientes:', error.message);
-        // Fallback: crear al menos algunas URLs de ingredientes básicas
-        ingredientPages = [
-          { slug: 'tomate', lastmod: currentDate },
-          { slug: 'cebolla', lastmod: currentDate },
-          { slug: 'ajo', lastmod: currentDate },
-          { slug: 'patata', lastmod: currentDate },
-          { slug: 'zanahoria', lastmod: currentDate }
-        ];
-        console.log('🔧 Usando ingredientes fallback');
-      }
-
-    } catch (dbError) {
-      console.log('❌ Error conexión BD:', dbError.message);
-      // Fallback completo
+    } catch (catError) {
+      console.log('❌ Error al cargar categorías:', catError.message);
+      // Categorías fallback
       categoryPages = [
         { name: 'Verduras', lastmod: currentDate },
         { name: 'Frutas', lastmod: currentDate },
         { name: 'Carnes', lastmod: currentDate }
       ];
+    }
+
+    // Cargar ingredientes con límite para evitar timeouts
+    console.log('🥬 === CARGANDO INGREDIENTES ===');
+    try {
+      const ingredientsPromise = supabase
+        .from('ingredients')
+        .select('slug, updated_at')
+        .not('slug', 'is', null)
+        .order('updated_at', { ascending: false })
+        .limit(500); // Límite para evitar timeouts
+      
+      const ingredientsResult = await Promise.race([
+        ingredientsPromise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Ingredients timeout')), 3000))
+      ]) as any;
+
+      if (ingredientsResult?.data && Array.isArray(ingredientsResult.data)) {
+        ingredientPages = ingredientsResult.data.map((ing: any) => ({
+          slug: ing.slug,
+          lastmod: ing.updated_at || currentDate
+        }));
+        console.log(`✅ ${ingredientPages.length} ingredientes cargados exitosamente`);
+      } else {
+        console.log('⚠️ No se encontraron ingredientes');
+      }
+    } catch (ingError) {
+      console.log('❌ Error al cargar ingredientes:', ingError.message);
+      // Ingredientes fallback mínimos
       ingredientPages = [
         { slug: 'tomate', lastmod: currentDate },
         { slug: 'cebolla', lastmod: currentDate },
-        { slug: 'ajo', lastmod: currentDate }
+        { slug: 'ajo', lastmod: currentDate },
+        { slug: 'patata', lastmod: currentDate },
+        { slug: 'zanahoria', lastmod: currentDate }
       ];
     }
 
-    // Construir sitemap XML limpio
+    // Construir sitemap XML completo
+    console.log('🔨 === CONSTRUYENDO SITEMAP XML ===');
     const xmlParts = [
       '<?xml version="1.0" encoding="UTF-8"?>',
       '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'
     ];
 
-    // Páginas estáticas
+    // Agregar páginas estáticas
     staticPages.forEach(page => {
       xmlParts.push(
         '<url>',
@@ -123,7 +130,7 @@ Deno.serve(async (req) => {
       );
     });
 
-    // Páginas de categorías
+    // Agregar páginas de categorías
     categoryPages.forEach(cat => {
       xmlParts.push(
         '<url>',
@@ -135,7 +142,7 @@ Deno.serve(async (req) => {
       );
     });
 
-    // Páginas de ingredientes
+    // Agregar páginas de ingredientes
     ingredientPages.forEach(ing => {
       xmlParts.push(
         '<url>',
@@ -148,8 +155,12 @@ Deno.serve(async (req) => {
     });
 
     xmlParts.push('</urlset>');
-
     const xmlContent = xmlParts.join('');
+    
+    const totalUrls = staticPages.length + categoryPages.length + ingredientPages.length;
+    console.log(`✅ === SITEMAP GENERADO EXITOSAMENTE ===`);
+    console.log(`📊 Total URLs: ${totalUrls} (${staticPages.length} estáticas + ${categoryPages.length} categorías + ${ingredientPages.length} ingredientes)`);
+    console.log(`📏 XML length: ${xmlContent.length} characters`);
 
     return new Response(xmlContent, {
       status: 200,

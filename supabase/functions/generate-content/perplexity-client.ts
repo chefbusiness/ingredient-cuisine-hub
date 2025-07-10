@@ -21,6 +21,7 @@ export class PerplexityClient {
     
     try {
       console.log('🌐 Enviando solicitud a Perplexity API...');
+      console.log('🔑 Verificando formato de API Key:', this.apiKey.startsWith('pplx-') ? 'CORRECTO' : 'FORMATO INCORRECTO');
       
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
@@ -48,11 +49,28 @@ export class PerplexityClient {
         }),
       });
 
+      console.log('📊 Perplexity response status:', response.status, response.statusText);
+
       if (!response.ok) {
         const errorText = await response.text();
         console.error('❌ Perplexity API error:', response.status, response.statusText);
         console.error('📄 Error response:', errorText);
-        throw new Error(`Perplexity API error: ${response.status} ${response.statusText}`);
+        
+        // Diagnóstico específico del error
+        let diagnosticMessage = '';
+        if (response.status === 401) {
+          diagnosticMessage = 'API Key inválida o expirada. Verificar en cuenta de Perplexity.';
+        } else if (response.status === 429) {
+          diagnosticMessage = 'Límite de rate alcanzado. Esperar antes de reintentar.';
+        } else if (response.status === 402) {
+          diagnosticMessage = 'Sin créditos disponibles. Revisar plan de facturación.';
+        } else if (response.status >= 500) {
+          diagnosticMessage = 'Error temporal del servidor de Perplexity.';
+        } else {
+          diagnosticMessage = `Error HTTP ${response.status}: ${response.statusText}`;
+        }
+        
+        throw new Error(`Perplexity API error (${response.status}): ${diagnosticMessage}`);
       }
 
       const data = await response.json();

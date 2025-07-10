@@ -152,7 +152,7 @@ export class PerplexityClient {
     console.log('🔄 === FALLBACK: Usando modelo estándar masivo ===');
     
     const requestBody = {
-      model: 'llama-3.1-sonar-small-128k-online', // CORREGIDO: modelo válido
+      model: 'sonar-pro', // ACTUALIZADO: modelo correcto según nueva API de Perplexity
       messages: [
         {
           role: 'system',

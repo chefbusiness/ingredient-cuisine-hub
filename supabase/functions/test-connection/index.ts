@@ -29,11 +29,16 @@ serve(async (req) => {
       console.log('🔑 PERPLEXITY_API_KEY inicio:', perplexityKey.substring(0, 10) + '...');
     }
 
-    // Test simple de conectividad con Perplexity
+    // Test detallado de conectividad con Perplexity
     let perplexityTest = false;
+    let perplexityError = null;
+    let perplexityDetails = {};
+    
     if (perplexityKey) {
       try {
         console.log('🌐 Probando conectividad con Perplexity...');
+        console.log('🔑 API Key format check:', perplexityKey.startsWith('pplx-') ? 'CORRECTO' : 'FORMATO INCORRECTO');
+        
         const testResponse = await fetch('https://api.perplexity.ai/chat/completions', {
           method: 'POST',
           headers: {
@@ -41,7 +46,7 @@ serve(async (req) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'llama-3.1-sonar-small-128k-online',
+            model: 'sonar-pro', // ACTUALIZADO: modelo correcto según nueva API de Perplexity
             messages: [
               { role: 'user', content: 'Test connection - respond with "OK"' }
             ],
@@ -50,14 +55,45 @@ serve(async (req) => {
         });
         
         perplexityTest = testResponse.ok;
+        perplexityDetails = {
+          status: testResponse.status,
+          statusText: testResponse.statusText,
+          headers: Object.fromEntries(testResponse.headers.entries())
+        };
+        
         console.log('🌐 Test Perplexity:', perplexityTest ? 'ÉXITO' : 'FALLO');
+        console.log('📊 Response status:', testResponse.status, testResponse.statusText);
         
         if (!testResponse.ok) {
           const errorText = await testResponse.text();
           console.log('❌ Error de Perplexity:', testResponse.status, errorText);
+          perplexityError = {
+            status: testResponse.status,
+            statusText: testResponse.statusText,
+            body: errorText
+          };
+          
+          // Diagnóstico específico por código de error
+          if (testResponse.status === 401) {
+            console.log('🔐 DIAGNÓSTICO: API Key inválida o expirada');
+          } else if (testResponse.status === 429) {
+            console.log('⏱️ DIAGNÓSTICO: Límite de rate alcanzado');
+          } else if (testResponse.status === 402) {
+            console.log('💰 DIAGNÓSTICO: Sin créditos disponibles');
+          } else if (testResponse.status >= 500) {
+            console.log('🚨 DIAGNÓSTICO: Error temporal del servidor de Perplexity');
+          }
+        } else {
+          const responseData = await testResponse.json();
+          console.log('✅ Respuesta exitosa de Perplexity:', responseData);
         }
       } catch (error) {
         console.log('❌ Error conectando con Perplexity:', error.message);
+        perplexityError = {
+          type: 'network_error',
+          message: error.message,
+          stack: error.stack
+        };
       }
     }
 
@@ -68,10 +104,24 @@ serve(async (req) => {
         supabase_url_present: !!supabaseUrl,
         supabase_key_present: !!supabaseKey,
         perplexity_key_present: !!perplexityKey,
-        perplexity_key_length: perplexityKey ? perplexityKey.length : 0
+        perplexity_key_length: perplexityKey ? perplexityKey.length : 0,
+        perplexity_key_format: perplexityKey ? (perplexityKey.startsWith('pplx-') ? 'CORRECTO' : 'INCORRECTO') : 'N/A'
       },
       connectivity_tests: {
-        perplexity_api: perplexityTest
+        perplexity_api: perplexityTest,
+        perplexity_details: perplexityDetails,
+        perplexity_error: perplexityError
+      },
+      diagnostics: {
+        perplexity_status: perplexityTest ? 'FUNCIONANDO' : 'CON PROBLEMAS',
+        recommendations: perplexityError ? [
+          perplexityError.status === 401 ? 'Verificar que la API Key sea válida y esté activa en tu cuenta de Perplexity' :
+          perplexityError.status === 429 ? 'Has alcanzado el límite de requests. Espera un momento antes de volver a intentar' :
+          perplexityError.status === 402 ? 'Sin créditos disponibles en tu cuenta de Perplexity. Revisar el plan de facturación' :
+          perplexityError.status >= 500 ? 'Error temporal del servidor de Perplexity. Intentar de nuevo en unos minutos' :
+          perplexityError.type === 'network_error' ? 'Problema de conectividad de red. Verificar conexión a internet' :
+          'Error desconocido. Revisar logs para más detalles'
+        ] : ['Todo funcionando correctamente']
       },
       message: 'Función de diagnóstico ejecutada correctamente'
     };

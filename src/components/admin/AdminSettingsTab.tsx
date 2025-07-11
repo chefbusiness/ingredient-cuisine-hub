@@ -4,10 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Settings, Database, Zap, Globe, Search } from "lucide-react";
 import LanguageCorrection from "./LanguageCorrection";
 import AuditLogViewer from "./AuditLogViewer";
+import SitemapDiagnostic from "./SitemapDiagnostic";
 
 const AdminSettingsTab = () => {
   return (
     <div className="space-y-6">
+      {/* Sitemap Diagnostic - SEO Feature */}
+      <SitemapDiagnostic />
+      
       {/* Audit Log Viewer - Security Feature */}
       <AuditLogViewer />
 

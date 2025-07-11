@@ -155,16 +155,26 @@ Deno.serve(async (req) => {
     });
 
     xmlParts.push('</urlset>');
-    const xmlContent = xmlParts.join('');
+    
+    // Crear XML limpio con saltos de línea
+    const xmlContent = xmlParts.join('\n');
     
     const totalUrls = staticPages.length + categoryPages.length + ingredientPages.length;
     console.log(`✅ === SITEMAP GENERADO EXITOSAMENTE ===`);
     console.log(`📊 Total URLs: ${totalUrls} (${staticPages.length} estáticas + ${categoryPages.length} categorías + ${ingredientPages.length} ingredientes)`);
     console.log(`📏 XML length: ${xmlContent.length} characters`);
 
+    // Headers limpios solo para XML
+    const cleanHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=1800'
+    };
+
     return new Response(xmlContent, {
       status: 200,
-      headers: corsHeaders
+      headers: cleanHeaders
     });
 
   } catch (error) {

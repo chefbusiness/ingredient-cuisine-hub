@@ -94,6 +94,12 @@ export const useSaveContent = () => {
       queryClient.invalidateQueries({ queryKey: ['ingredients'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       
+      // Invalidar cache específica según el tipo de contenido
+      if (variables.type === 'category') {
+        console.log('📂 Invalidating category-specific queries');
+        queryClient.invalidateQueries({ queryKey: ['categories'] });
+      }
+      
       const { type, isManualMode } = variables;
       const savedCount = result.data?.length || 0;
       

@@ -88,30 +88,58 @@ serve(async (req) => {
       console.log('📂 === CREACIÓN DIRECTA DE CATEGORÍAS (SIN IA) ===');
       
       try {
-        const categories = requestBody.categoriesList.map((categoryName: string) => ({
-          name: categoryName.trim(),
-          name_en: categoryName.trim().toLowerCase(),
-          description: `Categoría de ${categoryName.trim()}`
-        }));
+        // Primero crear cliente de Supabase
+        const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+        const supabaseClient = createClient(
+          Deno.env.get('SUPABASE_URL') ?? '',
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        );
 
-        console.log('✅ Categorías preparadas para inserción directa:', categories.length);
+        const savedCategories = [];
+        
+        for (const categoryName of requestBody.categoriesList) {
+          const categoryData = {
+            name: categoryName.trim(),
+            name_en: categoryName.trim().toLowerCase(),
+            description: `Categoría de ${categoryName.trim()}`
+          };
+
+          console.log('💾 Guardando categoría en BD:', categoryData.name);
+          
+          // Insertar directamente en la base de datos
+          const { data: savedCategory, error: saveError } = await supabaseClient
+            .from('categories')
+            .insert(categoryData)
+            .select()
+            .single();
+
+          if (saveError) {
+            console.error('❌ Error guardando categoría:', saveError);
+            throw saveError;
+          }
+
+          console.log('✅ Categoría guardada exitosamente:', savedCategory.name);
+          savedCategories.push(savedCategory);
+        }
+
+        console.log('✅ Todas las categorías guardadas:', savedCategories.length);
         
         // Log successful generation
         await logAdminAction('generate_content_direct_categories', 'category', {
-          count: categories.length,
-          category_names: categories.map(c => c.name),
+          count: savedCategories.length,
+          category_names: savedCategories.map(c => c.name),
           generation_mode: 'direct_manual',
           ai_provider: 'none_direct_insertion'
         });
 
         const response = buildSuccessResponse(
-          categories,
+          savedCategories,
           'none_direct_insertion',
           'direct_manual',
-          'Categorías creadas directamente sin IA'
+          'Categorías creadas y guardadas directamente sin IA'
         );
 
-        console.log('📤 Sending direct categories response');
+        console.log('📤 Sending direct categories response with saved data');
 
         return new Response(JSON.stringify(response), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

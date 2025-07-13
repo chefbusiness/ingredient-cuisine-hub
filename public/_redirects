@@ -2,23 +2,59 @@
 # SITEMAP DINÁMICO COMPLETO: Redirección al sitemap con TODOS los ingredientes  
 /sitemap.xml https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/generate-sitemap 200!
 
-# Interceptar bots sociales Y crawlers SEO para meta tags optimizados
-/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *facebookexternalhit*
-/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Twitterbot*
+# 🚨 CRÍTICO SEO SOCIAL: Interceptar TODOS los bots sociales para meta tags optimizados
+
+# WhatsApp y Telegram (PRIORIDAD MÁXIMA)
 /ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *WhatsApp*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Telegram*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *TelegramBot*
+
+# Facebook (Meta) - Múltiples variantes
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *facebookexternalhit*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *FacebookBot*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *facebook*
+
+# Twitter/X
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Twitterbot*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *TwitterBot*
+
+# LinkedIn
 /ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *LinkedInBot*
-/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Slackbot*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *linkedin*
+
+# Discord
 /ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Discordbot*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Discord*
+
+# Slack
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Slackbot*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *SlackBot*
+
+# Herramientas de Social Media Management
 /ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *PostPlanner*
 /ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Buffer*
 /ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Hootsuite*
-# CRÍTICO SEO: Interceptar Google Bot y otros crawlers
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *SocialBee*
+
+# Crawlers SEO (Google, Bing, etc.)
 /ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Googlebot*
 /ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *GoogleBot*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Google*
 /ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Bingbot*
 /ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *bingbot*
 /ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *YandexBot*
 /ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *DuckDuckBot*
+
+# Pinterest y otros
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Pinterest*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Skype*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *SkypeUriPreview*
+
+# Fallback genérico para cualquier bot no capturado
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *bot*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Bot*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *crawler*
+/ingrediente/* https://unqhfgupcutpeyepnavl.supabase.co/functions/v1/ingredient-meta-prerender/ingrediente/:splat 200! User-Agent: *Crawler*
 
 # Redirección general para SPA
 /* /index.html 200

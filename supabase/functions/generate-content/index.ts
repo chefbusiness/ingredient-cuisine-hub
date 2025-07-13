@@ -83,13 +83,53 @@ serve(async (req) => {
     console.log('📋 Lista de ingredientes:', requestBody.ingredientsList?.length || 0);
     console.log('📋 Lista de categorías:', requestBody.categoriesList?.length || 0);
 
+    // CREACIÓN DIRECTA DE CATEGORÍAS SIN IA
+    if (isCategory && isManualMode && requestBody.categoriesList) {
+      console.log('📂 === CREACIÓN DIRECTA DE CATEGORÍAS (SIN IA) ===');
+      
+      try {
+        const categories = requestBody.categoriesList.map((categoryName: string) => ({
+          name: categoryName.trim(),
+          name_en: categoryName.trim().toLowerCase(),
+          description: `Categoría de ${categoryName.trim()}`
+        }));
+
+        console.log('✅ Categorías preparadas para inserción directa:', categories.length);
+        
+        // Log successful generation
+        await logAdminAction('generate_content_direct_categories', 'category', {
+          count: categories.length,
+          category_names: categories.map(c => c.name),
+          generation_mode: 'direct_manual',
+          ai_provider: 'none_direct_insertion'
+        });
+
+        const response = buildSuccessResponse(
+          categories,
+          'none_direct_insertion',
+          'direct_manual',
+          'Categorías creadas directamente sin IA'
+        );
+
+        console.log('📤 Sending direct categories response');
+
+        return new Response(JSON.stringify(response), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+        
+      } catch (directError) {
+        console.error('❌ Error en creación directa de categorías:', directError);
+        throw directError;
+      }
+    }
+
     // Verificar si Perplexity API Key está disponible
     const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
     console.log('🔑 Perplexity API Key status:', perplexityApiKey ? `Presente (${perplexityApiKey.length} chars)` : 'NO ENCONTRADA');
 
-    // INTENTAR CON PERPLEXITY PRIMERO
-    if (perplexityApiKey) {
-      console.log('🌐 === INTENTANDO GENERACIÓN CON PERPLEXITY ===');
+    // INTENTAR CON PERPLEXITY SOLO PARA INGREDIENTES
+    if (perplexityApiKey && !isCategory) {
+      console.log('🌐 === INTENTANDO GENERACIÓN CON PERPLEXITY (SOLO INGREDIENTES) ===');
       
       try {
         let generatedData;
@@ -97,22 +137,14 @@ serve(async (req) => {
         if (isManualMode) {
           console.log('🎯 === USANDO MODO MANUAL CON UTILS.TS ===');
           
-          if (isCategory) {
-            // MODO MANUAL PARA CATEGORÍAS
-            console.log('📂 === PROCESANDO CATEGORÍAS MANUALES ===');
-            generatedData = await generateCategoryData(
-              requestBody.categoriesList || []
-            );
-          } else {
-            // MODO MANUAL PARA INGREDIENTES (SIN CAMBIOS)
-            console.log('🥕 === PROCESANDO INGREDIENTES MANUALES ===');
-            generatedData = await generateIngredientData(
-              requestBody.count || 1,
-              requestBody.category,
-              '',
-              requestBody.ingredientsList || (requestBody.ingredient ? [requestBody.ingredient] : undefined)
-            );
-          }
+          // SOLO MODO MANUAL PARA INGREDIENTES (SIN CAMBIOS)
+          console.log('🥕 === PROCESANDO INGREDIENTES MANUALES ===');
+          generatedData = await generateIngredientData(
+            requestBody.count || 1,
+            requestBody.category,
+            '',
+            requestBody.ingredientsList || (requestBody.ingredient ? [requestBody.ingredient] : undefined)
+          );
         } else {
           // MODO AUTOMÁTICO: Usar PerplexityClient directamente
           console.log('🤖 === MODO AUTOMÁTICO: USAR CLIENT DIRECTO ===');
@@ -165,8 +197,8 @@ serve(async (req) => {
       } catch (perplexityError) {
         console.error('❌ Error con Perplexity, pasando a fallback:', perplexityError.message);
       }
-    } else {
-      console.log('⚠️ Perplexity API Key no disponible, usando fallback');
+    } else if (!isCategory) {
+      console.log('⚠️ Perplexity API Key no disponible para ingredientes, usando fallback');
     }
 
     // FALLBACK: Usar datos de prueba si Perplexity falla

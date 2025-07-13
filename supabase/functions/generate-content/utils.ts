@@ -52,6 +52,121 @@ const isSpecificDuplicate = (requestedName: string, existingIngredients: any[]):
   return isDupe;
 };
 
+// NUEVA FUNCIÓN PARA GENERAR CATEGORÍAS MANUALMENTE
+export async function generateCategoryData(
+  categoriesList: string[]
+): Promise<any[]> {
+  console.log('🎯 === INICIANDO GENERACIÓN MANUAL DE CATEGORÍAS ===');
+  console.log('📋 Categories to process:', categoriesList.length);
+  
+  const perplexity = new PerplexityClient();
+  
+  try {
+    // Fetch existing categories to avoid duplicates
+    console.log('📋 Fetching existing categories for duplicate detection...');
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.7.1');
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+    
+    const { data: existingCategories, error: fetchError } = await supabase
+      .from('categories')
+      .select('id, name, name_en');
+
+    if (fetchError) {
+      console.log('⚠️ Warning: Could not fetch existing categories:', fetchError.message);
+    }
+
+    const existingCategoriesData = existingCategories || [];
+    console.log(`📊 Found ${existingCategoriesData.length} existing categories for duplicate validation`);
+
+    // Pre-filter duplicates
+    const nonDuplicateCategories = [];
+    const duplicateCategories = [];
+    
+    for (const category of categoriesList) {
+      const trimmedCategory = category.trim();
+      if (!trimmedCategory) continue;
+      
+      const normalizedRequested = normalizeForComparison(trimmedCategory);
+      const isDuplicate = existingCategoriesData.some(existing => {
+        const normalizedExisting = normalizeForComparison(existing.name);
+        const normalizedExistingEn = normalizeForComparison(existing.name_en);
+        return normalizedExisting === normalizedRequested || normalizedExistingEn === normalizedRequested;
+      });
+      
+      if (isDuplicate) {
+        console.log(`💰 TOKEN SAVED: "${trimmedCategory}" is duplicate - not sending to Perplexity`);
+        duplicateCategories.push({
+          name: trimmedCategory,
+          error: 'DUPLICADO_DETECTADO',
+          reason: 'Pre-filtrado: Ya existe en la base de datos',
+          requested_category: trimmedCategory,
+          generated: false,
+          tokens_saved: true
+        });
+      } else {
+        nonDuplicateCategories.push(trimmedCategory);
+      }
+    }
+    
+    console.log(`💰 TOKEN SAVINGS: ${duplicateCategories.length}/${categoriesList.length} duplicates avoided`);
+    console.log(`🚀 CATEGORIES TO PROCESS: ${nonDuplicateCategories.length}/${categoriesList.length}`);
+    
+    if (nonDuplicateCategories.length === 0) {
+      console.log('⚠️ All requested categories already exist - returning only duplicates');
+      return duplicateCategories;
+    }
+
+    let generatedCategories: any[] = [];
+
+    try {
+      const params = {
+        type: 'category',
+        count: nonDuplicateCategories.length,
+        categoriesList: nonDuplicateCategories
+      };
+
+      console.log(`📋 Generating prompt for categories: ${nonDuplicateCategories.join(', ')}`);
+      const { generateCategoryPrompt } = await import('./prompts/category-prompts.ts');
+      const prompt = generateCategoryPrompt(params, existingCategoriesData);
+      
+      console.log(`📡 Sending request to Perplexity for: ${nonDuplicateCategories.length} categories`);
+      
+      const response = await perplexity.generateContent(prompt);
+      console.log(`📦 Perplexity response:`, {
+        success: !!response,
+        length: response?.length || 0,
+        hasData: response && response.length > 0
+      });
+      
+      if (response && response.length > 0) {
+        generatedCategories.push(...response);
+        console.log(`✅ Successfully generated ${response.length} categories`);
+      }
+      
+    } catch (error) {
+      console.error(`❌ Error processing categories:`, error);
+    }
+    
+    // Combine generated with duplicates
+    const allResults = [...generatedCategories, ...duplicateCategories];
+    const successfulCategories = allResults.filter(cat => cat.generated !== false);
+    
+    console.log(`🎯 Manual category generation completed:`);
+    console.log(`  ✅ Generated successfully: ${successfulCategories.length}`);
+    console.log(`  💰 Duplicates avoided (tokens saved): ${duplicateCategories.length}`);
+    console.log(`  📊 Total processed: ${allResults.length}/${categoriesList.length}`);
+    
+    return successfulCategories;
+    
+  } catch (error) {
+    console.error('❌ Critical error in generateCategoryData:', error);
+    throw new Error(`Error generating category data: ${error.message}`);
+  }
+}
+
 export async function generateIngredientData(
   count: number, 
   category?: string, 

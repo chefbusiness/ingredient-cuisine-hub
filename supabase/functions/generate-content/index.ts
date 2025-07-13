@@ -10,7 +10,7 @@ import { validateSources } from './source-validator.ts';
 import { createFallbackData } from './fallback-data.ts';
 import { buildSuccessResponse, buildFallbackResponse, buildErrorResponse } from './response-builder.ts';
 import { getExistingIngredients } from './existing-ingredients.ts';
-import { generateIngredientData } from './utils.ts'; // AÑADIDO: usar utils para modo manual
+import { generateIngredientData, generateCategoryData } from './utils.ts'; // AÑADIDO: usar utils para modo manual
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -67,14 +67,21 @@ serve(async (req) => {
       });
     }
 
-    // DETECTAR MODO MANUAL: Verificar si hay ingredient específico o ingredientsList
+    // DETECTAR MODO MANUAL: Verificar si hay ingredient específico, ingredientsList o categoriesList
     const isManualMode = (requestBody.ingredient && requestBody.ingredient.trim()) || 
-                        (requestBody.ingredientsList && requestBody.ingredientsList.length > 0);
+                        (requestBody.ingredientsList && requestBody.ingredientsList.length > 0) ||
+                        (requestBody.categoriesList && requestBody.categoriesList.length > 0);
     
-    console.log('🎯 === MODO DETECTADO ===');
+    // DETECTAR TIPO DE CONTENIDO
+    const isCategory = requestBody.type === 'category' || 
+                      (requestBody.categoriesList && requestBody.categoriesList.length > 0);
+    
+    console.log('🎯 === MODO Y TIPO DETECTADO ===');
     console.log('📋 Modo manual detectado:', isManualMode);
+    console.log('📋 Tipo de contenido:', isCategory ? 'CATEGORY' : 'INGREDIENT');
     console.log('📋 Ingrediente específico:', requestBody.ingredient || 'N/A');
     console.log('📋 Lista de ingredientes:', requestBody.ingredientsList?.length || 0);
+    console.log('📋 Lista de categorías:', requestBody.categoriesList?.length || 0);
 
     // Verificar si Perplexity API Key está disponible
     const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
@@ -88,14 +95,24 @@ serve(async (req) => {
         let generatedData;
         
         if (isManualMode) {
-          // CORREGIDO: Usar utils.ts para modo manual que tiene la lógica correcta
           console.log('🎯 === USANDO MODO MANUAL CON UTILS.TS ===');
-          generatedData = await generateIngredientData(
-            requestBody.count || 1,
-            requestBody.category,
-            '',
-            requestBody.ingredientsList || (requestBody.ingredient ? [requestBody.ingredient] : undefined)
-          );
+          
+          if (isCategory) {
+            // MODO MANUAL PARA CATEGORÍAS
+            console.log('📂 === PROCESANDO CATEGORÍAS MANUALES ===');
+            generatedData = await generateCategoryData(
+              requestBody.categoriesList || []
+            );
+          } else {
+            // MODO MANUAL PARA INGREDIENTES (SIN CAMBIOS)
+            console.log('🥕 === PROCESANDO INGREDIENTES MANUALES ===');
+            generatedData = await generateIngredientData(
+              requestBody.count || 1,
+              requestBody.category,
+              '',
+              requestBody.ingredientsList || (requestBody.ingredient ? [requestBody.ingredient] : undefined)
+            );
+          }
         } else {
           // MODO AUTOMÁTICO: Usar PerplexityClient directamente
           console.log('🤖 === MODO AUTOMÁTICO: USAR CLIENT DIRECTO ===');

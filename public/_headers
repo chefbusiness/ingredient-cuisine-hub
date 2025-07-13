@@ -1,0 +1,29 @@
+# Headers globales para SEO y seguridad
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  X-XSS-Protection: 1; mode=block
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
+
+# Headers específicos para ingredientes (cuando son prerendeirizados)
+/ingrediente/*
+  X-Robots-Tag: index, follow
+  Cache-Control: public, max-age=3600, s-maxage=7200
+
+# Assets estáticos con cache largo
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Sitemap con cache moderado
+/sitemap.xml
+  Cache-Control: public, max-age=3600
+  Content-Type: application/xml
+
+# Favicon y manifest
+/favicon.ico
+  Cache-Control: public, max-age=86400
+  
+/manifest.json
+  Cache-Control: public, max-age=86400
+  Content-Type: application/manifest+json

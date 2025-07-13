@@ -123,14 +123,6 @@ serve(async (req) => {
         }
 
         console.log('✅ Todas las categorías guardadas:', savedCategories.length);
-        
-        // Log successful generation
-        await logAdminAction('generate_content_direct_categories', 'category', {
-          count: savedCategories.length,
-          category_names: savedCategories.map(c => c.name),
-          generation_mode: 'direct_manual',
-          ai_provider: 'none_direct_insertion'
-        });
 
         const response = buildSuccessResponse(
           savedCategories,

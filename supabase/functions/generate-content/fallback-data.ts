@@ -41,7 +41,24 @@ export function createFallbackIngredient(requestBody: any, ingredientName?: stri
   return mockIngredient;
 }
 
+export function createFallbackCategory(categoryName?: string) {
+  return {
+    name: categoryName ? `${categoryName}` : "Categoría Fallback",
+    name_en: categoryName ? `${categoryName}` : "Fallback Category", 
+    description: "Esta categoría fue generada como respaldo debido a un error temporal con la API de investigación. Los datos son de prueba.",
+    requested_category: categoryName
+  };
+}
+
 export function createFallbackData(requestBody: any): any[] {
+  // Handle categories
+  if (requestBody.type === 'category' && requestBody.categoriesList && requestBody.categoriesList.length > 0) {
+    return requestBody.categoriesList.map((categoryName: string) => 
+      createFallbackCategory(categoryName)
+    );
+  }
+  
+  // Handle ingredients (existing logic)
   return requestBody.ingredientsList && requestBody.ingredientsList.length > 0
     ? requestBody.ingredientsList.map((ingredientName: string) => 
         createFallbackIngredient(requestBody, ingredientName)

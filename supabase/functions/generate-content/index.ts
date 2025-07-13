@@ -10,7 +10,7 @@ import { validateSources } from './source-validator.ts';
 import { createFallbackData } from './fallback-data.ts';
 import { buildSuccessResponse, buildFallbackResponse, buildErrorResponse } from './response-builder.ts';
 import { getExistingIngredients } from './existing-ingredients.ts';
-import { generateIngredientData } from './utils.ts'; // AÑADIDO: usar utils para modo manual
+import { generateIngredientData, generateCategoryData } from './utils.ts'; // AÑADIDO: usar utils para modo manual
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -67,29 +67,98 @@ serve(async (req) => {
       });
     }
 
-    // DETECTAR MODO MANUAL: Verificar si hay ingredient específico o ingredientsList
+    // DETECTAR MODO MANUAL: Verificar si hay ingredient específico, ingredientsList o categoriesList
     const isManualMode = (requestBody.ingredient && requestBody.ingredient.trim()) || 
-                        (requestBody.ingredientsList && requestBody.ingredientsList.length > 0);
+                        (requestBody.ingredientsList && requestBody.ingredientsList.length > 0) ||
+                        (requestBody.categoriesList && requestBody.categoriesList.length > 0);
     
-    console.log('🎯 === MODO DETECTADO ===');
+    // DETECTAR TIPO DE CONTENIDO
+    const isCategory = requestBody.type === 'category' || 
+                      (requestBody.categoriesList && requestBody.categoriesList.length > 0);
+    
+    console.log('🎯 === MODO Y TIPO DETECTADO ===');
     console.log('📋 Modo manual detectado:', isManualMode);
+    console.log('📋 Tipo de contenido:', isCategory ? 'CATEGORY' : 'INGREDIENT');
     console.log('📋 Ingrediente específico:', requestBody.ingredient || 'N/A');
     console.log('📋 Lista de ingredientes:', requestBody.ingredientsList?.length || 0);
+    console.log('📋 Lista de categorías:', requestBody.categoriesList?.length || 0);
+
+    // CREACIÓN DIRECTA DE CATEGORÍAS SIN IA
+    if (isCategory && isManualMode && requestBody.categoriesList) {
+      console.log('📂 === CREACIÓN DIRECTA DE CATEGORÍAS (SIN IA) ===');
+      
+      try {
+        // Primero crear cliente de Supabase
+        const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+        const supabaseClient = createClient(
+          Deno.env.get('SUPABASE_URL') ?? '',
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+        );
+
+        const savedCategories = [];
+        
+        for (const categoryName of requestBody.categoriesList) {
+          const categoryData = {
+            name: categoryName.trim(),
+            name_en: categoryName.trim().toLowerCase(),
+            description: `Categoría de ${categoryName.trim()}`
+          };
+
+          console.log('💾 Guardando categoría en BD:', categoryData.name);
+          
+          // Insertar directamente en la base de datos
+          const { data: savedCategory, error: saveError } = await supabaseClient
+            .from('categories')
+            .insert(categoryData)
+            .select()
+            .single();
+
+          if (saveError) {
+            console.error('❌ Error guardando categoría:', saveError);
+            throw saveError;
+          }
+
+          console.log('✅ Categoría guardada exitosamente:', savedCategory.name);
+          savedCategories.push(savedCategory);
+        }
+
+        console.log('✅ Todas las categorías guardadas:', savedCategories.length);
+
+        const response = buildSuccessResponse(
+          savedCategories,
+          'none_direct_insertion',
+          'direct_manual',
+          'Categorías creadas y guardadas directamente sin IA'
+        );
+
+        console.log('📤 Sending direct categories response with saved data');
+
+        return new Response(JSON.stringify(response), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+        
+      } catch (directError) {
+        console.error('❌ Error en creación directa de categorías:', directError);
+        throw directError;
+      }
+    }
 
     // Verificar si Perplexity API Key está disponible
     const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
     console.log('🔑 Perplexity API Key status:', perplexityApiKey ? `Presente (${perplexityApiKey.length} chars)` : 'NO ENCONTRADA');
 
-    // INTENTAR CON PERPLEXITY PRIMERO
-    if (perplexityApiKey) {
-      console.log('🌐 === INTENTANDO GENERACIÓN CON PERPLEXITY ===');
+    // INTENTAR CON PERPLEXITY SOLO PARA INGREDIENTES
+    if (perplexityApiKey && !isCategory) {
+      console.log('🌐 === INTENTANDO GENERACIÓN CON PERPLEXITY (SOLO INGREDIENTES) ===');
       
       try {
         let generatedData;
         
         if (isManualMode) {
-          // CORREGIDO: Usar utils.ts para modo manual que tiene la lógica correcta
           console.log('🎯 === USANDO MODO MANUAL CON UTILS.TS ===');
+          
+          // SOLO MODO MANUAL PARA INGREDIENTES (SIN CAMBIOS)
+          console.log('🥕 === PROCESANDO INGREDIENTES MANUALES ===');
           generatedData = await generateIngredientData(
             requestBody.count || 1,
             requestBody.category,
@@ -148,8 +217,8 @@ serve(async (req) => {
       } catch (perplexityError) {
         console.error('❌ Error con Perplexity, pasando a fallback:', perplexityError.message);
       }
-    } else {
-      console.log('⚠️ Perplexity API Key no disponible, usando fallback');
+    } else if (!isCategory) {
+      console.log('⚠️ Perplexity API Key no disponible para ingredientes, usando fallback');
     }
 
     // FALLBACK: Usar datos de prueba si Perplexity falla

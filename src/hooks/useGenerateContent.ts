@@ -7,15 +7,16 @@ export const useGenerateContent = () => {
   const { toast } = useToast();
   
   return useMutation({
-    mutationFn: async ({ type, count, category, region, ingredient, ingredientsList }: { 
+    mutationFn: async ({ type, count, category, region, ingredient, ingredientsList, categoriesList }: { 
       type: string; 
       count: number; 
       category?: string;
       region?: string;
       ingredient?: string;
       ingredientsList?: string[];
+      categoriesList?: string[];
     }) => {
-      console.log('🔄 Generating content:', { type, count, category, region, ingredient, ingredientsList });
+      console.log('🔄 Generating content:', { type, count, category, region, ingredient, ingredientsList, categoriesList });
       
       const { data, error } = await supabase.functions.invoke('generate-content', {
         body: { 
@@ -24,7 +25,8 @@ export const useGenerateContent = () => {
           category, 
           region, 
           ingredient,
-          ingredientsList: ingredientsList || undefined
+          ingredientsList: ingredientsList || undefined,
+          categoriesList: categoriesList || undefined
         }
       });
 

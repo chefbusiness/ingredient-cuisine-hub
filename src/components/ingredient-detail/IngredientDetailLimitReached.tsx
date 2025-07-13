@@ -22,7 +22,7 @@ const IngredientDetailLimitReached = ({
           <div className="max-w-2xl mx-auto text-center py-16">
             <h2 className="text-2xl font-bold mb-4">¡Has alcanzado el límite gratuito!</h2>
             <p className="text-muted-foreground mb-6">
-              Has visto 20 ingredientes. Regístrate gratis para acceso ilimitado a todo el directorio.
+              Has visto 5 ingredientes. Regístrate gratis para acceso ilimitado a todo el directorio.
             </p>
             <Button onClick={() => setShowAuthModal(true)} size="lg">
               Registro Gratuito

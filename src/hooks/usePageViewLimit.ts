@@ -5,7 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSuperAdmin } from './useSuperAdmin';
 import { rateLimit } from '@/utils/security';
 
-const PAGE_VIEW_LIMIT = 20;
+const PAGE_VIEW_LIMIT = 5;
 const SESSION_STORAGE_KEY = 'ingredients_session_id';
 const VIEWED_PAGES_KEY = 'viewed_ingredient_pages';
 

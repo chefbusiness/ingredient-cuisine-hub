@@ -31,7 +31,7 @@ const FAQSection = () => {
     },
     {
       question: "¿Hay límite en el número de ingredientes que puedo consultar?",
-      answer: "Los usuarios pueden consultar hasta 20 ingredientes de forma gratuita. Después de eso, pueden registrarse gratuitamente para acceso ilimitado a todo el directorio."
+      answer: "Los usuarios pueden consultar hasta 5 ingredientes de forma gratuita. Después de eso, pueden registrarse gratuitamente para acceso ilimitado a todo el directorio."
     }
   ];
 

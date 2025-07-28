@@ -127,33 +127,43 @@ function generateIngredientHTML(ingredient: any): string {
                    ingredient.image_url || 
                    `${baseUrl}/placeholder.svg`;
   
-  // 📝 DESCRIPCIÓN OPTIMIZADA para compartir (160 chars para Facebook)
-  let shareDescription = '';
-  if (ingredient.description && ingredient.description.length > 0) {
-    shareDescription = ingredient.description.length > 155 
-      ? ingredient.description.substring(0, 152) + '...'
-      : ingredient.description;
-  } else {
-    shareDescription = `Información completa sobre ${ingredient.name}: usos culinarios profesionales, precios actualizados, recetas y características técnicas.`;
-  }
+  // 🏷️ FUNCIÓN AUXILIAR para emojis por categoría
+  const getCategoryEmoji = (categoryName?: string): string => {
+    if (!categoryName) return '🥘';
+    
+    const categoryEmojis: Record<string, string> = {
+      'verduras': '🥬', 'frutas': '🍎', 'carnes': '🥩', 'pescados': '🐟', 'mariscos': '🦐',
+      'lácteos': '🥛', 'cereales': '🌾', 'legumbres': '🫘', 'especias': '🌶️', 'hierbas': '🌿',
+      'hongos': '🍄', 'aceites': '🫒', 'vinagres': '🍾', 'frutos secos': '🥜', 'condimentos': '🧂',
+      'salsas': '🥫', 'endulzantes': '🍯'
+    };
+    
+    return categoryEmojis[categoryName.toLowerCase()] || '🥘';
+  };
+
+  // 🏷️ TÍTULO OPTIMIZADO Y ÚNICO
+  const categoryEmoji = getCategoryEmoji(ingredient.categories?.name);
+  const seasonInfo = ingredient.temporada ? ` - Temporada ${ingredient.temporada}` : '';
+  const popularityBadge = ingredient.popularity > 80 ? ' ⭐ Popular' : '';
   
-  // 🏷️ TÍTULO OPTIMIZADO para redes sociales (60 chars para Twitter)
-  const shareTitle = `${ingredient.name} - Ingrediente Profesional | Ingredients Index Pro`;
+  const shareTitle = `${ingredient.name} ${categoryEmoji}${popularityBadge} | Precio${seasonInfo} | Chef Profesional`;
   
-  // 🔧 KEYWORDS SEO optimizadas
-  const keywords = [
-    ingredient.name,
-    ingredient.name_en,
-    'ingrediente profesional',
-    'cocina profesional',
-    'gastronomía',
-    'chef',
-    'precios ingredientes',
-    'recetas profesionales',
-    'hostelería',
-    'ingredients index',
-    ingredient.categories?.name
-  ].filter(Boolean).join(', ');
+  // 📝 META DESCRIPTION OPTIMIZADA (150-160 caracteres)
+  const originInfo = ingredient.origen ? ` Origen: ${ingredient.origen}.` : '';
+  const priceInfo = ingredient.ingredient_prices && ingredient.ingredient_prices.length > 0 
+    ? ` Precio actual disponible.` : '';
+  const performanceInfo = ` Rendimiento ${ingredient.rendimiento || 0}%, merma ${ingredient.merma || 0}%.`;
+  
+  const baseDescription = `${ingredient.name} profesional ✨${priceInfo}${originInfo}${performanceInfo} ¡Descubre técnicas y usos culinarios!`;
+  
+  // Truncar si es necesario pero mantener coherencia
+  const shareDescription = baseDescription.length > 160 
+    ? `${ingredient.name} profesional ✨${priceInfo} Rendimiento ${ingredient.rendimiento || 0}%, merma ${ingredient.merma || 0}%. ¡Técnicas culinarias exclusivas!`
+    : baseDescription;
+  
+  // 🔧 KEYWORDS SEO más específicas y relevantes
+  const categoryKeywords = ingredient.categories?.name || 'ingredientes';
+  const keywords = `${ingredient.name}, ${categoryKeywords}, cocina profesional, chef, precios ${ingredient.name}, técnicas culinarias, hostelería, gastronomía, rendimiento, merma`;
 
   // Escapar caracteres especiales para HTML
   const escapeHtml = (text: string) => text

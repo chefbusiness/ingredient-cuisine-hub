@@ -71,31 +71,77 @@ export const generateIngredientSchema = (ingredient: Ingredient) => ({
 });
 
 export const generateIngredientSEO = (ingredient: Ingredient) => {
-  const title = `${ingredient.name} | Ingrediente Profesional - Precios y Características | IngredientsIndex.pro`;
-  const description = ingredient.description.length > 155 
-    ? `${ingredient.description.substring(0, 152)}...` 
-    : ingredient.description;
-  const metaDescription = `${description} Información completa sobre ${ingredient.name}: precios, merma (${ingredient.merma}%), rendimiento (${ingredient.rendimiento}%), usos culinarios y más.`;
+  // Generar título optimizado y único
+  const categoryEmoji = getCategoryEmoji(ingredient.categories?.name);
+  const seasonInfo = ingredient.temporada ? ` - Temporada ${ingredient.temporada}` : '';
+  const popularityBadge = ingredient.popularity > 80 ? ' ⭐ Popular' : '';
+  
+  const title = `${ingredient.name} ${categoryEmoji}${popularityBadge} | Precio${seasonInfo} | Chef Profesional`;
+  
+  // Generar meta description optimizada (150-160 caracteres)
+  const originInfo = ingredient.origen ? ` Origen: ${ingredient.origen}.` : '';
+  const priceInfo = ingredient.ingredient_prices && ingredient.ingredient_prices.length > 0 
+    ? ` Precio actual disponible.` : '';
+  const performanceInfo = ` Rendimiento ${ingredient.rendimiento}%, merma ${ingredient.merma}%.`;
+  
+  const baseDescription = `${ingredient.name} profesional ✨${priceInfo}${originInfo}${performanceInfo} ¡Descubre técnicas y usos culinarios!`;
+  
+  // Truncar si es necesario pero mantener coherencia
+  const metaDescription = baseDescription.length > 160 
+    ? `${ingredient.name} profesional ✨${priceInfo} Rendimiento ${ingredient.rendimiento}%, merma ${ingredient.merma}%. ¡Técnicas culinarias exclusivas!`
+    : baseDescription;
+  
   const imageUrl = ingredient.real_image_url || ingredient.image_url || `${BASE_URL}/og-image.jpg`;
   const canonicalUrl = ingredient.slug 
     ? `${BASE_URL}/ingrediente/${ingredient.slug}`
     : `${BASE_URL}/ingrediente/${ingredient.id}`;
-  const keywords = `${ingredient.name}, ingrediente, cocina profesional, hostelería, precios, merma, rendimiento, ${ingredient.categories?.name || 'ingredientes'}, chef, gastronomía`;
+  
+  // Keywords más específicas y relevantes
+  const categoryKeywords = ingredient.categories?.name || 'ingredientes';
+  const keywords = `${ingredient.name}, ${categoryKeywords}, cocina profesional, chef, precios ${ingredient.name}, técnicas culinarias, hostelería, gastronomía, rendimiento, merma`;
 
   return {
     title,
     description: metaDescription,
     keywords,
-    ogTitle: `${ingredient.name} - Ingrediente Profesional | IngredientsIndex.pro`,
+    ogTitle: `${ingredient.name} ${categoryEmoji} - Guía Profesional del Chef`,
     ogDescription: metaDescription,
     ogImage: imageUrl,
     ogType: 'product',
     twitterCard: 'summary_large_image',
-    twitterTitle: `${ingredient.name} - Ingrediente Profesional | IngredientsIndex.pro`,
+    twitterTitle: `${ingredient.name} ${categoryEmoji} | Chef Profesional`,
     twitterDescription: metaDescription,
     twitterImage: imageUrl,
     canonical: canonicalUrl
   };
+};
+
+// Función auxiliar para emojis por categoría
+const getCategoryEmoji = (categoryName?: string): string => {
+  if (!categoryName) return '🥘';
+  
+  const categoryEmojis: Record<string, string> = {
+    'verduras': '🥬',
+    'frutas': '🍎',
+    'carnes': '🥩',
+    'pescados': '🐟',
+    'mariscos': '🦐',
+    'lácteos': '🥛',
+    'cereales': '🌾',
+    'legumbres': '🫘',
+    'especias': '🌶️',
+    'hierbas': '🌿',
+    'hongos': '🍄',
+    'aceites': '🫒',
+    'vinagres': '🍾',
+    'frutos secos': '🥜',
+    'condimentos': '🧂',
+    'salsas': '🥫',
+    'endulzantes': '🍯'
+  };
+  
+  const normalizedCategory = categoryName.toLowerCase();
+  return categoryEmojis[normalizedCategory] || '🥘';
 };
 
 export const generateBreadcrumbSchema = (items: { name: string; url: string }[]) => ({

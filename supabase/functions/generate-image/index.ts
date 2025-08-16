@@ -12,6 +12,36 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
+// Security function to verify super admin access
+async function verifySuperAdminAccess(authHeader: string | null): Promise<{ authorized: boolean, userEmail?: string }> {
+  if (!authHeader) {
+    return { authorized: false };
+  }
+
+  try {
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError || !user) {
+      return { authorized: false };
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role, email')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || profile.role !== 'super_admin') {
+      return { authorized: false, userEmail: profile?.email };
+    }
+
+    return { authorized: true, userEmail: profile.email };
+  } catch (error) {
+    return { authorized: false };
+  }
+}
+
 const generateSEOFileName = (ingredientName: string) => {
   const cleanName = ingredientName
     .toLowerCase()
@@ -164,6 +194,24 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     console.log('⚡ Handling CORS preflight');
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // SECURITY: Verify super admin access
+  const authHeader = req.headers.get('Authorization');
+  const { authorized } = await verifySuperAdminAccess(authHeader);
+  
+  if (!authorized) {
+    console.log('❌ Unauthorized access attempt');
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: 'Access denied. Super admin privileges required.' 
+      }), 
+      { 
+        status: 403, 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      }
+    );
   }
 
   try {

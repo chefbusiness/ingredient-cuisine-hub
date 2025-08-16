@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -576,10 +576,10 @@ export type Database = {
       }
       log_admin_action: {
         Args: {
-          action_type: string
-          resource_type: string
-          resource_id?: string
           action_details?: Json
+          action_type: string
+          resource_id?: string
+          resource_type: string
         }
         Returns: undefined
       }
@@ -588,7 +588,7 @@ export type Database = {
         Returns: boolean
       }
       update_image_approval: {
-        Args: { image_id: string; approved: boolean }
+        Args: { approved: boolean; image_id: string }
         Returns: Json
       }
       verify_super_admin_access: {

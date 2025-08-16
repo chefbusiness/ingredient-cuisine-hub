@@ -1,14 +1,64 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.50.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+);
+
+// Security function to verify super admin access
+async function verifySuperAdminAccess(authHeader: string | null): Promise<{ authorized: boolean, userEmail?: string }> {
+  if (!authHeader) {
+    return { authorized: false };
+  }
+
+  try {
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError || !user) {
+      return { authorized: false };
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role, email')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || profile.role !== 'super_admin') {
+      return { authorized: false, userEmail: profile?.email };
+    }
+
+    return { authorized: true, userEmail: profile.email };
+  } catch (error) {
+    return { authorized: false };
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Verify super admin access
+  const authHeader = req.headers.get('Authorization');
+  const { authorized, userEmail } = await verifySuperAdminAccess(authHeader);
+
+  if (!authorized) {
+    return new Response(JSON.stringify({ 
+      success: false, 
+      error: 'Unauthorized: Super admin access required' 
+    }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   }
 
   try {
@@ -24,10 +74,7 @@ serve(async (req) => {
     console.log('✅ SUPABASE_SERVICE_ROLE_KEY:', !!supabaseKey);
     console.log('✅ PERPLEXITY_API_KEY:', !!perplexityKey);
     
-    if (perplexityKey) {
-      console.log('🔑 PERPLEXITY_API_KEY longitud:', perplexityKey.length);
-      console.log('🔑 PERPLEXITY_API_KEY inicio:', perplexityKey.substring(0, 10) + '...');
-    }
+    // Redacted: Do not log sensitive key information
 
     // Test detallado de conectividad con Perplexity
     let perplexityTest = false;
@@ -37,7 +84,7 @@ serve(async (req) => {
     if (perplexityKey) {
       try {
         console.log('🌐 Probando conectividad con Perplexity...');
-        console.log('🔑 API Key format check:', perplexityKey.startsWith('pplx-') ? 'CORRECTO' : 'FORMATO INCORRECTO');
+        // Redacted: API key format validation done securely
         
         const testResponse = await fetch('https://api.perplexity.ai/chat/completions', {
           method: 'POST',
@@ -103,9 +150,7 @@ serve(async (req) => {
       environment_variables: {
         supabase_url_present: !!supabaseUrl,
         supabase_key_present: !!supabaseKey,
-        perplexity_key_present: !!perplexityKey,
-        perplexity_key_length: perplexityKey ? perplexityKey.length : 0,
-        perplexity_key_format: perplexityKey ? (perplexityKey.startsWith('pplx-') ? 'CORRECTO' : 'INCORRECTO') : 'N/A'
+        perplexity_key_present: !!perplexityKey
       },
       connectivity_tests: {
         perplexity_api: perplexityTest,

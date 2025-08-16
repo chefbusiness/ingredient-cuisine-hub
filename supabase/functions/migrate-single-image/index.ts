@@ -12,6 +12,45 @@ const supabase = createClient(
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 );
 
+// Security function to verify super admin access
+async function verifySuperAdminAccess(authHeader: string | null): Promise<{ authorized: boolean, userEmail?: string }> {
+  if (!authHeader) {
+    console.log('❌ No authorization header provided');
+    return { authorized: false };
+  }
+
+  try {
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    
+    if (userError || !user) {
+      console.log('❌ Invalid or expired token:', userError?.message);
+      return { authorized: false };
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role, email')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError) {
+      console.log('❌ Error fetching user profile:', profileError.message);
+      return { authorized: false, userEmail: user.email };
+    }
+
+    if (profile.role !== 'super_admin') {
+      console.log('❌ User is not a super admin:', profile.email);
+      return { authorized: false, userEmail: profile.email };
+    }
+
+    return { authorized: true, userEmail: profile.email };
+  } catch (error) {
+    console.log('❌ Error verifying admin access:', error);
+    return { authorized: false };
+  }
+}
+
 const generateSEOFileName = (ingredientName: string) => {
   const cleanName = ingredientName
     .toLowerCase()
@@ -32,6 +71,23 @@ serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
+
+  // Verify super admin access
+  const authHeader = req.headers.get('Authorization');
+  const { authorized, userEmail } = await verifySuperAdminAccess(authHeader);
+
+  if (!authorized) {
+    console.log('🚫 Unauthorized access attempt from:', userEmail || 'unknown user');
+    return new Response(JSON.stringify({ 
+      success: false, 
+      error: 'Unauthorized: Super admin access required' 
+    }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  console.log('✅ Super admin access verified for:', userEmail);
 
   try {
     const { ingredientId, ingredientName, currentImageUrl } = await req.json();
